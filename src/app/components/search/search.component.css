@@ -1,0 +1,317 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+:host {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: url('/assets/images/shaded-background.jpg');
+}
+
+/* ---------- Sidebar ---------- */ 
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 80px;
+    height: 100%;
+    background: transparent;
+    backdrop-filter: blur(3px);
+    border-right: .15vw solid rgba(255, 255, 255, .2);
+    box-shadow: 0 0 10px rgba(0, 0, 0, .2);
+    padding: 6px 14px;
+    transition: .5s;
+}
+.sidebar.active {
+    width: 260px; 
+}
+.sidebar .logo-menu {
+    display: flex; 
+    align-items: center; 
+    width: 100%; 
+    height: 70px;
+}
+.sidebar .logo-menu .logo {
+    font-size: 25px; 
+    color: #fff; 
+    pointer-events: none; 
+    opacity: 0; 
+    transition: .3s;
+}
+.sidebar.active .logo-menu .logo {
+    opacity: 1; 
+    transition-delay: .2s;
+}
+.sidebar .logo-menu .toggle-button {
+    position: absolute; 
+    left: 50%; 
+    transform: translateX(-50%); 
+    width: 40px; 
+    height: 40px;
+    font-size: 22px; 
+    color: #fff; 
+    text-align: center; 
+    line-height: 40px; 
+    cursor: pointer; 
+    transition: .5s;
+}
+.sidebar.active .logo-menu .toggle-button {
+    left: 90%;
+}
+.sidebar .list {
+    margin-top: 10px;
+}
+.sidebar .link-name { 
+    opacity: 0; 
+    pointer-events: none; 
+    transition: opacity .3s; 
+}
+.sidebar.active .link-name { 
+    opacity: 1; 
+    pointer-events: auto; 
+    transition-delay: calc(.1s * var(--i)); 
+}
+
+.list .list-item {
+    list-style: none; 
+    width: 100%; 
+    height: 50px; 
+    margin: 7.5px 0; 
+    line-height: 50px;
+}
+.list .list-item a {
+    display: flex; 
+    align-items: center; 
+    font-size: 18px; 
+    color: #fff; 
+    text-decoration: none;
+    border-radius: 6px; 
+    white-space: nowrap; 
+    transition: .5s; 
+    cursor: pointer;
+}
+.list .list-item.active a, .list .list-item a:hover { 
+    background: rgba(255, 255, 255, .2); 
+    transform: scale(1.05);
+}
+.list .list-item a i { 
+    min-width: 50px; 
+    height: 50px; 
+    text-align: center; 
+    line-height: 50px; 
+}
+
+.username {
+    position: absolute; 
+    padding: 0 10px 15px;
+    list-style: none;
+    bottom: 0;
+    font-size: 20px;
+    font-weight: 500; 
+    color: #fff;
+}
+
+
+/* ---------- Container ---------- */
+.container {
+  display: flex;
+  flex-direction: column;
+  border: 0.2vw solid #fff;
+  border-radius: 5px;
+  position: absolute;
+  left: 300px;
+  right: 40px;
+  top: 40px;
+  bottom: 40px;
+  width: auto;
+  height: auto;
+  transition: 0.5s;
+  backdrop-filter: blur(3px);
+}
+.container.active {
+  left: 120px;
+}
+
+
+/* ---------- Search Bar ---------- */
+.search-bar {
+  display: flex;
+  flex-direction: row;
+  width: auto;
+  height: 56px;
+  border-bottom: 0.2vw solid #fff;
+  margin-left: 20px;
+  margin-right: 21px;
+  transition: 0.5s;
+  position: relative;
+}
+
+.prompt {
+  position: absolute;
+  transition: 0.5s;
+  font-size: clamp(16px, 1.25vw, 20px); /* was 1em */
+  color: #fff;
+  font-weight: 500;
+  pointer-events: none;
+  margin-top: 12px;
+  margin-left: 5px;
+}
+.prompt.active {
+  color: transparent;
+  transition: 0.5s;
+}
+
+.search-bar input {
+  width: 98.3%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: clamp(16px, 1.25vw, 20px); /* was 1em */
+  color: #fff;
+  font-weight: 600;
+  padding: 0 40px 0 8px;
+}
+.search-bar a {
+  margin-right: 0px;
+  font-size: 1.2em;
+  color: #fff;
+  padding-top: 5px;
+}
+
+.search {
+  padding-top: 5px;
+  padding-left: 7.5px;
+  padding-right: 7.5px;
+  margin-left: 2.5px;
+  margin-right: 2.5px;
+  font-size: 1.2em;
+  color: #fff;
+  margin-top: auto;
+  margin-bottom: auto;
+  cursor: pointer;
+}
+.search.active,
+.search:hover {
+  padding-top: 5px;
+  padding-left: 7.5px;
+  padding-right: 7.5px;
+  font-size: 1.2em;
+  margin-left: 2.5px;
+  margin-right: 2.5px;
+  margin-top: auto;
+  margin-bottom: auto;
+  color: #fff;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.movies,
+.series,
+.users {
+  padding-left: 7.5px;
+  padding-right: 7.5px;
+  margin-left: 2.5px;
+  margin-right: 2.5px;
+  font-size: 1.2em;
+  color: #fff;
+  height: 1.5em;
+  margin-top: auto;
+  margin-bottom: auto;
+  cursor: pointer;
+}
+.movies.active,
+.series.active,
+.users.active,
+.movies:hover,
+.series:hover,
+.users:hover {
+  padding-left: 7.5px;
+  padding-right: 7.5px;
+  font-size: 1.2em;
+  margin-left: 2.5px;
+  margin-right: 2.5px;
+  height: 1.5em;
+  margin-top: auto;
+  margin-bottom: auto;
+  color: #fff;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.search-warning {
+  transform: scale(0);
+  color: white;
+  font-size: 2vw;
+  font-weight: 600;
+  width: 100%;
+  text-align: center;
+  height: 0;
+}
+.search-warning.active {
+  height: auto;
+  padding-top: 2.5%;
+  transform: scale(1);
+}
+
+
+/* ---------- Results Scroll Area ---------- */
+.scroll-box {
+  padding-right: 6.5px;
+  margin-right: 6.5px;
+  margin-left: 20px;
+  width: auto;
+  height: 94%;
+  overflow: hidden;
+  overflow-y: scroll;
+  transition: 0.5s;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black var(--top-mask-size, 0),
+    black calc(100% - var(--bottom-mask-size, 0)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black var(--top-mask-size, 0),
+    black calc(100% - var(--bottom-mask-size, 0)),
+    transparent 100%
+  );
+  --top-mask-size: 10px;
+  --bottom-mask-size: 0px;
+}
+.scroll-box.searched-films {
+  overflow: hidden;
+  overflow-y: scroll;
+  scrollbar-color: #fff transparent;
+  transition: 0.5s;
+}
+.scroll-box::-webkit-scrollbar {
+  width: 0.5em;
+}
+.scroll-box::-webkit-scrollbar-thumb {
+  background: white;
+  border-radius: 0.25em;
+  cursor: pointer;
+}
+
+.searched-movie,
+.searched-user {
+  cursor: pointer;
+}
+.searched-users > app-searched-user-template,
+.searched-movies > app-searched-film-template {
+  display: block;
+  margin-bottom: 8px;
+}

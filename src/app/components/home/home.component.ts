@@ -9,11 +9,12 @@ import { FollowerModel } from '../../models/database-models/follower-model';
 import { PostsDatabase } from '../../databases/posts-database';
 import { PostsService } from '../../services/posts-service';
 import { FeedPostComponent } from '../templates/feed-post/feed-post.component';
+import { RouterLink, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeedPostComponent],
+  imports: [CommonModule, FormsModule, FeedPostComponent, RouterModule],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -36,9 +37,6 @@ export class HomeComponent implements OnInit {
   ngOnInit() {
     /// provides the users feed/memory lane (if they view all feed posts) \\\
     this.populateUsersFeed();
-
-    console.log(this.usersFeedPosts);
-    
 
     this.populateMemoryLane();
 

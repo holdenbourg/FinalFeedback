@@ -1,0 +1,126 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: "Poppins", sans-serif; }
+
+body {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: url('../images/shadedBackground.jpg');
+}
+
+.container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  position: absolute;
+  left: 40px; right: 40px; bottom: 40px; top: 40px;
+  width: auto; height: auto;
+}
+
+/* selected film director/writer/release-date/box-office/genre/awards/summary */
+.left-information {
+  display: flex; flex-direction: column;
+  width: 54.3%; height: 100%;
+  font-size: 1.9vw; color: #fff; font-weight: 600;
+  border: .2vw solid #fff; border-radius: 5px; backdrop-filter: blur(3px);
+}
+.left-information p {
+  text-align: center; padding: 0 20px; margin-bottom: 5px;
+}
+.director { padding-top: 20px; }
+.summary { padding-bottom: 20px; }
+
+/* selected film poster/type/rated/run-time/ratings/rate-button */
+.right-information {
+  width: 43.3%; height: 100%;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+
+/* container for ratings and rate button */
+.ratings-button {
+  display: flex; flex-direction: column; justify-content: space-between; height: 14.2vw;
+}
+
+/* container for the ratings and the company logos */
+.ratings {
+  display: flex; flex-direction: row; justify-content: space-between;
+  border: .2vw solid #fff; border-radius: 5px; width: 100%; height: 8vw;
+  padding: 20px 60px 30px; backdrop-filter: blur(3px);
+}
+.imdb-img { width: 6.7vw; }
+.rotten-tomatoes-img { width: 10vw; }
+.metacritic-img { width: 4.1vw; margin-left: .2vw; }
+
+.imdb-rating, .rotten-tomatoes-rating, .metacritic-rating {
+  display: flex; flex-direction: column; text-align: center; color: #fff;
+  font-size: 1.3vw; font-weight: 600;
+}
+.imdb-rating { margin-top: .3vw; }
+.rotten-tomatoes-rating { margin-top: .55vw; }
+
+/* "Rate This Movie" button */
+.rate-button {
+  width: 100%; height: 4vw;
+  background: transparent; border: .2vw solid #fff; border-radius: 5px;
+  backdrop-filter: blur(3px); box-shadow: 0 0 30px rgba(0,0,0,.5);
+  outline: none; cursor: pointer; font-size: 1.8vw; color: #fff; font-weight: 600;
+}
+
+/* selected film poster/title/type/rated/run-time */
+.film-information {
+  display: flex; flex-direction: row; justify-content: right;
+  height: 39.5%; border: .2vw solid #fff; border-radius: 5px; backdrop-filter: blur(3px);
+}
+.film-text { margin-top: 10px; }
+.film-poster {
+  margin-top: 10px; margin-right: 10px;
+  width: 10.66vw; height: 16vw; border-radius: 5px;
+}
+.title {
+  overflow-wrap: normal; font-size: 2.85vw; line-height: 2.85vw;
+  color: #fff; font-weight: 600; padding: 0 15px 0 20px; text-align: right;
+}
+.type, .rated, .run-time {
+  padding: 0 15px 0 20px; text-align: right;
+  font-size: 1.85vw; line-height: 1.85vw; color: #fff; font-weight: 500;
+}
+
+/* container for the label and all streaming platforms */
+.streaming-on {
+  border: .2vw solid #fff; border-radius: 5px; backdrop-filter: blur(3px);
+  text-align: center; height: 7.52vw;
+}
+.label { font-size: 1vw; color: #fff; font-weight: 500; text-align: center; margin: 0; }
+.streaming-services {
+  display: flex; flex-direction: row; justify-content: center; margin-left: 1.25vw;
+}
+
+/* provider logos */
+.provider-logo {
+  height: 34px;
+  width: auto;
+  margin: 0 10px;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
+.streaming-services {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+}
+
+.no-streaming-services { font-size: 2vw; color: #fff; font-weight: 600; text-align: center; }
+
+.trailer a {
+  position: absolute; bottom: 0; left: 40%;
+  background: transparent; border: .2vw solid #fff; border-radius: 5px;
+  backdrop-filter: blur(3px); box-shadow: 0 0 30px rgba(0,0,0,.5);
+  cursor: pointer; text-decoration: none; font-size: 1.8vw; color: #fff; font-weight: 600;
+  margin-bottom: 25px; width: 20%; text-align: center;
+}
+
+/* loading/error */
+.loading-error { color: #fff; text-align: center; padding: 40px; }

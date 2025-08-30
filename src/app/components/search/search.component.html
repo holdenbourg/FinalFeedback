@@ -1,0 +1,105 @@
+<nav class="sidebar" [class.active]="sidebarActive()">
+    <div class="logo-menu">
+        <h2 class="logo">What2Watch</h2>
+        <i class="bx bx-menu toggle-button" (click)="toggleSidebar()"></i>
+    </div>
+
+    <ul class="list">
+        <li class="list-item">
+            <a (click)="routingService.navigateToHome()">
+                <i class="bx bx-home-alt"></i>
+                <span class="link-name" style="--i:2;">Home</span>
+            </a>
+        </li>
+        <li class="list-item active">
+            <a (click)="routingService.navigateToSearchMovies()">
+                <i class="bx bx-search"></i>
+                <span class="link-name" style="--i:1;">Search</span>
+            </a>
+        </li>
+        <li class="list-item">
+            <a (click)="routingService.navigateToMovies()">
+                <i class="bx bx-camera-movie"></i>
+                <span class="link-name" style="--i:2;">Movies</span>
+            </a>
+        </li>
+        <li class="list-item">
+            <a (click)="routingService.navigateToShows()">
+                <i class="bx bx-collection"></i>
+                <span class="link-name" style="--i:3;">Shows</span>
+            </a>
+        </li>
+        <li class="list-item">
+            <a (click)="routingService.navigateToSummary()">
+                <i class="bx bx-bar-chart-alt-2"></i>
+                <span class="link-name" style="--i:4;">Summary</span>
+            </a>
+        </li>
+        <li class="list-item">
+            <a (click)="routingService.navigateToAccountsPosts(currentUser.username)">
+                <i class="bx bx-user"></i>
+                <span class="link-name" style="--i:5;">Account</span>
+            </a>
+        </li>
+        <li class="list-item">
+            <a (click)="routingService.navigateToSettings()">
+                <i class="bx bx-cog"></i>
+                <span class="link-name" style="--i:6;">Settings</span>
+            </a>
+        </li>
+
+        <li class="username">
+            <p class="link-name" style="--i:7">Signed in as:</p>
+            <p class="link-name" style="--i:7">{{ currentUser.username }}</p>
+        </li>
+    </ul>
+</nav>
+
+<div class="container">
+    <div class="search-bar">
+        <label class="prompt" [class.active]="inputFocused || ((searchInput?.length || 0) > 0)">What did you watch?</label>
+
+        <input
+            class="input-enter"
+            type="text"
+            [(ngModel)]="searchInput"
+            name="searchInput"
+            (keyup.enter)="onSearch()"
+            (focus)="inputFocused = true"
+            (blur)="inputFocused = false"
+            autocomplete="off"
+            required
+        />
+
+        <i class="movies"  [class.active]="type==='movies'" (click)="routingService.navigateToSearchMovies(searchInput)">Movies</i>
+        <i class="series"  [class.active]="type==='series'" (click)="routingService.navigateToSearchSeries(searchInput)">Series</i>
+        <i class="users"   [class.active]="type==='users'"  (click)="routingService.navigateToSearchUsers(searchInput)">Users</i>
+
+        <a class="search" (click)="onSearch()">
+            <i class='bx bx-search'></i>
+        </a>
+    </div>
+
+    <div class="scroll-box">
+        <p class="search-warning" [class.active]="showWarning">Nothing Came Up, Try Something Else</p>
+
+        <div *ngIf="type === 'movies' || type === 'series'" class="searched-movies">
+            <app-searched-film
+            *ngFor="let film of results"
+            [filmDetails]="film"
+            (click)="type === 'movies' 
+                ? routingService.navigateToMovieInformation(film.imdbID)
+                : routingService.navigateToSeriesInformation(film.imdbID)"
+            class="searched-movie"
+            ></app-searched-film>
+        </div>
+
+        <div *ngIf="type === 'users'" class="searched-users">
+            <app-searched-user
+            *ngFor="let user of results"
+            [userDetails]="user"
+            class="searched-user"
+            ></app-searched-user>
+        </div>
+    </div>
+</div>

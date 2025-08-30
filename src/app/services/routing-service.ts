@@ -3,95 +3,81 @@ import { Router } from '@angular/router';
 
 @Injectable({ providedIn: 'root' })
 export class RoutingService {
-  private router: Router = inject(Router);
+  private router = inject(Router);
 
   navigateToLogin() {
     this.router.navigate(['']);
   }
 
-  //sidebar page redirects
-  // navigateToHome() {
-  //   this.router.navigate(['/home'], { replaceUrl: true });
-  // }
+  // sidebar
   navigateToHome() {
-    // Try navigateByUrl; both are fine, but this is simple
-    this.router.navigateByUrl('/home')
-      .then(ok => console.log('navigated to /home:', ok))
-      .catch(err => console.error('router error:', err));
+    this.router.navigate(['/home'], { replaceUrl: true });
   }
-  navigateToSearchMovies() {
-    this.router.navigateByUrl('/search/movies');
+  navigateToSearchMovies(q?: string) {
+    this.router.navigate(['/search', 'movies'], { queryParams: { q: q || null } });
   }
-  navigateToSearchMoviesWithInput(input: string) {
-    this.router.navigateByUrl(`/search/movies/${input}`);
+  navigateToSearchSeries(q?: string) {
+    this.router.navigate(['/search', 'series'], { queryParams: { q: q || null } });
   }
-  navigateToSearchSeries() {
-    this.router.navigateByUrl('/search/series');
-  }
-  navigateToSearchSeriesWithInput(input: string) {
-    this.router.navigateByUrl(`/search/series/${input}`);
-  }
-  navigateToSearchUsers() {
-    this.router.navigateByUrl('/search/users');
-  }
-  navigateToSearchUsersWithInput(input: string) {
-    this.router.navigateByUrl(`/search/users/${input}`);
+  navigateToSearchUsers(q?: string) {
+    this.router.navigate(['/search', 'users'], { queryParams: { q: q || null } });
   }
   navigateToMovies() {
-    this.router.navigateByUrl(`/movies`);
+    this.router.navigate(['/movies']);
   }
   navigateToShows() {
-    this.router.navigateByUrl(`/shows`);
+    this.router.navigate(['/shows']);
   }
   navigateToSummary() {
-    this.router.navigateByUrl(`/summary`);
+    this.router.navigate(['/summary']);
   }
+
   navigateToAccountsPosts(username: string) {
-    this.router.navigateByUrl(`/account/${username}/posts`);
+    this.router.navigate(['/account', username, 'posts']);
   }
   navigateToAccountsTagged(username: string) {
-    this.router.navigateByUrl(`/account/${username}/tagged`);
+    this.router.navigate(['/account', username, 'tagged']);
   }
   navigateToAccountsArchived(username: string) {
-    this.router.navigateByUrl(`/account/${username}/archive`);
+    this.router.navigate(['/account', username, 'archive']);
   }
   navigateToSettings() {
-    this.router.navigateByUrl(`/settings/account-info`);
+    this.router.navigate(['/settings', 'account-info']);
   }
   navigateToPrivacy() {
-    this.router.navigateByUrl(`/settings/privacy`);
+    this.router.navigate(['/settings', 'privacy']);
   }
   navigateToLogout() {
-    this.router.navigateByUrl(`/settings/logout`);
+    this.router.navigate(['/settings', 'logout']);
   }
 
-  //route once a movie has been selected after search
+  // film info
   navigateToMovieInformation(imdbId: string) {
-    this.router.navigateByUrl(`/film-information/movie/${imdbId}`);
+    this.router.navigate(['/film-information', 'movie', imdbId]);
   }
   navigateToRateMovie(imdbId?: string) {
-    this.router.navigateByUrl(`/rate-movie/${imdbId}`);
+    this.router.navigate(['/rate-movie', imdbId]);
   }
   navigateToPostMovie(postId: string) {
-    this.router.navigateByUrl(`/post-movie/${postId}`);
+    this.router.navigate(['/post-movie', postId]);
   }
 
-  //route once a series has been selected after search
+  // series info
   navigateToSeriesInformation(imdbId: string) {
-    this.router.navigateByUrl(`/film-information/series/${imdbId}`);
+    this.router.navigate(['/film-information', 'series', imdbId]);
   }
   navigateToRateSeries(imdbId?: string) {
-    this.router.navigateByUrl(`/rate-series/${imdbId}`);
+    this.router.navigate(['/rate-series', imdbId]);
   }
   navigateToPostSeries(postId: string) {
-    this.router.navigateByUrl(`/post-series/${postId}`);
+    this.router.navigate(['/post-series', postId]);
   }
 
-  //edit screen for films that have been rated
+  // edit
   navigateToEditMovie() {
-    this.router.navigateByUrl(`/edit-movie`);
+    this.router.navigate(['/edit-movie']);
   }
   navigateToEditSeries() {
-    this.router.navigateByUrl(`/edit-series`);
+    this.router.navigate(['/edit-series']);
   }
 }
