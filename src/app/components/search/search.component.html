@@ -87,11 +87,10 @@
             <app-searched-film
             *ngFor="let film of results"
             [filmDetails]="film"
-            (click)="type === 'movies' 
-                ? routingService.navigateToMovieInformation(film.imdbID)
-                : routingService.navigateToSeriesInformation(film.imdbID)"
-            class="searched-movie"
-            ></app-searched-film>
+            (click)="type === 'movies'
+                ? routingService.navigateToMovie(film.imdbID)
+                : routingService.navigateToSeries(film.imdbID)">
+            </app-searched-film>
         </div>
 
         <div *ngIf="type === 'users'" class="searched-users">

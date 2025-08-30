@@ -22,6 +22,9 @@ export class RoutingService {
   navigateToSearchUsers(q?: string) {
     this.router.navigate(['/search', 'users'], { queryParams: { q: q || null } });
   }
+
+
+
   navigateToMovies() {
     this.router.navigate(['/movies']);
   }
@@ -51,9 +54,9 @@ export class RoutingService {
     this.router.navigate(['/settings', 'logout']);
   }
 
-  // film info
-  navigateToMovieInformation(imdbId: string) {
-    this.router.navigate(['/film-information', 'movie', imdbId]);
+  ///  movie info path  \\\
+  navigateToMovie(imdbId: string) {
+    this.router.navigate(['/movie', imdbId], { queryParams: {} });
   }
   navigateToRateMovie(imdbId?: string) {
     this.router.navigate(['/rate-movie', imdbId]);
@@ -62,9 +65,9 @@ export class RoutingService {
     this.router.navigate(['/post-movie', postId]);
   }
 
-  // series info
-  navigateToSeriesInformation(imdbId: string) {
-    this.router.navigate(['/film-information', 'series', imdbId]);
+  ///  series info path  \\\
+  navigateToSeries(imdbId: string) {
+    this.router.navigate(['/series', imdbId], { queryParams: {} });
   }
   navigateToRateSeries(imdbId?: string) {
     this.router.navigate(['/rate-series', imdbId]);

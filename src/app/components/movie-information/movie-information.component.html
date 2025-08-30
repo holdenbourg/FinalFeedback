@@ -9,7 +9,7 @@
     <p class="summary">Summary: {{ combinedApiResult.plot }}</p>
 
     <div class="trailer" *ngIf="combinedApiResult.trailer">
-      <a (click)="goToTrailer(combinedApiResult.trailer)">Trailer</a>
+      <a (click)="goToTrailer(combinedApiResult.trailer)">Watch The Trailer</a>
     </div>
   </div>
 
@@ -17,53 +17,48 @@
     <div class="film-information">
       <div class="film-text">
         <p class="title">{{ combinedApiResult.title }}</p>
-        <p class="type">{{ fixFilmType(combinedApiResult.type) }}</p>
+        <p class="type">{{ fixFilmType(combinedApiResult.type ?? '') }}</p>
         <p class="rated">{{ combinedApiResult.rated }}</p>
         <p class="run-time">{{ fixRuntime(combinedApiResult.runTime) }}</p>
       </div>
-
       <img class="film-poster" [src]="posterSrc" [attr.alt]="combinedApiResult.title || 'Poster'">
     </div>
 
     <div class="streaming-on">
-        <p class="label">Streaming On:</p>
-
-        <div class="streaming-services" *ngIf="streamingServices.length !== 0; else noStreamingServices">
-            <img
-            *ngFor="let p of streamingServices; trackBy: trackByProviderName"
-            class="provider-logo"
-            [src]="p.logo"
-            [attr.alt]="p.name"
-            [attr.title]="p.name"
-            (error)="onLogoError(p)"
-            loading="lazy"
-            decoding="async"
-            />
-        </div>
-
-        <ng-template #noStreamingServices>
-            <p class="no-streaming-services">N/A</p>
-        </ng-template>
-    </div
+      <p class="label">Streaming On:</p>
+      <div class="streaming-services" *ngIf="streamingServices.length !== 0; else noStreamingServices">
+        <img *ngFor="let p of streamingServices; trackBy: trackByProviderName"
+             class="provider-logo"
+             [src]="p.logo"
+             [attr.alt]="p.name"
+             [attr.title]="p.name"
+             (error)="onLogoError(p)"
+             loading="lazy"
+             decoding="async" />
+      </div>
+      <ng-template #noStreamingServices>
+        <p class="no-streaming-services">N/A</p>
+      </ng-template>
+    </div>
 
     <div class="ratings-button">
       <div class="ratings">
         <div class="imdb-rating">
           <img class="imdb-img" src="https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg" alt="Imdb">
-          <p class="imdb-score">{{ checkIfRatingsEmpty(combinedApiResult.ratings?.at(0)?.Value) }}</p>
+          <p class="imdb-score">{{ getRatingValue(0) }}</p>
         </div>
         <div class="rotten-tomatoes-rating">
           <img class="rotten-tomatoes-img" src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Rotten_Tomatoes_logo.svg" alt="Rotten Tomatoes">
-          <p class="rotten-tomatoes-score">{{ checkIfRatingsEmpty(combinedApiResult.ratings?.at(1)?.Value) }}</p>
+          <p class="rotten-tomatoes-score">{{ getRatingValue(1) }}</p>
         </div>
         <div class="metacritic-rating">
           <img class="metacritic-img" src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Metacritic_logo_original.svg" alt="Metacritic">
-          <p class="metacritic-score">{{ checkIfRatingsEmpty(combinedApiResult.ratings?.at(2)?.Value) }}</p>
+          <p class="metacritic-score">{{ getRatingValue(2) }}</p>
         </div>
       </div>
 
       <button type="button" class="rate-button" (click)="onRateThisFilm()">
-        Rate This {{ fixFilmType(combinedApiResult.type) }}
+        Rate This {{ fixFilmType(combinedApiResult.type ?? '') }}
       </button>
     </div>
   </div>

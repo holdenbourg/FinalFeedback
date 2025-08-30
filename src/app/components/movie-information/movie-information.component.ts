@@ -168,8 +168,13 @@ export class MovieInformationComponent implements OnInit {
     this.routingService.navigateToRateMovie(this.combinedApiResult.imdbId);
   }
 
-  // --- formatters / helpers ---
+  getRatingValue(index: number): string {
+    const r: any = this.combinedApiResult.ratings?.[index];
+    return r?.Value ?? r?.value ?? 'N/A';
+  }
 
+
+  /// ---------------------------------------- Formatting ---------------------------------------- \\\
   get posterSrc(): string {
     const p = this.combinedApiResult?.poster;
     const hasPoster = !!p && p !== 'N/A';
@@ -206,10 +211,6 @@ export class MovieInformationComponent implements OnInit {
     const d = director ?? '';
     const w = writer ?? '';
     return d && d === w ? '' : (w ? `Writer: ${w}` : '');
-  }
-
-  checkIfRatingsEmpty(rating?: string) {
-    return (rating && rating.length > 1) ? rating : 'N/A';
   }
 
   fixBoxOffice(filmType?: string, boxOffice?: string) {
