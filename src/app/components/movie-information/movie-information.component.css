@@ -1,11 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
 
-* { 
-  margin: 0; 
-  padding: 0; 
-  box-sizing: border-box; 
-  font-family: "Poppins", sans-serif; 
-}
+/* ---------- Base ---------- */
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: "Poppins", sans-serif; }
 
 :host {
   --page-gap: clamp(24px, 3.5vw, 48px);
@@ -20,202 +16,52 @@
   position: absolute;
   inset: var(--page-gap);
   display: grid;
-  grid-template-columns: 1.3fr 1fr;  /* left a bit wider than right */
-  gap: var(--page-gap);              /* both column and row gaps */
+  grid-template-columns: 1.3fr 1fr;
+  gap: var(--page-gap);
   align-items: stretch;
 }
 
-.left-information,
-.right-information {
-  width: 100%;    /* fill the grid area */
-  min-width: 0;   /* avoid overflow squeezing */
-  min-height: 0;
-  height: 100%;
-}
 
-/* selected film director/writer/release-date/box-office/genre/awards/summary */
+/* ---------- Left column ---------- */
+.left-information, .right-information { 
+  width: 100%; 
+  min-width: 0; 
+  min-height: 0; 
+  height: 100%; 
+}
 .left-information {
-  /* width: 54.3%;  <-- remove */
-  font-size: 1.9vw;
-  color: #fff;
+  font-size: 1.9vw; 
+  color: #fff; 
   font-weight: 600;
-  border: .2vw solid #fff;
-  border-radius: 5px;
+  border: .2vw solid #fff; 
+  border-radius: 5px; 
   backdrop-filter: blur(3px);
 }
-.left-information .row {
-  padding: 0 20px;
-  margin: 0 0 10px 0;
-  line-height: 1.25;
+.left-information .row { 
+  padding: 0 20px; 
+  margin: 0 0 10px 0; 
+  line-height: 1.25; 
 }
-.left-information .label {
-  font-weight: 600;
-  font-size: 1em;                /* same as the <p> size */
-  color: #fff;
-  margin-right: .35em;           /* space before the value */
+.left-information .label { 
+  font-weight: 600; 
+  font-size: 1em; 
+  color: #fff; 
+  margin-right: .35em; 
 }
-.left-information .value {
-  font-size: .88em;              /* ~12% smaller than the label */
-  font-weight: 500;
-  color: #fff;
-  opacity: .95;                  /* optional: tiny contrast softening */
-}
-.director { padding-top: 20px; }
-.summary { padding-bottom: 20px; }
-
-/* selected film poster/type/rated/run-time/ratings/rate-button */
-/* Right column: stack children with a gap */
-.right-information {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(12px, 1.4vw, 20px);        /* equal space between the right-side blocks */
-  justify-content: flex-start;           /* keep blocks anchored to the top */
-}
-.right-information > * {
-  /* no additional bottom margins */
-  margin-bottom: 0;
+.left-information .value { 
+  font-size: .88em; 
+  font-weight: 500; 
+  color: #fff; 
+  opacity: .95; 
 }
 
-/* container for ratings and rate button */
-.ratings-button {
-  display: contents !important;      /* <- key change */
- flex-direction: column; justify-content: space-between; height: 14.2vw;     /* <- key change */
-
-}
-
-/* container for the ratings and the company logos */
-.ratings {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  border: .2vw solid #fff;
-  border-radius: 5px;
-  width: 100%;
-  height: 8.5vw;
-  padding: 20px 60px 30px;
-  backdrop-filter: blur(3px);
-}
-.ratings p {
-  margin-top: 10px;
-}
-.imdb-img { width: 6.7vw; }
-.rotten-tomatoes-img { width: 10vw; }
-.metacritic-img { width: 4.1vw; margin-left: .2vw; }
-
-.imdb-rating, .rotten-tomatoes-rating, .metacritic-rating {
-  display: flex; flex-direction: column; text-align: center; color: #fff;
-  font-size: 1.3vw; font-weight: 600;
-}
-.imdb-rating { margin-top: .3vw; }
-.rotten-tomatoes-rating { margin-top: .55vw; }
-
-/* "Rate This Movie" button */
-.ratings-button {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;              /* space between ratings and button */
-  /* REMOVED: height: 14.2vw; */
-}
-
-/* --- Bring back the custom button styling --- */
-.rate-button {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 100%;
-  padding-top: 15px;
-  padding-bottom: 15px;
-  font-size: 1.3vw;
-  font-weight: 600;
-  line-height: 1.1;
-  background: transparent;
-  color: #fff;
-  border: .2vw solid #fff;
-  border-radius: 5px;
-  backdrop-filter: blur(3px);
-  box-shadow: 0 0 30px rgba(0,0,0,.5);
-  cursor: pointer;
-  transition: background .2s ease, transform .1s ease, border-color .2s ease;
-}
-.rate-button:hover {   
-  transform: scale(1.0125);
-  background: rgba(255,255,255,0.12);
-  outline: none;
-  cursor: pointer; 
-}
-.rate-button:active { transform: translateY(1px); }
-.rate-button:focus-visible { outline: 2px solid rgba(255,255,255,0.7); outline-offset: 2px; }
-
-.film-information,
-.streaming-on,
-.ratings,
-.rate-button {
-  margin: 0;                          /* neutral baseline */
-}
-
-/* selected film poster/title/type/rated/run-time */
-.film-information {
-  display: flex;
-  flex-direction: row;
-  justify-content: right;
-  border: .2vw solid #fff;
-  border-radius: 5px;
-  backdrop-filter: blur(3px);
-}
-.film-text { margin-top: 10px; }
-.film-poster { margin-top: 10px; margin-right: 10px; width: 10.66vw; height: 16vw; border-radius: 5px; }
-.title {
-  overflow-wrap: normal; font-size: 2.85vw; line-height: 2.85vw;
-  color: #fff; font-weight: 600; padding: 0 15px 0 20px; text-align: right;
-}
-.type, .rated, .run-time {
-  padding: 0 15px 0 20px; text-align: right;
-  font-size: 1.85vw; line-height: 1.85vw; color: #fff; font-weight: 500;
-}
-
-/* container for the label and all streaming platforms */
-.streaming-on {
-  border: .2vw solid #fff;
-  border-radius: 5px;
-  backdrop-filter: blur(3px);
-  text-align: center;
-  padding: 10px 12px;
-}
-.label { font-size: 1vw; color: #fff; font-weight: 500; text-align: center; margin: 0; }
-.streaming-services {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  padding-top: 15px;
-  padding-bottom: 15px;
-}
-
-/* provider logos */
-.provider-logo {
-  height: 50px;
-  width: auto;
-  margin: 0 10px;
-  object-fit: contain;
-  vertical-align: middle;
-}
-
-.streaming-services {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 8px 14px;
-}
-
-.no-streaming-services { font-size: 2vw; color: #fff; font-weight: 600; text-align: center; }
-
-
+/* Trailer button */
 .trailer a {
   position: absolute; 
   bottom: 0; 
   left: 40%;
   background: transparent; 
-  border: .2vw solid #fff;
+  border: .2vw solid #fff; 
   border-radius: 5px;
   backdrop-filter: blur(3px); 
   box-shadow: 0 0 30px rgba(0,0,0,.5);
@@ -224,20 +70,215 @@
   font-size: 1.3vw; 
   color: #fff; 
   font-weight: 600;
-  margin-bottom: 25px;
-  padding-top: 5px;
-  padding-bottom: 5px;
-  padding-left: 20px;
-  padding-right: 20px;
+  margin-bottom: 25px; 
+  padding: 5px 20px; 
   text-align: center;
 }
-.trailer a:hover,
-.trailer a:focus {
-  transform: scale(1.0125);
-  ;background: rgba(255,255,255,0.12);
-  outline: none;
-  cursor: pointer;
+.trailer a:hover, .trailer a:focus { 
+  transform: scale(1.0125); 
+  background: rgba(255,255,255,0.12); 
 }
 
-/* loading/error */
-.loading-error { color: #fff; text-align: center; padding: 40px; }
+
+/* ---------- Right column ---------- */
+.right-information {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 1.4vw, 20px);
+  height: 100%;
+}
+
+.film-information {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  justify-content: right;
+  border: .2vw solid #fff; 
+  border-radius: 5px; 
+  backdrop-filter: blur(3px);
+}
+
+.film-text { 
+  margin-top: 10px; 
+}
+
+.film-poster { 
+  margin: 10px 10px 10px 0; 
+  aspect-ratio: 2/3;
+  height: auto;
+  border-radius: 5px; 
+}
+
+.title {
+  overflow-wrap: normal; 
+  font-size: 2.85vw; 
+  line-height: 2.85vw;
+  color: #fff; 
+  font-weight: 600; 
+  padding: 0 15px 0 20px; 
+  text-align: right;
+}
+
+.type, .rated, .run-time {
+  padding: 0 15px 0 20px; 
+  text-align: right;
+  font-size: 1.75vw; 
+  line-height: 1.75vw; 
+  color: rgba(255,255,255,0.8); 
+  font-weight: 500;
+}
+
+/* ----- Streaming Section ----- */
+.streaming-on {
+  border: .2vw solid #fff; 
+  border-radius: 5px; 
+  backdrop-filter: blur(3px);
+  text-align: center; 
+  padding: 10px 12px;
+}
+
+.label { 
+  font-size: 1.1vw; 
+  color: #fff; 
+  font-weight: 500; 
+  text-align: center; 
+  margin: 0; 
+}
+
+.streaming-services { 
+  display: flex; 
+  flex-wrap: wrap; 
+  align-items: center; 
+  justify-content: center; 
+  padding: 15px 0; 
+}
+.no-streaming-services { 
+  font-size: 2vw; 
+  color: #fff; 
+  font-weight: 600; 
+  text-align: center; 
+}
+
+.provider-logo { 
+  height: 50px; 
+  width: auto; 
+  margin: 0 10px; 
+  object-fit: contain; 
+  vertical-align: middle; 
+}
+
+
+/* ----- Ratings Section ----- */
+.ratings {
+  --rating-logo-h: clamp(64px, 6vw, 120px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: clamp(14px, 2vw, 28px);
+  row-gap: 0;
+  align-items: start;
+  padding: clamp(10px, 1.2vw, 16px) clamp(8px, 1.5vw, 18px);
+  border: .2vw solid #fff;
+  border-radius: 5px;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.ratings > .ratings-item {
+  display: grid;
+  grid-template-rows: var(--rating-logo-h) auto;
+  justify-items: center;
+  align-content: start;
+}
+.ratings .logo-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--rating-logo-h);
+  width: 100%;
+  line-height: 0;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ratings .logo-link.is-disabled { 
+  pointer-events: none; 
+  cursor: default; 
+  opacity: .95; 
+}
+.ratings .logo-link img {
+  --s: 1;
+  --tY: 0px;
+  display: block;
+  max-height: 100%;
+  max-width: 95%;
+  width: auto;
+  object-fit: contain;
+  margin: 0;
+  transform-origin: center center;
+  transform: translateY(var(--tY)) scale(var(--s));
+  transition: transform .15s ease;
+}
+.ratings .logo-link:not(.is-disabled):hover img,
+.ratings .logo-link:not(.is-disabled):focus-visible img {
+  transform: translateY(var(--tY)) scale(calc(var(--s) * 1.05));
+}
+.ratings .score {
+  margin: 4px 0 0 0;
+  font-size: 1.15vw;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.2;
+  text-align: center;
+}
+.ratings + .rate-button { 
+  margin-top: clamp(16px, 1.6vw, 24px); 
+}
+
+.imdb-rating .logo-link img { 
+  --s: .70; 
+  --tY:  2px; 
+}
+.rotten-tomatoes-rating .logo-link img { 
+  --s: .92; 
+  --tY:  0px; 
+}
+.metacritic-rating .logo-link img { 
+  --s: .66; 
+  --tY: -4px; 
+}
+
+/* ---------- Rate button ---------- */
+.rate-button {
+  appearance: none; 
+  -webkit-appearance: none; 
+  width: 100%;
+  padding: 15px 0; 
+  font-size: 1.3vw; 
+  font-weight: 600; 
+  line-height: 1.1;
+  background: transparent; 
+  color: #fff; 
+  border: .2vw solid #fff; 
+  border-radius: 5px;
+  backdrop-filter: blur(3px); 
+  box-shadow: 0 0 30px rgba(0,0,0,.5);
+  cursor: pointer; 
+  transition: background .2s ease, transform .1s ease, border-color .2s ease;
+}
+.rate-button:hover { 
+  transform: scale(1.0125); 
+  background: rgba(255,255,255,0.12); 
+}
+.rate-button:active { 
+  transform: translateY(1px); 
+}
+.rate-button:focus-visible { 
+  outline: 2px solid rgba(255,255,255,0.7); 
+  outline-offset: 2px; 
+}
+
+
+/* ---------- Loading/Error ---------- */
+.loading-error { 
+  color: #fff; 
+  text-align: center; 
+  padding: 40px; 
+}

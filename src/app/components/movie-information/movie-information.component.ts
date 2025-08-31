@@ -89,6 +89,9 @@ export class MovieInformationComponent implements OnInit {
       this.imdbId = pm.get('imdbId') ?? '';
       if (!this.imdbId) return;
       await this.loadMovie(this.imdbId);
+
+      console.log(this.combinedApiResult);
+      
     });
   }
 
@@ -202,30 +205,74 @@ export class MovieInformationComponent implements OnInit {
     return `${month} ${day}, ${year}`;
   }
 
-  get isDirectorWriterSame(): boolean {
-    const d = (this.combinedApiResult.director || '').trim();
-    const w = (this.combinedApiResult.writer || '').trim();
-    
-    return !!d && d === w;
+  /** Normalize a list of names like "A & B, C and D" → ["A","B","C","D"] */
+  private splitNames(raw?: string): string[] {
+    if (!raw) return [];
+    return raw
+      .replace(/\s*&\s*/g, ',')        // "&" → ","
+      .replace(/\s+and\s+/gi, ',')     // " and " → ","
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
   }
-  checkDirectorWriterForDirector(director?: string, writer?: string) {
-    const d = director ?? '';
-    const w = writer ?? '';
-    return d && d === w ? `Director/Writer: ${d}` : (d ? `Director: ${d}` : '');
-  }
-  checkDirectorWriterForWriter(director?: string, writer?: string) {
-    const d = director ?? '';
-    const w = writer ?? '';
 
-    if (d && d === w) {
-      return '';
-    } else {
-      if(w && writer?.includes(',')) {
-        return `Writers: ${w}`
-      } else {
-        return `Writer: ${w}`
-      }
-    }
+  get directorName(): string {
+    return (this.combinedApiResult.director || '').trim();
+  }
+  get writerNames(): string[] {
+    return this.splitNames(this.combinedApiResult.writer);
+  }
+
+  /** If writer is N/A OR the single writer equals the director → show "Director/Writer" single row */
+  get showDirWriterCombined(): boolean {
+    const d = this.directorName;
+    const w = this.writerNames;
+    if (!d) return false;                         // no director -> can't combine
+    if (w.length === 0) return true;              // writer N/A -> combine
+    if (w.length === 1 && w[0].toLowerCase() === d.toLowerCase()) return true;
+    return false;
+  }
+
+  /** Writers line text with proper punctuation: A, B, and C / A and B / A */
+  formatWritersText(names: string[]): string {
+    if (names.length <= 1) return names[0] ?? 'N/A';
+    if (names.length === 2) return `${names[0]} and ${names[1]}`;
+    return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`;
+  }
+
+    /** Treat blanks and "N/A" as missing */
+  isPresent(v?: string): boolean {
+    const s = (v ?? '').trim();
+    return !!s && s.toUpperCase() !== 'N/A';
+  }
+
+  /** Normalize a delimited list like "Drama, Comedy & Action / Adventure" → ["Drama","Comedy","Action","Adventure"] */
+  private normalizeList(raw?: string): string[] {
+    if (!this.isPresent(raw)) return [];
+    return (raw as string)
+      .replace(/[\/|]/g, ',')       // slashes & pipes -> commas
+      .replace(/\s*&\s*/g, ',')     // ampersands -> commas
+      .replace(/\s+and\s+/gi, ',')  // " and " -> comma
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+
+  /** A, B, and C  /  A and B  /  A */
+  private formatList(list: string[]): string {
+    if (list.length <= 1) return list[0] ?? '';
+    if (list.length === 2) return `${list[0]} and ${list[1]}`;
+    return `${list.slice(0, -1).join(', ')}, and ${list[list.length - 1]}`;
+  }
+
+  /** Genres: returns null if nothing valid, else {label, text} with pluralization */
+  get formattedGenres(): { label: 'Genre' | 'Genres'; text: string } | null {
+    const list = this.normalizeList(this.combinedApiResult.genre);
+    if (list.length === 0) return null;
+    return {
+      label: (list.length === 1) ? 'Genre' : 'Genres',
+      text: this.formatList(list)
+    };
   }
 
   fixBoxOffice(filmType?: string, boxOffice?: string) {
@@ -241,6 +288,46 @@ export class MovieInformationComponent implements OnInit {
     const minutes = r - hours * 60;
     if (!hours && !minutes) return 'N/A';
     return `${hours} HR ${minutes} MIN`;
+  }
+
+  /** Build external rating URLs */
+  get imdbUrl(): string | null {
+    const id = this.combinedApiResult?.imdbId?.trim();
+    return id ? `https://www.imdb.com/title/${id}/` : null;
+  }
+
+  get rottenTomatoesUrl(): string | null {
+    const t = this.combinedApiResult?.title?.trim();
+    if (!t) return null;
+    return `https://www.rottentomatoes.com/m/${this.slugForRottenTomatoes(t)}`;
+  }
+
+  get metacriticUrl(): string | null {
+    const t = this.combinedApiResult?.title?.trim();
+    if (!t) return null;
+    return `https://www.metacritic.com/movie/${this.slugForMetacritic(t)}/`;
+  }
+
+  /** RottenTomatoes uses underscores, lowercase, “&” → “and”, strip punctuation */
+  private slugForRottenTomatoes(title: string): string {
+    return title
+      .toLowerCase()
+      .replace(/&/g, ' and ')
+      .replace(/[’'":!?.,()]/g, '')
+      .replace(/\s+/g, '_')
+      .replace(/_+/g, '_')
+      .trim();
+  }
+
+  /** Metacritic uses hyphens, lowercase, “&” → “and”, strip punctuation */
+  private slugForMetacritic(title: string): string {
+    return title
+      .toLowerCase()
+      .replace(/&/g, ' and ')
+      .replace(/[’'":!?.,()]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
   }
 
   onLogoError(p: { name: string }) {

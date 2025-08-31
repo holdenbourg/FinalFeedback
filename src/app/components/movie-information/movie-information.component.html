@@ -1,33 +1,40 @@
 <div class="container" *ngIf="!loading && !error; else loadingOrError">
-  <div class="left-information">
-  <!-- Director / Writer (handles same person case) -->
-  <p class="row">
-    <span class="label">{{ isDirectorWriterSame ? 'Director/Writer:' : 'Director:' }}</span>
-    <span class="value">{{ combinedApiResult.director || 'N/A' }}</span>
+<div class="left-information">
+  <!-- Director/Writer (combined if applicable) -->
+  <p class="row" *ngIf="showDirWriterCombined; else separateDirWriter">
+    <span class="label">Director/Writer:</span>
+    <span class="value">{{ directorName || 'N/A' }}</span>
   </p>
-  <p class="row" *ngIf="!isDirectorWriterSame">
-    <span class="label">Writer:</span>
-    <span class="value">{{ combinedApiResult.writer || 'N/A' }}</span>
-  </p>
+
+  <ng-template #separateDirWriter>
+    <p class="row" *ngIf="directorName">
+      <span class="label">Director:</span>
+      <span class="value">{{ directorName }}</span>
+    </p>
+    <p class="row" *ngIf="writerNames.length > 0">
+      <span class="label">{{ writerNames.length > 1 ? 'Writers:' : 'Writer:' }}</span>
+      <span class="value">{{ formatWritersText(writerNames) }}</span>
+    </p>
+  </ng-template>
 
   <p class="row">
     <span class="label">Release Date:</span>
     <span class="value">{{ fixRelease(combinedApiResult.released) }}</span>
   </p>
 
-  <p class="row" *ngIf="(combinedApiResult.type || '').toLowerCase() === 'movie' && combinedApiResult.boxOffice">
+  <p class="row" *ngIf="(combinedApiResult.type || '').toLowerCase() === 'movie' && isPresent(combinedApiResult.boxOffice)">
     <span class="label">Box Office:</span>
     <span class="value">{{ combinedApiResult.boxOffice }}</span>
   </p>
 
-  <p class="row">
-    <span class="label">Genre:</span>
-    <span class="value">{{ combinedApiResult.genre || 'N/A' }}</span>
+  <p class="row" *ngIf="formattedGenres as g">
+    <span class="label">{{ g.label }}:</span>
+    <span class="value">{{ g.text }}</span>
   </p>
 
-  <p class="row">
+  <p class="row" *ngIf="isPresent(combinedApiResult.awards)">
     <span class="label">Awards:</span>
-    <span class="value">{{ combinedApiResult.awards || 'N/A' }}</span>
+    <span class="value">{{ combinedApiResult.awards }}</span>
   </p>
 
   <p class="row">
@@ -73,19 +80,43 @@
 
     <div class="ratings-button">
       <div class="ratings">
-        <div class="imdb-rating">
-          <img class="imdb-img" src="https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg" alt="Imdb">
-          <p class="imdb-score">{{ getRatingValue(0) }}</p>
+        <div class="ratings-item imdb-rating">
+          <a class="logo-link"
+            [attr.href]="imdbUrl || null"
+            [class.is-disabled]="!imdbUrl"
+            target="_blank" rel="noopener noreferrer"
+            aria-label="Open on IMDb">
+            <img class="imdb-img"
+                src="https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg"
+                alt="IMDb" />
+          </a>
+          <p class="score">{{ getRatingValue(0) }}</p>
         </div>
 
-        <div class="rotten-tomatoes-rating">
-          <img class="rotten-tomatoes-img" src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Rotten_Tomatoes_logo.svg" alt="Rotten Tomatoes">
-          <p class="rotten-tomatoes-score">{{ getRatingValue(1) }}</p>
+        <div class="ratings-item rotten-tomatoes-rating">
+          <a class="logo-link"
+            [attr.href]="rottenTomatoesUrl || null"
+            [class.is-disabled]="!rottenTomatoesUrl"
+            target="_blank" rel="noopener noreferrer"
+            aria-label="Open on Rotten Tomatoes">
+            <img class="rotten-tomatoes-img"
+                src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Rotten_Tomatoes_logo.svg"
+                alt="Rotten Tomatoes" />
+          </a>
+          <p class="score">{{ getRatingValue(1) }}</p>
         </div>
 
-        <div class="metacritic-rating">
-          <img class="metacritic-img" src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Metacritic_logo_original.svg" alt="Metacritic">
-          <p class="metacritic-score">{{ getRatingValue(2) }}</p>
+        <div class="ratings-item metacritic-rating">
+          <a class="logo-link"
+            [attr.href]="metacriticUrl || null"
+            [class.is-disabled]="!metacriticUrl"
+            target="_blank" rel="noopener noreferrer"
+            aria-label="Open on Metacritic">
+            <img class="metacritic-img"
+                src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Metacritic_logo_original.svg"
+                alt="Metacritic" />
+          </a>
+          <p class="score">{{ getRatingValue(2) }}</p>
         </div>
       </div>
 
