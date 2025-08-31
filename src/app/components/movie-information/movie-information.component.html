@@ -1,17 +1,44 @@
 <div class="container" *ngIf="!loading && !error; else loadingOrError">
   <div class="left-information">
-    <p class="director">{{ checkDirectorWriterForDirector(combinedApiResult.director, combinedApiResult.writer) }}</p>
-    <p class="writer">{{ checkDirectorWriterForWriter(combinedApiResult.director, combinedApiResult.writer) }}</p>
-    <p class="release-date">Release Date: {{ fixRelease(combinedApiResult.released) }}</p>
-    <p class="box-office">{{ fixBoxOffice(combinedApiResult.type, combinedApiResult.boxOffice) }}</p>
-    <p class="genre">Genre: {{ combinedApiResult.genre }}</p>
-    <p class="awards">Awards: {{ combinedApiResult.awards }}</p>
-    <p class="summary">Summary: {{ combinedApiResult.plot }}</p>
+  <!-- Director / Writer (handles same person case) -->
+  <p class="row">
+    <span class="label">{{ isDirectorWriterSame ? 'Director/Writer:' : 'Director:' }}</span>
+    <span class="value">{{ combinedApiResult.director || 'N/A' }}</span>
+  </p>
+  <p class="row" *ngIf="!isDirectorWriterSame">
+    <span class="label">Writer:</span>
+    <span class="value">{{ combinedApiResult.writer || 'N/A' }}</span>
+  </p>
 
-    <div class="trailer" *ngIf="combinedApiResult.trailer">
-      <a (click)="goToTrailer(combinedApiResult.trailer)">Watch The Trailer</a>
-    </div>
+  <p class="row">
+    <span class="label">Release Date:</span>
+    <span class="value">{{ fixRelease(combinedApiResult.released) }}</span>
+  </p>
+
+  <p class="row" *ngIf="(combinedApiResult.type || '').toLowerCase() === 'movie' && combinedApiResult.boxOffice">
+    <span class="label">Box Office:</span>
+    <span class="value">{{ combinedApiResult.boxOffice }}</span>
+  </p>
+
+  <p class="row">
+    <span class="label">Genre:</span>
+    <span class="value">{{ combinedApiResult.genre || 'N/A' }}</span>
+  </p>
+
+  <p class="row">
+    <span class="label">Awards:</span>
+    <span class="value">{{ combinedApiResult.awards || 'N/A' }}</span>
+  </p>
+
+  <p class="row">
+    <span class="label">Summary:</span>
+    <span class="value">{{ combinedApiResult.plot || 'N/A' }}</span>
+  </p>
+
+  <div class="trailer" *ngIf="combinedApiResult.trailer">
+    <a (click)="goToTrailer(combinedApiResult.trailer)">Watch The Trailer</a>
   </div>
+</div>
 
   <div class="right-information">
     <div class="film-information">
@@ -21,11 +48,13 @@
         <p class="rated">{{ combinedApiResult.rated }}</p>
         <p class="run-time">{{ fixRuntime(combinedApiResult.runTime) }}</p>
       </div>
+
       <img class="film-poster" [src]="posterSrc" [attr.alt]="combinedApiResult.title || 'Poster'">
     </div>
 
     <div class="streaming-on">
       <p class="label">Streaming On:</p>
+
       <div class="streaming-services" *ngIf="streamingServices.length !== 0; else noStreamingServices">
         <img *ngFor="let p of streamingServices; trackBy: trackByProviderName"
              class="provider-logo"
@@ -36,6 +65,7 @@
              loading="lazy"
              decoding="async" />
       </div>
+
       <ng-template #noStreamingServices>
         <p class="no-streaming-services">N/A</p>
       </ng-template>
@@ -47,19 +77,19 @@
           <img class="imdb-img" src="https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg" alt="Imdb">
           <p class="imdb-score">{{ getRatingValue(0) }}</p>
         </div>
+
         <div class="rotten-tomatoes-rating">
           <img class="rotten-tomatoes-img" src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Rotten_Tomatoes_logo.svg" alt="Rotten Tomatoes">
           <p class="rotten-tomatoes-score">{{ getRatingValue(1) }}</p>
         </div>
+
         <div class="metacritic-rating">
           <img class="metacritic-img" src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Metacritic_logo_original.svg" alt="Metacritic">
           <p class="metacritic-score">{{ getRatingValue(2) }}</p>
         </div>
       </div>
 
-      <button type="button" class="rate-button" (click)="onRateThisFilm()">
-        Rate This {{ fixFilmType(combinedApiResult.type ?? '') }}
-      </button>
+      <button type="button" class="rate-button" (click)="onRateThisFilm()">Rate "{{ fixFilmType(combinedApiResult.title ?? '') }}"</button>
     </div>
   </div>
 </div>

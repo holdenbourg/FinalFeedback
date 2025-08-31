@@ -202,6 +202,12 @@ export class MovieInformationComponent implements OnInit {
     return `${month} ${day}, ${year}`;
   }
 
+  get isDirectorWriterSame(): boolean {
+    const d = (this.combinedApiResult.director || '').trim();
+    const w = (this.combinedApiResult.writer || '').trim();
+    
+    return !!d && d === w;
+  }
   checkDirectorWriterForDirector(director?: string, writer?: string) {
     const d = director ?? '';
     const w = writer ?? '';
@@ -210,7 +216,16 @@ export class MovieInformationComponent implements OnInit {
   checkDirectorWriterForWriter(director?: string, writer?: string) {
     const d = director ?? '';
     const w = writer ?? '';
-    return d && d === w ? '' : (w ? `Writer: ${w}` : '');
+
+    if (d && d === w) {
+      return '';
+    } else {
+      if(w && writer?.includes(',')) {
+        return `Writers: ${w}`
+      } else {
+        return `Writer: ${w}`
+      }
+    }
   }
 
   fixBoxOffice(filmType?: string, boxOffice?: string) {
