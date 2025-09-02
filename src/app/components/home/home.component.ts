@@ -101,13 +101,5 @@ export class HomeComponent implements OnInit {
     return following.map(followee => followee.username);
   }
 
-  private sortPostsByDate(date?: string): number {
-    if (!date) return 0;
-
-    const t = Date.parse(date);
-
-    return Number.isNaN(t) ? 0 : t;
-  }
-
   trackPost = (_: number, post: UserPostModel) => post.postId ?? `${post.username}-${post.postDate}`;
 }

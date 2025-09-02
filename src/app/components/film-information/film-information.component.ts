@@ -24,7 +24,6 @@ export class FilmInformationComponent implements OnInit {
   public loading = true;
   public error: string | null = null;
 
-  /** name/logo/url for streaming providers we already support */
   public streamingServices: { name: string; logo: string; url: string | null }[] = [];
 
   readonly fallbackPoster = 'assets/images/no-poster.jpg';
@@ -83,7 +82,6 @@ export class FilmInformationComponent implements OnInit {
     ['The Roku Channel', 'https://www.tvweek.com/wp-content/uploads/2015/09/roku.png']
   ]);
 
-  /** hard-coded deep links for provider home pages (optional; keep null to make them non-clickable) */
   private streamingServiceUrls: Map<string, string | null> = new Map<string, string | null>([
     ['Netflix', 'https://www.netflix.com/'],
     ['Disney Plus', 'https://www.disneyplus.com/'],
@@ -115,12 +113,12 @@ export class FilmInformationComponent implements OnInit {
     });
   }
 
-  /** movie vs series */
+  ///  Returns true if film is a series, false if not \\\
   get isSeries(): boolean {
     return (this.combinedApiResult.type || '').toLowerCase() === 'series';
   }
 
-  /** derived counts for series */
+  ///  Derived counts for series  \\\
   get totalSeasons(): number {
     const list = this.combinedApiResult.seasons ?? [];
     const fromList = list.filter(s => (s?.episode_count ?? 0) > 0).length;
@@ -143,26 +141,23 @@ export class FilmInformationComponent implements OnInit {
     return n === 1 ? '1 Episode' : `${n} Episodes`;
   }
 
-  /** main loader, branches on OMDb type for MDB call */
+  ///  Loads the film information  \\\
   private async loadTitle(id: string) {
     this.loading = true;
     this.error = null;
     this.streamingServices = [];
 
     try {
-      // 1) OMDb first so we know type (movie/series)
+      ///  1) OMDb call first so we know type (movie/series)  \\\
       const omdbMovie = await this.apiService.getFilmOmdb(id);
 
-      // 2) MDB: pick the right call for the type
+      ///  2) MDB: pick the right call for the type  \\\
       let mdb: any = null;
+
       const omdbType = (omdbMovie?.Type ?? '').toLowerCase();
 
       if (omdbType === 'series') {
-        // Replace with your real series call if you have one:
-        // e.g. mdb = await this.apiService.getSeriesByImdb(id);
-        // Using "any" to avoid TS errors if this method doesn't exist in typings.
-        mdb = await (this.apiService as any).search1SeriesMdbStraight?.(id)
-           ?? await this.apiService.getMovieByImdb(id); // fallback if your series method isn't available
+        mdb = await this.apiService.getSeriesByImdb(id);
       } else {
         mdb = await this.apiService.getMovieByImdb(id);
       }
@@ -200,7 +195,7 @@ export class FilmInformationComponent implements OnInit {
 
       this.combinedApiResult = combined;
 
-      // 3) streaming services: use only known logos; attach optional homepage URL
+      ///  3) streaming services: use only known logos; attach optional homepage URL  \\\
       const seen = new Set<string>();
       this.streamingServices = (this.combinedApiResult.watch_providers ?? [])
         .map((p: any) => p?.name?.trim())
@@ -208,13 +203,11 @@ export class FilmInformationComponent implements OnInit {
         .map(name => {
           seen.add(name);
           const logo = this.streamingServiceLogos.get(name);
-          if (!logo) return null; // skip unknown
+          if (!logo) return null;
           const url = this.streamingServiceUrls.get(name) ?? null;
           return { name, logo, url };
         })
         .filter((x): x is { name: string; logo: string; url: string | null } => !!x);
-
-        console.log(this.combinedApiResult);
 
     } catch (e: any) {
       console.error(e);
@@ -224,13 +217,21 @@ export class FilmInformationComponent implements OnInit {
     }
   }
 
+  ///  Opens trailer in a new tab (if available)  \\\
   goToTrailer(trailerUrl: string) {
     if (!trailerUrl) return;
     window.open(trailerUrl, '_blank');
   }
 
+  ///  Get the indiviudal rating from ratings list  \\\
+  getRatingValue(index: number): string {
+    const r: any = this.combinedApiResult.ratings?.[index];
+
+    return r?.Value ?? r?.value ?? 'N/A';
+  }
+
+
   onRateThisFilm() {
-    // route based on type
     if (this.isSeries) {
       this.localStorageService.setInformation('currentRateSeries', this.combinedApiResult);
       this.routingService.navigateToRateSeries(this.combinedApiResult.imdbId);
@@ -240,39 +241,56 @@ export class FilmInformationComponent implements OnInit {
     }
   }
 
-  getRatingValue(index: number): string {
-    const r: any = this.combinedApiResult.ratings?.[index];
-    return r?.Value ?? r?.value ?? 'N/A';
-  }
 
-  // ----------------------------- Formatting helpers (kept from your movie version) -----------------------------
+  /// ---------------------------------------- Formatting  ----------------------------------------  \\\
+  ///  Get poster if not use fallback "No Poster" image  \\\
   get posterSrc(): string {
     const p = this.combinedApiResult?.poster;
     const hasPoster = !!p && p !== 'N/A';
+
     return hasPoster ? (p as string) : this.fallbackPoster;
   }
 
+  ///  Change film type (movie → Movie)  \\\
   fixFilmType(filmType: string) {
     if (!filmType) return '';
+
     return filmType.charAt(0).toUpperCase() + filmType.slice(1).toLowerCase();
   }
 
+  ///  Change release date from "DD MM YYYY" → "Month DD, YYYY"  \\\
   fixRelease(releaseDate?: string) {
     if (!releaseDate || releaseDate === 'N/A') return 'N/A';
+
     const day = releaseDate.substring(0, 2);
     let month = releaseDate.substring(3, 6);
     const year = releaseDate.substring(7);
+
     const map: Record<string, string> = {
       Jan: 'January', Feb: 'February', Mar: 'March', Apr: 'April',
       May: 'May', Jun: 'June', Jul: 'July', Aug: 'August',
       Sep: 'September', Oct: 'October', Nov: 'November', Dec: 'December'
     };
+
     month = map[month] ?? month;
+
     return `${month} ${day}, ${year}`;
   }
 
+  ///  Get director's name  \\\
+  get directorName(): string {
+    return (this.combinedApiResult.director || '').trim();
+  }
+
+  ///  Get writer(s) name(s)  \\\
+  get writerNames(): string[] {
+    return this.splitNames(this.combinedApiResult.writer);
+  }
+
+  ///  split the name for later formatting  \\\
   private splitNames(raw?: string): string[] {
     if (!raw) return [];
+
     return raw
       .replace(/\s*&\s*/g, ',')
       .replace(/\s+and\s+/gi, ',')
@@ -281,33 +299,39 @@ export class FilmInformationComponent implements OnInit {
       .filter(Boolean);
   }
 
-  get directorName(): string {
-    return (this.combinedApiResult.director || '').trim();
-  }
-  get writerNames(): string[] {
-    return this.splitNames(this.combinedApiResult.writer);
-  }
-
+  ///  If directror and writer(s) are the same change to Director/Writer  \\\
   get showDirWriterCombined(): boolean {
     const d = this.directorName;
     const w = this.writerNames;
+
     if (!d) return false;
-    if (w.length === 0) return true; // writer N/A
+
+    if (w.length === 0) return true;
+
     if (w.length === 1 && w[0].toLowerCase() === d.toLowerCase()) return true;
+
     return false;
   }
 
+  ///  Format the writer(s) properly (writer or writer and writer or writer, writer, and writer)  \\\
   formatWritersText(names: string[]): string {
     if (names.length <= 1) return names[0] ?? 'N/A';
+
     if (names.length === 2) return `${names[0]} and ${names[1]}`;
+
     return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`;
   }
 
-  isPresent(v?: string): boolean {
-    const s = (v ?? '').trim();
-    return !!s && s.toUpperCase() !== 'N/A';
+  ///  Return formatted genre(s) (genre or genre and genre or genre, genre, and genre)  \\\
+  get formattedGenres(): { label: 'Genre' | 'Genres'; text: string } | null {
+    const list = this.normalizeList(this.combinedApiResult.genre);
+
+    if (list.length === 0) return null;
+
+    return { label: list.length === 1 ? 'Genre' : 'Genres', text: this.formatList(list) };
   }
 
+  ///  Return list of genres (if present)  \\\
   private normalizeList(raw?: string): string[] {
     if (!this.isPresent(raw)) return [];
     return (raw as string)
@@ -319,18 +343,23 @@ export class FilmInformationComponent implements OnInit {
       .filter(Boolean);
   }
 
+  ///  True if value is present, false if not or "N/A"  \\\
+  isPresent(v?: string): boolean {
+    const s = (v ?? '').trim();
+
+    return !!s && s.toUpperCase() !== 'N/A';
+  }
+
+  ///  Format the genre(s) properly (genre or genre and genre or genre, genre, and genre)  \\\
   private formatList(list: string[]): string {
     if (list.length <= 1) return list[0] ?? '';
+
     if (list.length === 2) return `${list[0]} and ${list[1]}`;
+
     return `${list.slice(0, -1).join(', ')}, and ${list[list.length - 1]}`;
   }
 
-  get formattedGenres(): { label: 'Genre' | 'Genres'; text: string } | null {
-    const list = this.normalizeList(this.combinedApiResult.genre);
-    if (list.length === 0) return null;
-    return { label: list.length === 1 ? 'Genre' : 'Genres', text: this.formatList(list) };
-  }
-
+  ///  Return box office (if present and a movie), return nothing if not or is a series  \\\
   fixBoxOffice(filmType?: string, boxOffice?: string) {
     if ((filmType ?? '').toLowerCase() === 'movie' && boxOffice) {
       return `Box Office: ${boxOffice}`;
@@ -338,6 +367,7 @@ export class FilmInformationComponent implements OnInit {
     return '';
   }
 
+  ///  Format runtime (123 minutes → 2 HR 3 MIN)   \\\
   fixRuntime(runtime?: number) {
     const r = runtime ?? 0;
     const hours = Math.floor(r / 60);
@@ -346,7 +376,7 @@ export class FilmInformationComponent implements OnInit {
     return `${hours} HR ${minutes} MIN`;
   }
 
-  // External rating URLs
+  ///  Rating sites URLs  \\\
   get imdbUrl(): string | null {
     const id = this.combinedApiResult?.imdbId?.trim();
 
@@ -371,6 +401,7 @@ export class FilmInformationComponent implements OnInit {
     return `https://www.metacritic.com/${segment}/${slug}/`;
   }
 
+  ///  Format title for use in URLs  \\\
   private slugForRottenTomatoes(title: string): string {
     return title
       .toLowerCase()
@@ -390,11 +421,13 @@ export class FilmInformationComponent implements OnInit {
       .trim();
   }
 
+  ///  True if film is series, false if movie
   private get isTvLike(): boolean {
     const t = (this.combinedApiResult.type || '').toLowerCase();
     return t === 'series' || t === 'episode';
   }
 
+  ///  If streaming service logo fails to load remove it from the list  \\\
   onLogoError(p: { name: string }) {
     this.streamingServices = this.streamingServices.filter(s => s.name !== p.name);
   }

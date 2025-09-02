@@ -168,7 +168,6 @@ export class LoginRegisterComponent {
     this.warningType = warningType;
     this.showWarning = true;
 
-    // schedule the hide after visible duration
     setTimeout(() => {
       this.showWarning = false;
 
