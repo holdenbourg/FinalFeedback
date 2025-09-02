@@ -57,7 +57,7 @@
 
 <div class="container" [class.active]="sidebarActive() === false">
     <div class="search-bar">
-        <label class="prompt" [class.active]="inputFocused || ((searchInput?.length || 0) > 0)">What did you watch?</label>
+        <label class="prompt" [class.active]="inputFocused || (searchInput.length > 0)">What did you watch?</label>
 
         <input
             class="input-enter"

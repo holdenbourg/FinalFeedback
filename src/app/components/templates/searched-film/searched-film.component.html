@@ -1,9 +1,9 @@
-<article class="film-details-card" tabindex="0" [attr.aria-label]="(filmDetails?.Title || 'Untitled') + (filmDetails?.Year ? ' (' + filmDetails.Year + ')' : '')">
+<article class="film-details-card" tabindex="0" [attr.aria-label]="(filmDetails.Title || 'Untitled') + (filmDetails.Year ? ' (' + filmDetails.Year + ')' : '')">
   <div class="film-poster-wrap">
     <img
       class="film-poster"
       [src]="posterSrc"
-      [attr.alt]="filmDetails?.Title || 'Poster'"
+      [attr.alt]="filmDetails.Title || 'Poster'"
       (error)="setFallback($event)"
       loading="lazy"
       decoding="async"
@@ -11,7 +11,7 @@
   </div>
 
   <div class="film-details">
-    <p class="film-title">{{ filmDetails?.Title }}</p>
+    <p class="film-title">{{ filmDetails.Title }}</p>
     <p class="film-release-year">{{ displayYear }}</p>
     <p class="film-type">{{ displayType }}</p>
   </div>

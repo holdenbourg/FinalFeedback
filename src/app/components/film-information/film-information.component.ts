@@ -7,15 +7,14 @@ import { ApiService } from '../../services/api-service';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { RoutingService } from '../../services/routing-service';
 
-
 @Component({
-  selector: 'app-movie-information',
+  selector: 'app-film-information',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './movie-information.component.html',
-  styleUrls: ['./movie-information.component.css']
+  templateUrl: './film-information.component.html',
+  styleUrls: ['./film-information.component.css']
 })
-export class MovieInformationComponent implements OnInit {
+export class FilmInformationComponent implements OnInit {
   private apiService = inject(ApiService);
   private routingService = inject(RoutingService);
   private route = inject(ActivatedRoute);
@@ -25,7 +24,8 @@ export class MovieInformationComponent implements OnInit {
   public loading = true;
   public error: string | null = null;
 
-  public streamingServices: { name: string, logo: string }[] = [];
+  /** name/logo/url for streaming providers we already support */
+  public streamingServices: { name: string; logo: string; url: string | null }[] = [];
 
   readonly fallbackPoster = 'assets/images/no-poster.jpg';
 
@@ -66,7 +66,7 @@ export class MovieInformationComponent implements OnInit {
     ['Max', 'https://play-lh.googleusercontent.com/1iyX7VdQ7MlM7iotI9XDtTwgiVmqFGzqwz10L67XVoyiTmJVoHX87QtqvcXgUnb0AC8'],
     ['Amazon Prime Video', 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Amazon_Prime_Video_blue_logo_1.svg/640px-Amazon_Prime_Video_blue_logo_1.svg.png'],
     ['Paramount Plus', 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Paramount_Plus.svg/640px-Paramount_Plus.svg.png'],
-    ['DIRECTV', 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/2011_Directv_logo.svg/1280px-Directv_logo.svg.png'],
+    ['DIRECTV', 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/2011_Directv_logo.svg/1280px-2011_Directv_logo.svg.png'],
     ['Hulu', 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Hulu_Japan_logo.svg/640px-Hulu_Japan_logo.svg.png'],
     ['Crunchyroll', 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Crunchyroll_Logo.svg/640px-Crunchyroll_Logo.svg.png'],
     ['Adult Swim', 'https://variety.com/wp-content/uploads/2014/02/adult-swim1.jpg?crop=178px%2C100px%2C666px%2C371px&resize=1000%2C563'],
@@ -83,35 +83,96 @@ export class MovieInformationComponent implements OnInit {
     ['The Roku Channel', 'https://www.tvweek.com/wp-content/uploads/2015/09/roku.png']
   ]);
 
+  /** hard-coded deep links for provider home pages (optional; keep null to make them non-clickable) */
+  private streamingServiceUrls: Map<string, string | null> = new Map<string, string | null>([
+    ['Netflix', 'https://www.netflix.com/'],
+    ['Disney Plus', 'https://www.disneyplus.com/'],
+    ['Max', 'https://www.max.com/'],
+    ['Amazon Prime Video', 'https://www.primevideo.com/'],
+    ['Paramount Plus', 'https://www.paramountplus.com/'],
+    ['DIRECTV', 'https://www.directv.com/'],
+    ['Hulu', 'https://www.hulu.com/'],
+    ['Crunchyroll', 'https://www.crunchyroll.com/'],
+    ['Adult Swim', 'https://www.adultswim.com/'],
+    ['Spectrum On Demand', 'https://ondemand.spectrum.net/'],
+    ['Funimation Now', 'https://www.funimation.com/'],
+    ['Cinemax Amazon Channel', 'https://www.cinemax.com/'],
+    ['Boomerang', 'https://www.boomerang.com/'],
+    ['Hoopla', 'https://www.hoopladigital.com/'],
+    ['Comedy Central', 'https://www.cc.com/'],
+    ['fuboTV', 'https://www.fubo.tv/'],
+    ['Peacock Premium', 'https://www.peacocktv.com/'],
+    ['Apple TV Plus', 'https://tv.apple.com/'],
+    ['Discovery', 'https://www.discovery.com/'],
+    ['The Roku Channel', 'https://therokuchannel.roku.com/']
+  ]);
+
   ngOnInit() {
-    // react if navigating within the component to a different imdbId
     this.route.paramMap.subscribe(async pm => {
       this.imdbId = pm.get('imdbId') ?? '';
       if (!this.imdbId) return;
-      await this.loadMovie(this.imdbId);
-
-      console.log(this.combinedApiResult);
-      
+      await this.loadTitle(this.imdbId);
     });
   }
 
-  async loadMovie(id: string) {
+  /** movie vs series */
+  get isSeries(): boolean {
+    return (this.combinedApiResult.type || '').toLowerCase() === 'series';
+  }
+
+  /** derived counts for series */
+  get totalSeasons(): number {
+    const list = this.combinedApiResult.seasons ?? [];
+    const fromList = list.filter(s => (s?.episode_count ?? 0) > 0).length;
+    return fromList;
+  }
+  get totalEpisodes(): number {
+    const list = this.combinedApiResult.seasons ?? [];
+    return list.reduce((acc, s: any) => acc + (s?.episode_count ?? 0), 0);
+  }
+  get seasonsLabel(): string | null {
+    if (!this.isSeries) return null;
+    const n = this.totalSeasons;
+    if (!n) return null;
+    return n === 1 ? '1 Season' : `${n} Seasons`;
+  }
+  get episodesLabel(): string | null {
+    if (!this.isSeries) return null;
+    const n = this.totalEpisodes;
+    if (!n) return null;
+    return n === 1 ? '1 Episode' : `${n} Episodes`;
+  }
+
+  /** main loader, branches on OMDb type for MDB call */
+  private async loadTitle(id: string) {
     this.loading = true;
     this.error = null;
     this.streamingServices = [];
 
     try {
-      const [omdbMovie, mdbMovie] = await Promise.all([
-        this.apiService.getFilmOmdb(id),
-        this.apiService.getMovieByImdb(id),
-      ]);
+      // 1) OMDb first so we know type (movie/series)
+      const omdbMovie = await this.apiService.getFilmOmdb(id);
+
+      // 2) MDB: pick the right call for the type
+      let mdb: any = null;
+      const omdbType = (omdbMovie?.Type ?? '').toLowerCase();
+
+      if (omdbType === 'series') {
+        // Replace with your real series call if you have one:
+        // e.g. mdb = await this.apiService.getSeriesByImdb(id);
+        // Using "any" to avoid TS errors if this method doesn't exist in typings.
+        mdb = await (this.apiService as any).search1SeriesMdbStraight?.(id)
+           ?? await this.apiService.getMovieByImdb(id); // fallback if your series method isn't available
+      } else {
+        mdb = await this.apiService.getMovieByImdb(id);
+      }
 
       const combined: CombinedFilmApiResponseModel = {
         title: omdbMovie?.Title ?? '',
         year: omdbMovie?.Year ?? '',
         rated: omdbMovie?.Rated ?? '',
         released: omdbMovie?.Released ?? '',
-        runTime: mdbMovie?.runtime ?? 0,
+        runTime: mdb?.runtime ?? 0,
         genre: omdbMovie?.Genre ?? '',
         director: omdbMovie?.Director ?? '',
         writer: omdbMovie?.Writer ?? '',
@@ -132,30 +193,32 @@ export class MovieInformationComponent implements OnInit {
         production: omdbMovie?.Production ?? '',
         website: omdbMovie?.Website ?? '',
         response: omdbMovie?.Response ?? '',
-        watch_providers: mdbMovie?.watch_providers ?? [],
-        trailer: mdbMovie?.trailer ?? '',
-        seasons: []
+        watch_providers: mdb?.watch_providers ?? [],
+        trailer: mdb?.trailer ?? '',
+        seasons: mdb?.seasons ?? []
       };
 
       this.combinedApiResult = combined;
 
-      // Map provider names to known logos (deduplicate)
+      // 3) streaming services: use only known logos; attach optional homepage URL
       const seen = new Set<string>();
-      
       this.streamingServices = (this.combinedApiResult.watch_providers ?? [])
-        .map(p => p?.name?.trim())
+        .map((p: any) => p?.name?.trim())
         .filter((name): name is string => !!name && !seen.has(name))
         .map(name => {
           seen.add(name);
           const logo = this.streamingServiceLogos.get(name);
-          return logo ? { name, logo } : null;   // skip unknown
+          if (!logo) return null; // skip unknown
+          const url = this.streamingServiceUrls.get(name) ?? null;
+          return { name, logo, url };
         })
-        .filter((x): x is { name: string; logo: string } => !!x);
+        .filter((x): x is { name: string; logo: string; url: string | null } => !!x);
+
+        console.log(this.combinedApiResult);
 
     } catch (e: any) {
       console.error(e);
-      this.error = 'Failed to load movie details.';
-
+      this.error = 'Failed to load title details.';
     } finally {
       this.loading = false;
     }
@@ -167,8 +230,14 @@ export class MovieInformationComponent implements OnInit {
   }
 
   onRateThisFilm() {
-    this.localStorageService.setInformation('currentRateMovie', this.combinedApiResult);
-    this.routingService.navigateToRateMovie(this.combinedApiResult.imdbId);
+    // route based on type
+    if (this.isSeries) {
+      this.localStorageService.setInformation('currentRateSeries', this.combinedApiResult);
+      this.routingService.navigateToRateSeries(this.combinedApiResult.imdbId);
+    } else {
+      this.localStorageService.setInformation('currentRateMovie', this.combinedApiResult);
+      this.routingService.navigateToRateMovie(this.combinedApiResult.imdbId);
+    }
   }
 
   getRatingValue(index: number): string {
@@ -176,12 +245,11 @@ export class MovieInformationComponent implements OnInit {
     return r?.Value ?? r?.value ?? 'N/A';
   }
 
-
-  /// ---------------------------------------- Formatting ---------------------------------------- \\\
+  // ----------------------------- Formatting helpers (kept from your movie version) -----------------------------
   get posterSrc(): string {
     const p = this.combinedApiResult?.poster;
     const hasPoster = !!p && p !== 'N/A';
-    return hasPoster ? p as string : this.fallbackPoster;
+    return hasPoster ? (p as string) : this.fallbackPoster;
   }
 
   fixFilmType(filmType: string) {
@@ -191,11 +259,9 @@ export class MovieInformationComponent implements OnInit {
 
   fixRelease(releaseDate?: string) {
     if (!releaseDate || releaseDate === 'N/A') return 'N/A';
-    // expects "18 Dec 2009"
     const day = releaseDate.substring(0, 2);
     let month = releaseDate.substring(3, 6);
     const year = releaseDate.substring(7);
-
     const map: Record<string, string> = {
       Jan: 'January', Feb: 'February', Mar: 'March', Apr: 'April',
       May: 'May', Jun: 'June', Jul: 'July', Aug: 'August',
@@ -205,12 +271,11 @@ export class MovieInformationComponent implements OnInit {
     return `${month} ${day}, ${year}`;
   }
 
-  /** Normalize a list of names like "A & B, C and D" → ["A","B","C","D"] */
   private splitNames(raw?: string): string[] {
     if (!raw) return [];
     return raw
-      .replace(/\s*&\s*/g, ',')        // "&" → ","
-      .replace(/\s+and\s+/gi, ',')     // " and " → ","
+      .replace(/\s*&\s*/g, ',')
+      .replace(/\s+and\s+/gi, ',')
       .split(',')
       .map(s => s.trim())
       .filter(Boolean);
@@ -223,56 +288,47 @@ export class MovieInformationComponent implements OnInit {
     return this.splitNames(this.combinedApiResult.writer);
   }
 
-  /** If writer is N/A OR the single writer equals the director → show "Director/Writer" single row */
   get showDirWriterCombined(): boolean {
     const d = this.directorName;
     const w = this.writerNames;
-    if (!d) return false;                         // no director -> can't combine
-    if (w.length === 0) return true;              // writer N/A -> combine
+    if (!d) return false;
+    if (w.length === 0) return true; // writer N/A
     if (w.length === 1 && w[0].toLowerCase() === d.toLowerCase()) return true;
     return false;
   }
 
-  /** Writers line text with proper punctuation: A, B, and C / A and B / A */
   formatWritersText(names: string[]): string {
     if (names.length <= 1) return names[0] ?? 'N/A';
     if (names.length === 2) return `${names[0]} and ${names[1]}`;
     return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`;
   }
 
-    /** Treat blanks and "N/A" as missing */
   isPresent(v?: string): boolean {
     const s = (v ?? '').trim();
     return !!s && s.toUpperCase() !== 'N/A';
   }
 
-  /** Normalize a delimited list like "Drama, Comedy & Action / Adventure" → ["Drama","Comedy","Action","Adventure"] */
   private normalizeList(raw?: string): string[] {
     if (!this.isPresent(raw)) return [];
     return (raw as string)
-      .replace(/[\/|]/g, ',')       // slashes & pipes -> commas
-      .replace(/\s*&\s*/g, ',')     // ampersands -> commas
-      .replace(/\s+and\s+/gi, ',')  // " and " -> comma
+      .replace(/[\/|]/g, ',')
+      .replace(/\s*&\s*/g, ',')
+      .replace(/\s+and\s+/gi, ',')
       .split(',')
       .map(s => s.trim())
       .filter(Boolean);
   }
 
-  /** A, B, and C  /  A and B  /  A */
   private formatList(list: string[]): string {
     if (list.length <= 1) return list[0] ?? '';
     if (list.length === 2) return `${list[0]} and ${list[1]}`;
     return `${list.slice(0, -1).join(', ')}, and ${list[list.length - 1]}`;
   }
 
-  /** Genres: returns null if nothing valid, else {label, text} with pluralization */
   get formattedGenres(): { label: 'Genre' | 'Genres'; text: string } | null {
     const list = this.normalizeList(this.combinedApiResult.genre);
     if (list.length === 0) return null;
-    return {
-      label: (list.length === 1) ? 'Genre' : 'Genres',
-      text: this.formatList(list)
-    };
+    return { label: list.length === 1 ? 'Genre' : 'Genres', text: this.formatList(list) };
   }
 
   fixBoxOffice(filmType?: string, boxOffice?: string) {
@@ -290,25 +346,31 @@ export class MovieInformationComponent implements OnInit {
     return `${hours} HR ${minutes} MIN`;
   }
 
-  /** Build external rating URLs */
+  // External rating URLs
   get imdbUrl(): string | null {
     const id = this.combinedApiResult?.imdbId?.trim();
+
     return id ? `https://www.imdb.com/title/${id}/` : null;
   }
-
   get rottenTomatoesUrl(): string | null {
     const t = this.combinedApiResult?.title?.trim();
     if (!t) return null;
-    return `https://www.rottentomatoes.com/m/${this.slugForRottenTomatoes(t)}`;
-  }
 
+    const segment = this.isTvLike ? 'tv' : 'm';
+    const slug = this.slugForRottenTomatoes(t);
+
+    return `https://www.rottentomatoes.com/${segment}/${slug}`;
+  }
   get metacriticUrl(): string | null {
     const t = this.combinedApiResult?.title?.trim();
     if (!t) return null;
-    return `https://www.metacritic.com/movie/${this.slugForMetacritic(t)}/`;
+
+    const segment = this.isTvLike ? 'tv' : 'movie';
+    const slug = this.slugForMetacritic(t);
+
+    return `https://www.metacritic.com/${segment}/${slug}/`;
   }
 
-  /** RottenTomatoes uses underscores, lowercase, “&” → “and”, strip punctuation */
   private slugForRottenTomatoes(title: string): string {
     return title
       .toLowerCase()
@@ -318,8 +380,6 @@ export class MovieInformationComponent implements OnInit {
       .replace(/_+/g, '_')
       .trim();
   }
-
-  /** Metacritic uses hyphens, lowercase, “&” → “and”, strip punctuation */
   private slugForMetacritic(title: string): string {
     return title
       .toLowerCase()
@@ -328,6 +388,11 @@ export class MovieInformationComponent implements OnInit {
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .trim();
+  }
+
+  private get isTvLike(): boolean {
+    const t = (this.combinedApiResult.type || '').toLowerCase();
+    return t === 'series' || t === 'episode';
   }
 
   onLogoError(p: { name: string }) {
