@@ -3,9 +3,10 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 
 import { CombinedFilmApiResponseModel } from '../../models/api-models/combined-film-api-response';
-import { ApiService } from '../../services/api-service';
+import { ApiService } from '../../services/api.service';
 import { LocalStorageService } from '../../services/local-storage.service';
-import { RoutingService } from '../../services/routing-service';
+import { RoutingService } from '../../services/routing.service';
+import { FilmCacheService } from '../../services/film-cache.service';
 
 @Component({
   selector: 'app-film-information',
@@ -14,11 +15,13 @@ import { RoutingService } from '../../services/routing-service';
   templateUrl: './film-information.component.html',
   styleUrls: ['./film-information.component.css']
 })
+
 export class FilmInformationComponent implements OnInit {
   private apiService = inject(ApiService);
   private routingService = inject(RoutingService);
   private route = inject(ActivatedRoute);
   public localStorageService = inject(LocalStorageService);
+  private filmCache = inject(FilmCacheService);
 
   public imdbId = '';
   public loading = true;
@@ -114,9 +117,13 @@ export class FilmInformationComponent implements OnInit {
   }
 
   ///  Returns true if film is a series, false if not \\\
-  get isSeries(): boolean {
-    return (this.combinedApiResult.type || '').toLowerCase() === 'series';
+  get isMovie(): boolean { 
+    return (this.combinedApiResult?.type ?? '').toLowerCase() === 'movie'; 
   }
+  get isSeries(): boolean { 
+    return (this.combinedApiResult?.type ?? '').toLowerCase() === 'series'; 
+  }
+
 
   ///  Derived counts for series  \\\
   get totalSeasons(): number {
@@ -208,10 +215,11 @@ export class FilmInformationComponent implements OnInit {
           return { name, logo, url };
         })
         .filter((x): x is { name: string; logo: string; url: string | null } => !!x);
-
+        
     } catch (e: any) {
       console.error(e);
       this.error = 'Failed to load title details.';
+
     } finally {
       this.loading = false;
     }
@@ -225,20 +233,33 @@ export class FilmInformationComponent implements OnInit {
 
   ///  Get the indiviudal rating from ratings list  \\\
   getRatingValue(index: number): string {
-    const r: any = this.combinedApiResult.ratings?.[index];
+    const rating: any = this.combinedApiResult.ratings?.[index];
 
-    return r?.Value ?? r?.value ?? 'N/A';
+    return rating?.Value ?? rating?.value ?? 'N/A';
   }
 
 
   onRateThisFilm() {
-    if (this.isSeries) {
-      this.localStorageService.setInformation('currentRateSeries', this.combinedApiResult);
-      this.routingService.navigateToRateSeries(this.combinedApiResult.imdbId);
-    } else {
-      this.localStorageService.setInformation('currentRateMovie', this.combinedApiResult);
-      this.routingService.navigateToRateMovie(this.combinedApiResult.imdbId);
+    const film = this.combinedApiResult as CombinedFilmApiResponseModel | null;
+    if (!film) return;
+
+    const imdbId =
+      (film as any).imdbId ??
+      (film as any).imdbID ??
+      (film as any).id ??
+      '';
+    if (!imdbId) {
+      console.warn('onRateThisFilm(): missing imdbId');
+      return;
     }
+
+    const rawType = String((film as any).type ?? (film as any).Type ?? '').toLowerCase();
+    const type: 'movie' | 'series' = rawType === 'movie' ? 'movie' : 'series';
+
+    this.filmCache.set(imdbId, film);
+
+    if (type === 'movie') this.routingService.navigateToRateMovie(imdbId, film);
+    else this.routingService.navigateToRateSeries(imdbId, film);
   }
 
 
@@ -425,6 +446,66 @@ export class FilmInformationComponent implements OnInit {
   private get isTvLike(): boolean {
     const t = (this.combinedApiResult.type || '').toLowerCase();
     return t === 'series' || t === 'episode';
+  }
+
+    private parseRuntimeToMinutes(input: unknown): number {
+    if (typeof input === 'number' && Number.isFinite(input)) return Math.max(0, input);
+    const s = String(input ?? '').trim();
+    if (!s || /^(n\/a|na|unknown)$/i.test(s)) return 0;
+
+    // Range like "45–60 min" or "45-60m" -> use the upper bound
+    const range = s.match(/(\d+)\s*[-–]\s*(\d+)/);
+    if (range) return Math.max(0, parseInt(range[2], 10) || 0);
+
+    // "1 h 52 min", "1h52m", "2h", "130m"
+    const hours = s.match(/(\d+)\s*h(?:ours?)?/i);
+    const mins  = s.match(/(\d+)\s*m(?:in(?:utes?)?)?/i);
+    if (hours || mins) {
+      const h = hours ? parseInt(hours[1], 10) : 0;
+      const m = mins  ? parseInt(mins[1], 10)  : 0;
+      return Math.max(0, h * 60 + m);
+    }
+
+    // Plain "112" or "112 min"
+    const firstNum = s.match(/\d+/)?.[0];
+    return Math.max(0, firstNum ? parseInt(firstNum, 10) : 0);
+  }
+
+  get runtimeMinutes(): number {
+    // Prefer a numeric property if your model provides one
+    const nLike =
+      (this.combinedApiResult as any)?.runTime ??            // your field
+      (this.combinedApiResult as any)?.runtimeMinutes ??     // alt naming
+      (this.combinedApiResult as any)?.runtime_min ??        // another common variant
+      null;
+
+    if (Number.isFinite(nLike)) return Math.max(0, Number(nLike));
+
+    // Fallback to strings like "112 min", "1 h 52 min", etc.
+    const rt = (this.combinedApiResult as any)?.runtime ?? (this.combinedApiResult as any)?.Runtime ?? '';
+    return this.parseRuntimeToMinutes(rt);
+  }
+
+  get runtimeHours(): number {
+    return Math.floor(this.runtimeMinutes / 60);
+  }
+
+  get runtimeMinutesRemainder(): number {
+    return this.runtimeMinutes % 60;
+  }
+
+  ///  Counts for the right card — dynamic per type  \\\
+  get count1Num(): number {
+    return this.isMovie ? this.runtimeHours : this.totalSeasons;
+  }
+  get count1Label(): string {
+    return this.isMovie ? 'Hours' : 'Seasons';
+  }
+  get count2Num(): number {
+    return this.isMovie ? this.runtimeMinutesRemainder : this.totalEpisodes;
+  }
+  get count2Label(): string {
+    return this.isMovie ? 'Minutes' : 'Episodes';
   }
 
   ///  If streaming service logo fails to load remove it from the list  \\\

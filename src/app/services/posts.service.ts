@@ -5,7 +5,7 @@ import { RatedMovieModel } from "../models/database-models/rated-movie-model";
 import { RatedSeriesModel } from "../models/database-models/rated-series-model";
 import { RawPostModel } from "../models/database-models/raw-post-model";
 import { UserPostModel } from "../models/database-models/post-model";
-import { UsersService } from "./users-service";
+import { UsersService } from "./users.service";
 
 @Injectable({ providedIn: 'root' })
 export class PostsService {

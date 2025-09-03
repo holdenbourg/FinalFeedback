@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
-import { RoutingService } from '../../services/routing-service';
+import { RoutingService } from '../../services/routing.service';
 import { LocalStorageService } from '../../services/local-storage.service';
-import { UsersService } from '../../services/users-service';
+import { UsersService } from '../../services/users.service';
 import { AccountInformationModel } from '../../models/database-models/account-information-model';
 import { LoginModel } from '../../models/login-register-models/login-model';
 import { RegisterModel } from '../../models/login-register-models/register-model';

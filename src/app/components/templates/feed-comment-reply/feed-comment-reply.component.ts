@@ -4,8 +4,8 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AccountInformationModel } from '../../../models/database-models/account-information-model';
 import { ReplyModel } from '../../../models/database-models/reply-model';
 import { LocalStorageService } from '../../../services/local-storage.service';
-import { RepliesService } from '../../../services/replies-service';
-import { CommentModerationService } from '../../../services/comment-moderation-service';
+import { RepliesService } from '../../../services/replies.service';
+import { CommentModerationService } from '../../../services/comment-moderation.service';
 
 @Component({
   selector: 'app-feed-comment-reply',

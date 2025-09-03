@@ -46,19 +46,40 @@
     </div>
   </div>
 
-  <div class="right-information">
+  <div class="right-information" *ngIf="combinedApiResult as f">
     <div class="film-information">
-      <div class="film-text">
-        <p class="title">{{ combinedApiResult.title }}</p>
-        <p class="type">{{ fixFilmType(combinedApiResult.type ?? '') }}</p>
-        <p class="rated">{{ combinedApiResult.rated }}</p>
-        <p class="run-time" *ngIf="!isSeries">{{ fixRuntime(combinedApiResult.runTime) }}</p>
+      <div class="film-left">
+        <div class="film-scroll">
+          <p class="title">{{ f.title }}</p>
+          <p class="release" *ngIf="f.released && isMovie">{{ fixRelease(f.released) }}</p>
+          <p class="release" *ngIf="f.year && isSeries">{{ f.year }}</p>
 
-        <p class="seasons" *ngIf="isSeries && seasonsLabel">{{ seasonsLabel }}</p>
-        <p class="episodes" *ngIf="isSeries && episodesLabel">{{ episodesLabel }}</p>
+          <div class="meta">
+            <span class="badge" *ngIf="f.rated">{{ f.rated }}</span>
+            <span class="badge" *ngIf="(f.genre || '').length">
+              {{ (f.genre || '').split(', ').join(' • ') }}
+            </span>
+          </div>
+        </div>
+
+        <div class="film-counts">
+          <div class="count">
+            <div class="count-num">{{ count1Num }}</div>
+            <div class="count-label">{{ count1Label }}</div>
+          </div>
+          <div class="count">
+            <div class="count-num">{{ count2Num }}</div>
+            <div class="count-label">{{ count2Label }}</div>
+          </div>
+        </div>
       </div>
 
-      <img class="film-poster" [src]="posterSrc" [attr.alt]="combinedApiResult.title || 'Poster'">
+      <img
+        class="film-poster"
+        [src]="f.poster"
+        [attr.alt]="f.title || 'Poster'"
+        loading="lazy"
+        decoding="async" />
     </div>
 
     <div class="streaming-on">
@@ -94,39 +115,39 @@
       <div class="ratings">
         <div class="ratings-item imdb-rating">
           <a class="logo-link"
-            [attr.href]="imdbUrl || null"
-            [class.is-disabled]="!imdbUrl"
-            target="_blank" rel="noopener noreferrer"
-            aria-label="Open on IMDb">
+             [attr.href]="imdbUrl || null"
+             [class.is-disabled]="!imdbUrl"
+             target="_blank" rel="noopener noreferrer"
+             aria-label="Open on IMDb">
             <img class="imdb-img"
-                src="https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg"
-                alt="IMDb" />
+                 src="https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg"
+                 alt="IMDb" />
           </a>
           <p class="score">{{ getRatingValue(0) }}</p>
         </div>
 
         <div class="ratings-item rotten-tomatoes-rating">
           <a class="logo-link"
-            [attr.href]="rottenTomatoesUrl || null"
-            [class.is-disabled]="!rottenTomatoesUrl"
-            target="_blank" rel="noopener noreferrer"
-            aria-label="Open on Rotten Tomatoes">
+             [attr.href]="rottenTomatoesUrl || null"
+             [class.is-disabled]="!rottenTomatoesUrl"
+             target="_blank" rel="noopener noreferrer"
+             aria-label="Open on Rotten Tomatoes">
             <img class="rotten-tomatoes-img"
-                src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Rotten_Tomatoes_logo.svg"
-                alt="Rotten Tomatoes" />
+                 src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Rotten_Tomatoes_logo.svg"
+                 alt="Rotten Tomatoes" />
           </a>
           <p class="score">{{ getRatingValue(1) }}</p>
         </div>
 
         <div class="ratings-item metacritic-rating">
           <a class="logo-link"
-            [attr.href]="metacriticUrl || null"
-            [class.is-disabled]="!metacriticUrl"
-            target="_blank" rel="noopener noreferrer"
-            aria-label="Open on Metacritic">
+             [attr.href]="metacriticUrl || null"
+             [class.is-disabled]="!metacriticUrl"
+             target="_blank" rel="noopener noreferrer"
+             aria-label="Open on Metacritic">
             <img class="metacritic-img"
-                src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Metacritic_logo_original.svg"
-                alt="Metacritic" />
+                 src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Metacritic_logo_original.svg"
+                 alt="Metacritic" />
           </a>
           <p class="score">{{ getRatingValue(2) }}</p>
         </div>

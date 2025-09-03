@@ -5,11 +5,11 @@ import { CommentModel } from '../../../models/database-models/comment-model';
 import { ReplyModel } from '../../../models/database-models/reply-model';
 import { LocalStorageService } from '../../../services/local-storage.service';
 import { RepliesDatabase } from '../../../databases/replies-database';
-import { CommentsService } from '../../../services/comments-service';
-import { RepliesService } from '../../../services/replies-service';
+import { CommentsService } from '../../../services/comments.service';
+import { RepliesService } from '../../../services/replies.service';
 import { FeedCommentReplyComponent } from '../feed-comment-reply/feed-comment-reply.component';
 import { filter, Subject, takeUntil } from 'rxjs';
-import { CommentModerationService } from '../../../services/comment-moderation-service';
+import { CommentModerationService } from '../../../services/comment-moderation.service';
 
 @Component({
   selector: 'app-feed-comment',

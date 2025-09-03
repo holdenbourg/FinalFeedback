@@ -1,0 +1,58 @@
+<div class="container">
+  <!-- Left: rating widget -->
+  <div class="left-side">
+    <app-rate-item
+      #rater
+      [title]="titleText"
+      [criteria]="criteria"
+      (rated)="onRated($event)">
+    </app-rate-item>
+  </div>
+
+  <!-- Right: film info + bottom warning & buttons -->
+  <div class="right-side" *ngIf="film as f">
+    <div class="film-information">
+      <div class="film-text">
+        <p class="title">{{ f.title }}</p>
+        <p class="release" *ngIf="f.released && isMovie">{{ fixRelease(f.released) }}</p>
+        <p class="release" *ngIf="f.year && isSeries">{{ f.year }}</p>
+
+        <div class="meta">
+          <span class="badge" *ngIf="f.rated">{{ f.rated }}</span>
+          <span class="badge" *ngIf="(f.genre || '').length">
+            {{ (f.genre || '').split(', ').join(' • ') }}
+          </span>
+        </div>
+
+        <div class="counts">
+          <div class="count">
+            <div class="count-num">{{ count1Num }}</div>
+            <div class="count-label">{{ count1Label }}</div>
+          </div>
+          <div class="count">
+            <div class="count-num">{{ count2Num }}</div>
+            <div class="count-label">{{ count2Label }}</div>
+          </div>
+        </div>
+      </div>
+
+      <img
+        class="film-poster"
+        [src]="f.poster"
+        [attr.alt]="f.title || 'Poster'"
+        loading="lazy"
+        decoding="async" />
+    </div>
+
+    <div class="right-bottom">
+      <div class="warning-right" [class.active]="rater.warn" aria-live="polite">
+        Must select a rating for each criteria
+      </div>
+
+      <div class="actions-right">
+        <button class="btn ghost" type="button" (click)="rater.reset()">Reset</button>
+        <button class="btn" type="button" (click)="rater.submit()">Rate {{ rater.average }}/10</button>
+      </div>
+    </div>
+  </div>
+</div>

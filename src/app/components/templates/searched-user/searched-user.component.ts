@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RoutingService } from '../../../services/routing-service';
+import { RoutingService } from '../../../services/routing.service';
 
 export interface SearchedUser {
   username: string;

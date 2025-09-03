@@ -1,0 +1,31 @@
+<section class="rate-card">
+  <p class="rating-question">{{ title }}</p>
+
+  <div class="criteria-grid">
+    <ng-container *ngFor="let c of criteria; trackBy: trackByKey">
+      <p
+        class="criterion-title"
+        [class.active]="hoverKey === c.key"
+        (mouseenter)="hoverKey = c.key"
+        (mouseleave)="hoverKey = null">
+        {{ c.label }}:
+      </p>
+
+      <div class="ratings">
+        <button
+          *ngFor="let n of ten"
+          type="button"
+          class="rating-chip"
+          [class.active]="ratings[c.key] === n"
+          (click)="setRating(c.key, n)"
+          [attr.aria-label]="c.label + ' ' + n">
+          {{ n }}
+        </button>
+      </div>
+
+      <p class="criterion-explanation" [class.active]="hoverKey === c.key">
+        {{ c.explanation || '' }}
+      </p>
+    </ng-container>
+  </div>
+</section>

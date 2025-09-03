@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
+import { CombinedFilmApiResponseModel } from '../models/api-models/combined-film-api-response';
 
 @Injectable({ providedIn: 'root' })
 export class RoutingService {
@@ -9,7 +10,7 @@ export class RoutingService {
     this.router.navigate(['']);
   }
 
-  // sidebar
+  ///  Sidebar  \\\
   navigateToHome() {
     this.router.navigate(['/home'], { replaceUrl: true });
   }
@@ -22,6 +23,30 @@ export class RoutingService {
   navigateToSearchUsers(q?: string) {
     this.router.navigate(['/search', 'users'], { queryParams: { q: q || null } });
   }
+
+
+  ///  movie info path  \\\
+  navigateToMovie(imdbId: string) {
+    this.router.navigate(['/movie', imdbId], { queryParams: {} });
+  }
+  navigateToRateMovie(imdbId: string, film: CombinedFilmApiResponseModel) {
+    this.router.navigate(['/rate', 'movie', imdbId], { state: { film } });
+  }
+  navigateToPostMovie(postId: string) {
+    this.router.navigate(['/post-movie', postId]);
+  }
+
+  ///  series info path  \\\
+  navigateToSeries(imdbId: string) {
+    this.router.navigate(['/series', imdbId], { queryParams: {} });
+  }
+  navigateToRateSeries(imdbId: string, film: CombinedFilmApiResponseModel) {
+    this.router.navigate(['/rate', 'series', imdbId], { state: { film } });
+  }
+  navigateToPostSeries(postId: string) {
+    this.router.navigate(['/post-series', postId]);
+  }
+
 
 
 
@@ -52,28 +77,6 @@ export class RoutingService {
   }
   navigateToLogout() {
     this.router.navigate(['/settings', 'logout']);
-  }
-
-  ///  movie info path  \\\
-  navigateToMovie(imdbId: string) {
-    this.router.navigate(['/movie', imdbId], { queryParams: {} });
-  }
-  navigateToRateMovie(imdbId?: string) {
-    this.router.navigate(['/rate-movie', imdbId]);
-  }
-  navigateToPostMovie(postId: string) {
-    this.router.navigate(['/post-movie', postId]);
-  }
-
-  ///  series info path  \\\
-  navigateToSeries(imdbId: string) {
-    this.router.navigate(['/series', imdbId], { queryParams: {} });
-  }
-  navigateToRateSeries(imdbId?: string) {
-    this.router.navigate(['/rate-series', imdbId]);
-  }
-  navigateToPostSeries(postId: string) {
-    this.router.navigate(['/post-series', postId]);
   }
 
   // edit

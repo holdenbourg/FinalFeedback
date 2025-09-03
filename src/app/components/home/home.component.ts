@@ -4,10 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { AccountInformationModel } from '../../models/database-models/account-information-model';
 import { UserPostModel } from '../../models/database-models/post-model';
 import { LocalStorageService } from '../../services/local-storage.service';
-import { RoutingService } from '../../services/routing-service';
+import { RoutingService } from '../../services/routing.service';
 import { FollowerModel } from '../../models/database-models/follower-model';
 import { PostsDatabase } from '../../databases/posts-database';
-import { PostsService } from '../../services/posts-service';
+import { PostsService } from '../../services/posts.service';
 import { FeedPostComponent } from '../templates/feed-post/feed-post.component';
 import { RouterLink, RouterModule } from '@angular/router';
 

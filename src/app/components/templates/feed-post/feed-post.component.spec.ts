@@ -15,9 +15,9 @@ import { LocalStorageService } from '../../../services/local-storage.service';
 import { RatedMoviesDatabase } from '../../../databases/rated-movies-database';
 import { RatedSeriesDatabase } from '../../../databases/rated-series-database';
 import { CommentsDatabase } from '../../../databases/comments-database';
-import { CommentsService } from '../../../services/comments-service';
-import { PostsService } from '../../../services/posts-service';
-import { RepliesService } from '../../../services/replies-service';
+import { CommentsService } from '../../../services/comments.service';
+import { PostsService } from '../../../services/posts.service';
+import { RepliesService } from '../../../services/replies.service';
 import { CommentModerationService } from '../../../services/comment-moderation-service';
 
 

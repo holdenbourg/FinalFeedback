@@ -4,8 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
 import { LocalStorageService } from '../../services/local-storage.service';
-import { RoutingService } from '../../services/routing-service';
-import { SearchService } from '../../services/search-service';
+import { RoutingService } from '../../services/routing.service';
+import { SearchService } from '../../services/search.service';
 
 import { AccountInformationModel } from '../../models/database-models/account-information-model';
 
@@ -28,6 +28,7 @@ import { SearchedUserComponent } from '../templates/searched-user/searched-user.
   templateUrl: './search.component.html',
   styleUrl: './search.component.css'
 })
+
 export class SearchComponent implements OnInit {
   public routingService = inject(RoutingService);
   private route = inject(ActivatedRoute);
@@ -72,17 +73,17 @@ export class SearchComponent implements OnInit {
   }
 
   onSearch() {
-    const q = (this.searchInput || '').trim();
+    const query = (this.searchInput || '').trim();
 
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { q: q || null },  ///  null removes param if empty  \\\
+      queryParams: { q: query || null },  ///  null removes param if empty  \\\
       queryParamsHandling: 'merge'
     });
   }
 
-  private runSearch(q: string) {
-    this.searchService.search(this.type, q).subscribe({
+  private runSearch(query: string) {
+    this.searchService.search(this.type, query).subscribe({
       next: items => {
         this.results = items ?? [];
         this.showWarning = this.results.length === 0;

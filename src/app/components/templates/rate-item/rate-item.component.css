@@ -1,0 +1,85 @@
+.rate-card {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 28px 10px;
+  width: 100%;
+  height: 100%;
+  color: #fff;
+  gap: .28vw;
+  transform: translateX(-2%);
+
+}
+
+.rating-question {
+  width: 100%;
+  text-align: center;
+  font-size: 2.03vw;
+  font-weight: 700;
+  margin: 0 0 .32vw 0;
+}
+
+.criteria-grid {
+  display: grid;
+  grid-template-columns: auto max-content;
+  column-gap: .9vw;
+  row-gap: .18vw;
+  align-items: center;
+  width: max-content;
+  margin: 0 auto;
+  transform: translateX(-1.5%);
+
+}
+
+.criterion-title {
+  font-size: 3.0vw;
+  font-weight: 700;
+  margin: 0;
+  white-space: nowrap;
+  text-align: right;
+  justify-self: end;
+  cursor: default;
+}
+.criterion-title.active { 
+  color: rgb(255,165,0); 
+}
+
+.ratings {
+  display: flex;
+  align-items: center;
+  gap: 1.0vw;
+  justify-self: start;
+}
+
+.rating-chip {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 3.0vw;
+  font-weight: 700;
+  padding: 0 .05vw;
+  cursor: pointer;
+  line-height: 1;
+  transition: transform 120ms ease, color 120ms ease, opacity 120ms ease;
+  opacity: 0.95;
+}
+.rating-chip:hover { 
+  transform: translateY(-2px); 
+}
+.rating-chip.active { 
+  color: rgb(255,165,0); 
+}
+
+.criterion-explanation {
+  grid-column: 1 / -1;
+  font-size: 1.0vw;
+  line-height: 1.2;
+  font-weight: 500;
+  color: transparent;
+  margin: .08vw 0 .12vw;
+  text-align: center;
+  justify-self: center;
+  cursor: default;
+}
+.criterion-explanation.active { 
+  color: rgb(255,165,0); 
+}

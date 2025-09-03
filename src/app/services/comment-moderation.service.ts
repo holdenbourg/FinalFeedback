@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { UsersService } from '../services/users-service';
+import { UsersService } from './users.service';
 import { CommentModel } from '../models/database-models/comment-model';
 import { LocalStorageService } from './local-storage.service';
 

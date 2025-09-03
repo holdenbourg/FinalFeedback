@@ -8,14 +8,14 @@ import { CommentModel } from '../../../models/database-models/comment-model';
 import { RatedMovieModel } from '../../../models/database-models/rated-movie-model';
 import { RatedSeriesModel } from '../../../models/database-models/rated-series-model';
 import { LocalStorageService } from '../../../services/local-storage.service';
-import { RepliesService } from '../../../services/replies-service';
+import { RepliesService } from '../../../services/replies.service';
 import { RatedMoviesDatabase } from '../../../databases/rated-movies-database';
 import { RatedSeriesDatabase } from '../../../databases/rated-series-database';
 import { CommentsDatabase } from '../../../databases/comments-database';
-import { PostsService } from '../../../services/posts-service';
+import { PostsService } from '../../../services/posts.service';
 import { ReplyModel } from '../../../models/database-models/reply-model';
-import { CommentsService } from '../../../services/comments-service';
-import { CommentContext, CommentModerationService } from '../../../services/comment-moderation-service';
+import { CommentsService } from '../../../services/comments.service';
+import { CommentContext, CommentModerationService } from '../../../services/comment-moderation.service';
 
 @Component({
   selector: 'app-feed-post',

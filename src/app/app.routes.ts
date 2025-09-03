@@ -3,6 +3,7 @@ import { LoginRegisterComponent } from './components/login-register/login-regist
 import { HomeComponent } from './components/home/home.component';
 import { SearchComponent } from './components/search/search.component';
 import { FilmInformationComponent } from './components/film-information/film-information.component';
+import { RateFilmComponent } from './components/rate-film/rate-film.component';
 
 export const routes: Routes = [
     { path: '', component: LoginRegisterComponent },
@@ -11,6 +12,7 @@ export const routes: Routes = [
     { path: 'search/:type', component: SearchComponent },  ///  movies | series | users  \\\
     { path: 'movie/:imdbId', component: FilmInformationComponent },
     { path: 'series/:imdbId', component: FilmInformationComponent },
+    { path: 'rate/:type/:imdbId', component: RateFilmComponent },   ///  movies | series  \\\
 
     { path: '**', redirectTo: '' },
 ];

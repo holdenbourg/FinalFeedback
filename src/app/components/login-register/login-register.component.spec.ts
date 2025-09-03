@@ -10,8 +10,8 @@ import { RatedSeriesDatabase } from '../../databases/rated-series-database';
 import { RepliesDatabase } from '../../databases/replies-database';
 import { UsersDatabase } from '../../databases/users-database';
 import { LocalStorageService } from '../../services/local-storage.service';
-import { RoutingService } from '../../services/routing-service';
-import { UsersService } from '../../services/users-service';
+import { RoutingService } from '../../services/routing.service';
+import { UsersService } from '../../services/users.service';
 import { RawAccountInformationModel } from '../../models/database-models/raw-account-information-model';
 
 /// ----- Minimal Mocks ----- \\\

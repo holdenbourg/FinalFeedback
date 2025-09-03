@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { ApiService } from '../services/api-service';
+import { ApiService } from './api.service';
 import { SearchType } from '../models/search-models/search.types';
 import { UsersDatabase } from '../databases/users-database';
 
