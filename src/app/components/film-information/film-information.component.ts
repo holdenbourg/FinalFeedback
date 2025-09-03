@@ -29,6 +29,7 @@ export class FilmInformationComponent implements OnInit {
 
   public streamingServices: { name: string; logo: string; url: string | null }[] = [];
 
+  private useFallback = false;
   readonly fallbackPoster = 'assets/images/no-poster.jpg';
 
   combinedApiResult: CombinedFilmApiResponseModel = {
@@ -108,6 +109,7 @@ export class FilmInformationComponent implements OnInit {
     ['The Roku Channel', 'https://therokuchannel.roku.com/']
   ]);
 
+
   ngOnInit() {
     this.route.paramMap.subscribe(async pm => {
       this.imdbId = pm.get('imdbId') ?? '';
@@ -116,37 +118,6 @@ export class FilmInformationComponent implements OnInit {
     });
   }
 
-  ///  Returns true if film is a series, false if not \\\
-  get isMovie(): boolean { 
-    return (this.combinedApiResult?.type ?? '').toLowerCase() === 'movie'; 
-  }
-  get isSeries(): boolean { 
-    return (this.combinedApiResult?.type ?? '').toLowerCase() === 'series'; 
-  }
-
-
-  ///  Derived counts for series  \\\
-  get totalSeasons(): number {
-    const list = this.combinedApiResult.seasons ?? [];
-    const fromList = list.filter(s => (s?.episode_count ?? 0) > 0).length;
-    return fromList;
-  }
-  get totalEpisodes(): number {
-    const list = this.combinedApiResult.seasons ?? [];
-    return list.reduce((acc, s: any) => acc + (s?.episode_count ?? 0), 0);
-  }
-  get seasonsLabel(): string | null {
-    if (!this.isSeries) return null;
-    const n = this.totalSeasons;
-    if (!n) return null;
-    return n === 1 ? '1 Season' : `${n} Seasons`;
-  }
-  get episodesLabel(): string | null {
-    if (!this.isSeries) return null;
-    const n = this.totalEpisodes;
-    if (!n) return null;
-    return n === 1 ? '1 Episode' : `${n} Episodes`;
-  }
 
   ///  Loads the film information  \\\
   private async loadTitle(id: string) {
@@ -216,6 +187,9 @@ export class FilmInformationComponent implements OnInit {
         })
         .filter((x): x is { name: string; logo: string; url: string | null } => !!x);
         
+    console.log(this.combinedApiResult);
+
+
     } catch (e: any) {
       console.error(e);
       this.error = 'Failed to load title details.';
@@ -225,6 +199,8 @@ export class FilmInformationComponent implements OnInit {
     }
   }
 
+
+  /// ---------------------------------------- Helpers ----------------------------------------  \\\
   ///  Opens trailer in a new tab (if available)  \\\
   goToTrailer(trailerUrl: string) {
     if (!trailerUrl) return;
@@ -238,7 +214,25 @@ export class FilmInformationComponent implements OnInit {
     return rating?.Value ?? rating?.value ?? 'N/A';
   }
 
+  ///  Returns true if film is specified type, false if not \\\
+  get isMovie(): boolean { 
+    return (this.combinedApiResult?.type ?? '').toLowerCase() === 'movie'; 
+  }
+  get isSeries(): boolean { 
+    return (this.combinedApiResult?.type ?? '').toLowerCase() === 'series'; 
+  }
 
+  ///  Parse the API date (e.g., "19 Dec 2025"), true if date is today or after today (only show button if movie is released)  \\\
+  showButton(apiDateString: string): boolean {
+    const apiDate = new Date(apiDateString);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return apiDate <= today;
+  }
+
+  ///  Store the current film-information in the cache then route to rate-film  \\\
   onRateThisFilm() {
     const film = this.combinedApiResult as CombinedFilmApiResponseModel | null;
     if (!film) return;
@@ -262,16 +256,137 @@ export class FilmInformationComponent implements OnInit {
     else this.routingService.navigateToRateSeries(imdbId, film);
   }
 
-
-  /// ---------------------------------------- Formatting  ----------------------------------------  \\\
   ///  Get poster if not use fallback "No Poster" image  \\\
   get posterSrc(): string {
-    const p = this.combinedApiResult?.poster;
-    const hasPoster = !!p && p !== 'N/A';
+    const poster = this.combinedApiResult?.poster;
+    const hasPoster = !!poster && poster !== 'N/A';
 
-    return hasPoster ? (p as string) : this.fallbackPoster;
+    return (hasPoster && !this.useFallback) ? poster! : this.fallbackPoster;
+  }
+  ///  If poster fails to load, use fallback "No Poster" image  \\\
+  setFallback(ev?: Event) {
+    this.useFallback = true;
+
+    if (ev) (ev.target as HTMLImageElement).src = this.fallbackPoster;
   }
 
+  ///  Derived counts for Series  \\\
+  get totalSeasons(): number {
+    const list = this.combinedApiResult.seasons ?? [];
+    const fromList = list.filter(s => (s?.episode_count ?? 0) > 0).length;
+
+    return fromList;
+  }
+  get seasonsLabel(): string {
+    if (!this.isSeries) return 'N/A';
+
+    const n = this.totalSeasons;
+
+    if (!n) return 'N/A';
+
+    return n === 1 ? 'Season' : 'Seasons';
+  }
+
+  get totalEpisodes(): number {
+    const list = this.combinedApiResult.seasons ?? [];
+
+    return list.reduce((acc, s: any) => acc + (s?.episode_count ?? 0), 0);
+  }
+  get episodesLabel(): string {
+    if (!this.isSeries) return 'N/A';
+
+    const n = this.totalEpisodes;
+
+    if (!n) return 'N/A';
+
+    return n === 1 ? 'Episode' : 'Episodes';
+  }
+
+  ///  Derived counts for Movie  \\\
+  private parseRuntimeToMinutes(input: unknown): number {
+    if (typeof input === 'number' && Number.isFinite(input)) return Math.max(0, input);
+
+    const s = String(input ?? '').trim();
+
+    if (!s || /^(n\/a|na|unknown)$/i.test(s)) return 0;
+
+    ///  Range like "45–60 min" or "45-60m" -> use the upper bound  \\\
+    const range = s.match(/(\d+)\s*[-–]\s*(\d+)/);
+
+    if (range) return Math.max(0, parseInt(range[2], 10) || 0);
+
+    ///  "1 h 52 min", "1h52m", "2h", "130m"  \\\
+    const hours = s.match(/(\d+)\s*h(?:ours?)?/i);
+    const mins  = s.match(/(\d+)\s*m(?:in(?:utes?)?)?/i);
+
+    if (hours || mins) {
+      const h = hours ? parseInt(hours[1], 10) : 0;
+      const m = mins  ? parseInt(mins[1], 10)  : 0;
+      return Math.max(0, h * 60 + m);
+    }
+
+    ///  Plain "112" or "112 min"  \\\
+    const firstNum = s.match(/\d+/)?.[0];
+
+    return Math.max(0, firstNum ? parseInt(firstNum, 10) : 0);
+  }
+
+  get runtimeMinutes(): number {
+    const nLike =
+      (this.combinedApiResult as any)?.runTime ??
+      (this.combinedApiResult as any)?.runtimeMinutes ??
+      (this.combinedApiResult as any)?.runtime_min ??
+      null;
+
+    if (Number.isFinite(nLike)) return Math.max(0, Number(nLike));
+
+    const rt = (this.combinedApiResult as any)?.runtime ?? (this.combinedApiResult as any)?.Runtime ?? '';
+
+    return this.parseRuntimeToMinutes(rt);
+  }
+
+  get runtimeHours(): number {
+    return Math.floor(this.runtimeMinutes / 60);
+  }
+  get hoursLabel(): string {
+    if (!this.isMovie) return 'N/A';
+
+    const n = this.runtimeHours;
+
+    if (!n) return 'N/A';
+
+    return n === 1 ? 'Hour' : 'Hours';
+  }
+
+  get runtimeMinutesRemainder(): number {
+    return this.runtimeMinutes % 60;
+  }
+  get minutesLabel(): string {
+    if (!this.isMovie) return 'N/A';
+
+    const n = this.runtimeMinutesRemainder;
+
+    if (!n) return 'N/A';
+
+    return n === 1 ? 'Minute' : 'Minutes';
+  }
+
+  ///  Counts for the right card — dynamic per type  \\\
+  get count1Num(): number {
+    return this.isMovie ? this.runtimeHours : this.totalSeasons;
+  }
+  get count1Label(): string {
+    return this.isMovie ? this.hoursLabel : this.seasonsLabel;
+  }
+  get count2Num(): number {
+    return this.isMovie ? this.runtimeMinutesRemainder : this.totalEpisodes;
+  }
+  get count2Label(): string {
+    return this.isMovie ? 'Minutes' : this.episodesLabel;
+  }
+
+
+  /// ---------------------------------------- Formatting ----------------------------------------  \\\
   ///  Change film type (movie → Movie)  \\\
   fixFilmType(filmType: string) {
     if (!filmType) return '';
@@ -446,66 +561,6 @@ export class FilmInformationComponent implements OnInit {
   private get isTvLike(): boolean {
     const t = (this.combinedApiResult.type || '').toLowerCase();
     return t === 'series' || t === 'episode';
-  }
-
-    private parseRuntimeToMinutes(input: unknown): number {
-    if (typeof input === 'number' && Number.isFinite(input)) return Math.max(0, input);
-    const s = String(input ?? '').trim();
-    if (!s || /^(n\/a|na|unknown)$/i.test(s)) return 0;
-
-    // Range like "45–60 min" or "45-60m" -> use the upper bound
-    const range = s.match(/(\d+)\s*[-–]\s*(\d+)/);
-    if (range) return Math.max(0, parseInt(range[2], 10) || 0);
-
-    // "1 h 52 min", "1h52m", "2h", "130m"
-    const hours = s.match(/(\d+)\s*h(?:ours?)?/i);
-    const mins  = s.match(/(\d+)\s*m(?:in(?:utes?)?)?/i);
-    if (hours || mins) {
-      const h = hours ? parseInt(hours[1], 10) : 0;
-      const m = mins  ? parseInt(mins[1], 10)  : 0;
-      return Math.max(0, h * 60 + m);
-    }
-
-    // Plain "112" or "112 min"
-    const firstNum = s.match(/\d+/)?.[0];
-    return Math.max(0, firstNum ? parseInt(firstNum, 10) : 0);
-  }
-
-  get runtimeMinutes(): number {
-    // Prefer a numeric property if your model provides one
-    const nLike =
-      (this.combinedApiResult as any)?.runTime ??            // your field
-      (this.combinedApiResult as any)?.runtimeMinutes ??     // alt naming
-      (this.combinedApiResult as any)?.runtime_min ??        // another common variant
-      null;
-
-    if (Number.isFinite(nLike)) return Math.max(0, Number(nLike));
-
-    // Fallback to strings like "112 min", "1 h 52 min", etc.
-    const rt = (this.combinedApiResult as any)?.runtime ?? (this.combinedApiResult as any)?.Runtime ?? '';
-    return this.parseRuntimeToMinutes(rt);
-  }
-
-  get runtimeHours(): number {
-    return Math.floor(this.runtimeMinutes / 60);
-  }
-
-  get runtimeMinutesRemainder(): number {
-    return this.runtimeMinutes % 60;
-  }
-
-  ///  Counts for the right card — dynamic per type  \\\
-  get count1Num(): number {
-    return this.isMovie ? this.runtimeHours : this.totalSeasons;
-  }
-  get count1Label(): string {
-    return this.isMovie ? 'Hours' : 'Seasons';
-  }
-  get count2Num(): number {
-    return this.isMovie ? this.runtimeMinutesRemainder : this.totalEpisodes;
-  }
-  get count2Label(): string {
-    return this.isMovie ? 'Minutes' : 'Episodes';
   }
 
   ///  If streaming service logo fails to load remove it from the list  \\\

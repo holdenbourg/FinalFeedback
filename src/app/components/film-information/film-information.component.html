@@ -10,6 +10,7 @@
         <span class="label">Director:</span>
         <span class="value">{{ directorName }}</span>
       </p>
+
       <p class="row" *ngIf="writerNames.length > 0">
         <span class="label">{{ writerNames.length > 1 ? 'Writers:' : 'Writer:' }}</span>
         <span class="value">{{ formatWritersText(writerNames) }}</span>
@@ -56,6 +57,7 @@
 
           <div class="meta">
             <span class="badge" *ngIf="f.rated">{{ f.rated }}</span>
+
             <span class="badge" *ngIf="(f.genre || '').length">
               {{ (f.genre || '').split(', ').join(' • ') }}
             </span>
@@ -63,11 +65,12 @@
         </div>
 
         <div class="film-counts">
-          <div class="count">
+          <div class="count" *ngIf="runtimeHours !== 0 || totalSeasons !== 0">
             <div class="count-num">{{ count1Num }}</div>
             <div class="count-label">{{ count1Label }}</div>
           </div>
-          <div class="count">
+
+          <div class="count" *ngIf="runtimeMinutesRemainder !== 0 || totalEpisodes !== 0">
             <div class="count-num">{{ count2Num }}</div>
             <div class="count-label">{{ count2Label }}</div>
           </div>
@@ -76,10 +79,12 @@
 
       <img
         class="film-poster"
-        [src]="f.poster"
+        [src]="posterSrc"
         [attr.alt]="f.title || 'Poster'"
+        (error)="setFallback($event)"
         loading="lazy"
-        decoding="async" />
+        decoding="async"
+        />
     </div>
 
     <div class="streaming-on">
@@ -115,45 +120,58 @@
       <div class="ratings">
         <div class="ratings-item imdb-rating">
           <a class="logo-link"
-             [attr.href]="imdbUrl || null"
-             [class.is-disabled]="!imdbUrl"
-             target="_blank" rel="noopener noreferrer"
-             aria-label="Open on IMDb">
-            <img class="imdb-img"
-                 src="https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg"
-                 alt="IMDb" />
+            [attr.href]="imdbUrl || null"
+            [class.is-disabled]="!imdbUrl"
+            target="_blank" rel="noopener noreferrer"
+            aria-label="Open on IMDb"
+          >
+            
+            <img 
+              class="imdb-img"
+              src="https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg"
+              alt="IMDb" 
+            />
           </a>
+
           <p class="score">{{ getRatingValue(0) }}</p>
         </div>
 
         <div class="ratings-item rotten-tomatoes-rating">
           <a class="logo-link"
-             [attr.href]="rottenTomatoesUrl || null"
-             [class.is-disabled]="!rottenTomatoesUrl"
-             target="_blank" rel="noopener noreferrer"
-             aria-label="Open on Rotten Tomatoes">
-            <img class="rotten-tomatoes-img"
-                 src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Rotten_Tomatoes_logo.svg"
-                 alt="Rotten Tomatoes" />
+            [attr.href]="rottenTomatoesUrl || null"
+            [class.is-disabled]="!rottenTomatoesUrl"
+            target="_blank" rel="noopener noreferrer"
+            aria-label="Open on Rotten Tomatoes"
+          >
+            <img 
+              class="rotten-tomatoes-img"
+              src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Rotten_Tomatoes_logo.svg"
+              alt="Rotten Tomatoes"
+            />
           </a>
+
           <p class="score">{{ getRatingValue(1) }}</p>
         </div>
 
         <div class="ratings-item metacritic-rating">
           <a class="logo-link"
-             [attr.href]="metacriticUrl || null"
-             [class.is-disabled]="!metacriticUrl"
-             target="_blank" rel="noopener noreferrer"
-             aria-label="Open on Metacritic">
-            <img class="metacritic-img"
-                 src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Metacritic_logo_original.svg"
-                 alt="Metacritic" />
+            [attr.href]="metacriticUrl || null"
+            [class.is-disabled]="!metacriticUrl"
+            target="_blank" rel="noopener noreferrer"
+            aria-label="Open on Metacritic"
+          >
+            <img 
+              class="metacritic-img"
+              src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Metacritic_logo_original.svg"
+              alt="Metacritic" 
+            />
           </a>
+
           <p class="score">{{ getRatingValue(2) }}</p>
         </div>
       </div>
 
-      <button type="button" class="rate-button" (click)="onRateThisFilm()">Rate "{{ fixFilmType(combinedApiResult.title ?? '') }}"</button>
+      <button type="button" class="rate-button" *ngIf="f.released && showButton(f.released)" (click)="onRateThisFilm()">Rate "{{ f.title }}"</button>
     </div>
   </div>
 </div>

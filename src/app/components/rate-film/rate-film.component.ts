@@ -30,7 +30,7 @@ export class RateFilmComponent implements OnInit {
   imdbId = '';
   film: CombinedFilmApiResponseModel | null = null;
 
-  // Criteria
+  ///  Rating Criteria  \\\
   private seriesCriteria: RatingCriterion[] = [
     { key: 'acting',  label: 'Acting',  explanation: 'How would you rate the level of acting throughout this series?' },
     { key: 'visuals', label: 'Visuals', explanation: 'How captivating were the visuals this series offered?' },
@@ -39,7 +39,6 @@ export class RateFilmComponent implements OnInit {
     { key: 'length',  label: 'Length',  explanation: 'How would you rate this series length? Did it feel too long?' },
     { key: 'ending',  label: 'Ending',  explanation: 'How impactful was the ending to this story? Were you satisfied?' },
   ];
-
   private movieCriteria: RatingCriterion[] = [
     { key: 'acting',  label: 'Acting',  explanation: 'How would you rate the level of acting in this movie?' },
     { key: 'visuals', label: 'Visuals', explanation: 'How captivating were the visuals this movie offered?' },
@@ -52,7 +51,7 @@ export class RateFilmComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     this.imdbId = this.activatedRoute.snapshot.params['imdbId'];
 
-    // 1) Try navigation state (no storage hop)
+    ///  1) Try navigation state (no storage hop)  \\\
     const fromState = (this.router.getCurrentNavigation()?.extras?.state as any)?.film ?? (history.state?.film ?? null);
     if (fromState) {
       this.film = fromState;
@@ -60,48 +59,19 @@ export class RateFilmComponent implements OnInit {
       return;
     }
 
-    // 2) Try cache (refresh-safe)
+    ///  2) Try cache (refresh-safe)  \\\
     const cached = this.filmCache.get(this.imdbId);
     if (cached) {
       this.film = cached;
       return;
     }
 
-    // 3) Fallback to API
+    ///  3) Fallback to API  \\\
     this.film = await this.filmCache.getOrFetch(this.imdbId, () => this.apiService.getFilmOmdb(this.imdbId));
   }
 
-  // ---------- UI helpers ----------
-  get isMovie(): boolean { 
-    return (this.film?.type ?? '').toLowerCase() === 'movie'; 
-  }
-  get isSeries(): boolean { 
-    return (this.film?.type ?? '').toLowerCase() === 'series'; 
-  }
 
-  get titleText(): string {
-    return this.isMovie ? 'Rate the movie on the following aspects' : 'Rate the series on the following aspects';
-  }
-
-  get criteria(): RatingCriterion[] {
-    return this.isMovie ? this.movieCriteria : this.seriesCriteria;
-  }
-
-  // Counts for the right card — dynamic per type
-  get count1Num(): number {
-    return this.isMovie ? this.runtimeHours : this.totalSeasons;
-  }
-  get count1Label(): string {
-    return this.isMovie ? 'Hours' : 'Seasons';
-  }
-  get count2Num(): number {
-    return this.isMovie ? this.runtimeMinutesRemainder : this.totalEpisodes;
-  }
-  get count2Label(): string {
-    return this.isMovie ? 'Minutes' : 'Episodes';
-  }
-
-  // ---------- Save handler ----------
+  //!  CHANGE TO USE CACHE TO PASS THE RATING MOVIE/SERIES (LIKE YOU PASS IT TO THIS COMPONENT)  !\\
   onRated(result: RateResult) {
     if (!this.film) return;
 
@@ -166,7 +136,40 @@ export class RateFilmComponent implements OnInit {
     this.routingService.navigateToPostSeries(ratedSeries.postId);
   }
 
-  // ---------- Series helpers ----------
+
+  /// ---------------------------------------- Helpers ----------------------------------------  \\\
+  ///  Returns true if film is specified type, false if not \\\
+  get isMovie(): boolean { 
+    return (this.film?.type ?? '').toLowerCase() === 'movie'; 
+  }
+  get isSeries(): boolean { 
+    return (this.film?.type ?? '').toLowerCase() === 'series'; 
+  }
+
+  ///  Dynamic title for rating criteris  \\\
+  get titleText(): string {
+    return this.isMovie ? 'Rate the movie on the following aspects' : 'Rate the series on the following aspects';
+  }
+
+  ///  Dynamic criteria for rating (movie vs series)  \\\
+  get criteria(): RatingCriterion[] {
+    return this.isMovie ? this.movieCriteria : this.seriesCriteria;
+  }
+
+  ///  Dynmaic counts for Movie/Series (Count 1: Hours/Seasons - Count 2: Minutes/Episodes)  \\\
+  get count1Num(): number {
+    return this.isMovie ? this.runtimeHours : this.totalSeasons;
+  }
+  get count1Label(): string {
+    return this.isMovie ? 'Hours' : 'Seasons';
+  }
+  get count2Num(): number {
+    return this.isMovie ? this.runtimeMinutesRemainder : this.totalEpisodes;
+  }
+  get count2Label(): string {
+    return this.isMovie ? 'Minutes' : 'Episodes';
+  }
+
   get totalSeasons(): number {
     const list = this.film?.seasons ?? [];
     return list.filter(season => (season?.episode_count ?? 0) > 0).length;
