@@ -1,5 +1,4 @@
 <div class="container">
-  <!-- Left: rating widget -->
   <div class="left-side">
     <app-rate-item
       #rater
@@ -9,7 +8,6 @@
     </app-rate-item>
   </div>
 
-  <!-- Right: film info + bottom warning & buttons -->
   <div class="right-side" *ngIf="film as f">
     <div class="film-information">
       <div class="film-text">
@@ -19,6 +17,7 @@
 
         <div class="meta">
           <span class="badge" *ngIf="f.rated">{{ f.rated }}</span>
+
           <span class="badge" *ngIf="(f.genre || '').length">
             {{ (f.genre || '').split(', ').join(' • ') }}
           </span>
@@ -29,6 +28,7 @@
             <div class="count-num">{{ count1Num }}</div>
             <div class="count-label">{{ count1Label }}</div>
           </div>
+          
           <div class="count">
             <div class="count-num">{{ count2Num }}</div>
             <div class="count-label">{{ count2Label }}</div>

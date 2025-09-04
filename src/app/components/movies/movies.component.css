@@ -1,0 +1,132 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
+
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+    font-family: "Poppins", sans-serif; 
+}
+
+:host {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: url('/assets/images/shaded-background.jpg');
+}
+
+/* Sidebar */
+.sidebar {
+  position: fixed; top: 0; left: 0; width: 80px; height: 100%;
+  background: transparent; backdrop-filter: blur(3px);
+  border-right: .15vw solid rgba(255,255,255,.2);
+  box-shadow: 0 0 10px rgba(0,0,0,.2);
+  padding: 6px 14px; transition: .5s;
+}
+.sidebar.active { width: 260px; }
+.sidebar .logo-menu { display: flex; align-items: center; width: 100%; height: 70px; }
+.sidebar .logo-menu .logo { font-size: 25px; color: #fff; opacity: 0; transition: .3s; pointer-events: none; }
+.sidebar.active .logo-menu .logo { opacity: 1; transition-delay: .2s; }
+.sidebar .logo-menu .toggle-button {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  width: 40px; height: 40px; font-size: 22px; color: #fff; text-align: center; line-height: 40px; cursor: pointer; transition: .5s;
+}
+.sidebar.active .logo-menu .toggle-button { left: 90%; }
+.sidebar .list { margin-top: 10px; }
+.list .list-item { list-style: none; width: 100%; height: 50px; margin: 5px 0; line-height: 50px; cursor: pointer; }
+.list .list-item a {
+  display: flex; align-items: center; font-size: 18px; color: #fff; text-decoration: none; border-radius: 6px; white-space: nowrap; transition: .5s;
+}
+.list .list-item.active a, .list .list-item a:hover { background: rgba(255,255,255,.2); }
+.list .list-item a i { min-width: 50px; height: 50px; text-align: center; line-height: 50px; }
+.sidebar .link-name { opacity: 0; pointer-events: none; transition: opacity .3s; }
+.sidebar.active .link-name { opacity: 1; pointer-events: auto; transition-delay: calc(.1s * var(--i)); }
+.username {
+  position: absolute; padding: 0 10px 15px; list-style: none; bottom: 0;
+  font-size: 20px; font-weight: 500; color: #fff;
+}
+
+/* Main container */
+.container {
+  position: absolute; left: 300px; right: 40px; top: 40px; bottom: 40px;
+  display: flex; flex-direction: row; justify-content: space-between; transition: .5s;
+}
+.container.active { left: 120px; }
+
+/* Left pane */
+.left-side {
+  width: 48.75%; height: 100%;
+  border: .2vw solid #fff; border-radius: 5px; backdrop-filter: blur(3px); transition: .5s; position: relative;
+}
+.left-side.empty { display: flex; align-items: center; justify-content: center; }
+.empty-text { color: #fff; font-size: 1.5vw; font-weight: 600; }
+
+.top-information { display: flex; flex-direction: row; height: 55%; }
+.film-poster {
+  padding-top: 10px; padding-left: 10px; width: 16.1vw; height: 23.5vw; border-radius: 5px; object-fit: cover;
+}
+.title { line-height: 2.75vw; font-size: 2.5vw; color: #fff; font-weight: 600; padding-bottom: 10px; }
+.film-text {
+  margin: 20px; text-align: left; font-size: 1.82vw; line-height: 2vw; color: #fff; font-weight: 500;
+}
+
+.bottom-information {
+  position: absolute; bottom: 0; display: flex; flex-direction: row; justify-content: space-between;
+  width: 100%; height: 45%;
+}
+
+.film-ratings { display: flex; flex-direction: row; position: absolute; bottom: 20px; padding: 20px; font-size: 1.82vw; color: #fff; font-weight: 600; line-height: 2.4vw; }
+.rating-scores { text-align: right; }
+.ovr-rating { margin-top: 5px; }
+
+.button {
+  width: 100%; height: 2.2vw; background: transparent; border: .15vw solid #fff;
+  backdrop-filter: blur(10px); box-shadow: 0 0 30px rgba(0,0,0,.5);
+  outline: none; border-radius: 6px; cursor: pointer; font-size: 1.2vw; color: #fff; font-weight: 500;
+}
+
+.date-rated {
+  position: absolute; right: 20px; bottom: 20px; margin-left: 40%;
+  text-align: right; font-size: 1.56vw; color: #fff; font-weight: 500; line-height: 2.7vw; width: auto;
+}
+
+/* Right pane */
+.rated-films-container {
+  display: flex; flex-direction: column; border: .2vw solid #fff; border-radius: 5px; height: 100%; width: 48.75%;
+  backdrop-filter: blur(3px); overflow: hidden;
+}
+
+.input-box {
+  margin: 0 20px; height: 2.5vw; border-bottom: .15vw solid #fff; transition: .5s; position: relative;
+}
+.input-box label {
+  position: absolute; left: 5px; top: 50%; transform: translateY(-50%);
+  font-size: .9vw; color: #fff; font-weight: 500; pointer-events: none; transition: .2s;
+}
+.input-box input:focus ~ label,
+.input-box input:not(:placeholder-shown) ~ label { color: transparent; }
+.input-box input {
+  height: 100%; width: 100%; background: transparent; border: none; outline: none;
+  font-size: 1em; color: #fff; font-weight: 600; padding: 0 35px 0 5px;
+}
+
+.scroll-box {
+  margin-right: 6.5px; height: 100%; overflow-y: auto;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, black var(--top-mask-size, 0), black calc(100% - var(--bottom-mask-size, 0)), transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, black var(--top-mask-size, 0), black calc(100% - var(--bottom-mask-size, 0)), transparent 100%);
+  --top-mask-size: 10px; --bottom-mask-size: 0px;
+}
+.rated-films { padding: 0 6px 0 20px; }
+.scroll-box::-webkit-scrollbar { width: 0.5em; }
+.scroll-box::-webkit-scrollbar-thumb { background: white; border-radius: 0.25em; cursor: pointer; }
+
+.rated-film { cursor: pointer; }
+
+.no-rated-movies {
+  margin-top: 25px; display: flex; flex-direction: column; text-align: center; width: 100%;
+}
+.no-rated-movies p { color: #fff; font-size: 1.5vw; font-weight: 600; }
+.no-rated-movies button {
+  width: 60%; height: 2.2vw; background: transparent; border: .15vw solid #fff; backdrop-filter: blur(10px);
+  box-shadow: 0 0 30px rgba(0,0,0,.5); outline: none; border-radius: 6px; cursor: pointer; font-size: 1.2vw; color: #fff; font-weight: 500; margin: auto;
+}

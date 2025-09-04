@@ -1,1 +1,145 @@
-<p>movies works!</p>
+<body>
+  <nav class="sidebar" [class.active]="sidebarActive()">
+    <div class="logo-menu">
+      <h2 class="logo">Movies</h2>
+      <i class="bx bx-menu toggle-button" (click)="toggleSidebar()" aria-label="Toggle sidebar"></i>
+    </div>
+
+    <ul class="list">
+      <li class="list-item">
+        <a (click)="this.routingService.navigateToHome()">
+          <i class="bx bx-home-alt"></i>
+          <span class="link-name" style="--i:3;">Home</span>
+        </a>
+      </li>
+      <li class="list-item">
+        <a (click)="this.routingService.navigateToSearchMovies()">
+          <i class="bx bx-search"></i>
+          <span class="link-name" style="--i:2;">Search</span>
+        </a>
+      </li>
+      <li class="list-item active">
+        <a (click)="this.routingService.navigateToMovies()">
+          <i class="bx bx-camera-movie"></i>
+          <span class="link-name" style="--i:1;">Movies</span>
+        </a>
+      </li>
+      <li class="list-item">
+        <a (click)="this.routingService.navigateToShows()">
+          <i class="bx bx-collection"></i>
+          <span class="link-name" style="--i:2;">Shows</span>
+        </a>
+      </li>
+      <li class="list-item">
+        <a (click)="this.routingService.navigateToSummary()">
+          <i class="bx bx-bar-chart-alt-2"></i>
+          <span class="link-name" style="--i:3;">Summary</span>
+        </a>
+      </li>
+      <li class="list-item">
+        <a (click)="this.routingService.navigateToAccountsPosts(currentUser.username)">
+          <i class="bx bx-user"></i>
+          <span class="link-name" style="--i:4;">Account</span>
+        </a>
+      </li>
+      <li class="list-item">
+        <a (click)="this.routingService.navigateToSettings()">
+          <i class="bx bx-cog"></i>
+          <span class="link-name" style="--i:5;">Settings</span>
+        </a>
+      </li>
+      <li class="username">
+        <p class="link-name" style="--i:6;">Signed in as:</p>
+        <p class="link-name" style="--i:6;">{{ currentUser.username }}</p>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="container" [class.active]="sidebarActive() === false">
+    <div class="left-side" *ngIf="activeMovie as am; else noSelection">
+      <div class="top-information" *ngIf="am.dateRated">
+        <img
+            class="film-poster"
+            [src]="posterSrc"
+            [attr.alt]="activeMovie.title || 'Poster'"
+            (error)="setFallback($event)"
+            loading="lazy"
+            decoding="async"
+        />
+
+        <div class="film-text">
+          <p class="title">{{ am.title }}</p>
+          <p class="release">{{ formatLongDate(am.releaseDate) }}</p>
+          <p class="runtime">{{ fixRuntime(am.runTime) }}</p>
+          <p class="film-rating">{{ am.rated }}</p>
+        </div>
+      </div>
+
+      <div class="bottom-information" *ngIf="am.dateRated">
+        <div class="film-ratings">
+          <div class="rating-titles">
+            <p>Acting:</p>
+            <p>Visuals:</p>
+            <p>Story:</p>
+            <p>Pacing:</p>
+            <p>Climax:</p>
+            <p>Ending:</p>
+            <p class="ovr-rating">Rating:</p>
+          </div>
+          <div class="rating-scores">
+            <p>{{ am.acting }}</p>
+            <p>{{ am.visuals }}</p>
+            <p>{{ am.story }}</p>
+            <p>{{ am.pacing }}</p>
+            <p>{{ am.climax }}</p>
+            <p>{{ am.ending }}</p>
+            <p class="ovr-rating">{{ am.rating }}</p>
+          </div>
+        </div>
+
+        <div class="date-rated">
+          <p>Rated: {{ formatLongDate(am.dateRated) }}</p>
+          <button type="button" class="button" (click)="onEdit(am)">Edit Rating</button>
+          <button type="button" class="button" (click)="onDelete(am)">Delete Rating</button>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #noSelection>
+      <div class="left-side empty">
+        <p class="empty-text">Select a movie from the list to see details.</p>
+      </div>
+    </ng-template>
+
+    <div class="rated-films-container">
+      <div class="seach-bar">
+        <div class="input-box">
+          <input
+            type="text"
+            [(ngModel)]="searchInput"
+            name="searchInput"
+            autocomplete="off"
+            aria-label="Search rated movies"
+            required
+          />
+          <label>What are you looking for?</label>
+        </div>
+      </div>
+
+      <div class="scroll-box">
+        <div class="rated-films" *ngIf="filteredRatedMovies().length; else noRatedMovies">
+          <div class="rated-film" *ngFor="let movie of filteredRatedMovies(); trackBy: trackByPostId" (click)="onRatedFilmClicked(movie)">
+            <app-rated-film [ratedFilm]="movie"></app-rated-film> 
+          </div>
+        </div>
+
+        <ng-template #noRatedMovies>
+          <div class="no-rated-movies">
+            <p>You don’t have any ratings yet</p>
+            <button type="button" (click)="this.routingService.navigateToSearchMovies()">Find Movie To Rate</button>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</body>

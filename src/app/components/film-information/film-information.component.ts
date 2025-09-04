@@ -272,7 +272,7 @@ export class FilmInformationComponent implements OnInit {
 
   ///  Derived counts for Series  \\\
   get totalSeasons(): number {
-    const list = this.combinedApiResult.seasons ?? [];
+    const list = this.combinedApiResult?.seasons ?? [];
     const fromList = list.filter(s => (s?.episode_count ?? 0) > 0).length;
 
     return fromList;
@@ -288,7 +288,7 @@ export class FilmInformationComponent implements OnInit {
   }
 
   get totalEpisodes(): number {
-    const list = this.combinedApiResult.seasons ?? [];
+    const list = this.combinedApiResult?.seasons ?? [];
 
     return list.reduce((acc, s: any) => acc + (s?.episode_count ?? 0), 0);
   }
@@ -303,6 +303,19 @@ export class FilmInformationComponent implements OnInit {
   }
 
   ///  Derived counts for Movie  \\\
+  get runtimeHours(): number {
+    return Math.floor(this.runtimeMinutes / 60);
+  }
+  get hoursLabel(): string {
+    if (!this.isMovie) return 'N/A';
+
+    const n = this.runtimeHours;
+
+    if (!n) return 'N/A';
+
+    return n === 1 ? 'Hour' : 'Hours';
+  }
+
   private parseRuntimeToMinutes(input: unknown): number {
     if (typeof input === 'number' && Number.isFinite(input)) return Math.max(0, input);
 
@@ -330,7 +343,6 @@ export class FilmInformationComponent implements OnInit {
 
     return Math.max(0, firstNum ? parseInt(firstNum, 10) : 0);
   }
-
   get runtimeMinutes(): number {
     const nLike =
       (this.combinedApiResult as any)?.runTime ??
@@ -344,20 +356,6 @@ export class FilmInformationComponent implements OnInit {
 
     return this.parseRuntimeToMinutes(rt);
   }
-
-  get runtimeHours(): number {
-    return Math.floor(this.runtimeMinutes / 60);
-  }
-  get hoursLabel(): string {
-    if (!this.isMovie) return 'N/A';
-
-    const n = this.runtimeHours;
-
-    if (!n) return 'N/A';
-
-    return n === 1 ? 'Hour' : 'Hours';
-  }
-
   get runtimeMinutesRemainder(): number {
     return this.runtimeMinutes % 60;
   }
@@ -371,7 +369,7 @@ export class FilmInformationComponent implements OnInit {
     return n === 1 ? 'Minute' : 'Minutes';
   }
 
-  ///  Counts for the right card — dynamic per type  \\\
+  ///  Dynmaic counts for Movie/Series (Count 1: Hours/Seasons - Count 2: Minutes/Episodes)  \\\
   get count1Num(): number {
     return this.isMovie ? this.runtimeHours : this.totalSeasons;
   }

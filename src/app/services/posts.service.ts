@@ -111,6 +111,7 @@ export class PostsService {
             }
 
             return ratedMovieId;
+            
         } else if (type === 's') {
             let allRatedSeries: RatedSeriesModel[] = this.localStorageService.getInformation('rated-series');
 

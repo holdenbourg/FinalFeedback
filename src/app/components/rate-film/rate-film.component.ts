@@ -10,6 +10,7 @@ import { FilmCacheService } from '../../services/film-cache.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { RoutingService } from '../../services/routing.service';
 import { RateItemComponent, RatingCriterion, RateResult } from '../templates/rate-item/rate-item.component';
+import { PostsService } from '../../services/posts.service';
 
 @Component({
   selector: 'app-rate-film',
@@ -24,6 +25,7 @@ export class RateFilmComponent implements OnInit {
   private localStorageService = inject(LocalStorageService);
   private routingService = inject(RoutingService);
   private filmCache = inject(FilmCacheService);
+  private postsService = inject(PostsService);
   private router = inject(Router);
 
   currentUser: AccountInformationModel = this.localStorageService.getInformation('currentUser');
@@ -84,7 +86,7 @@ export class RateFilmComponent implements OnInit {
 
     if (this.isMovie) {
       const ratedMovie: RatedMovieModel = {
-        postId: this.generateUniqueMoviePostId(),
+        postId: this.postsService.generateUniquePostId('m')!,
         poster,
         title,
         releaseDate: this.alterReleaseForDatabase(released),
@@ -106,12 +108,13 @@ export class RateFilmComponent implements OnInit {
 
       this.localStorageService.setInformation('currentPostMovie', ratedMovie);
       this.routingService.navigateToPostMovie(ratedMovie.postId);
+
       return;
     }
 
     // Series
     const ratedSeries: RatedSeriesModel = {
-      postId: this.generateUniqueSeriesPostId(),
+      postId: this.postsService.generateUniquePostId('s')!,
       poster,
       title,
       releaseDate: this.alterReleaseForDatabase(released),
@@ -156,112 +159,149 @@ export class RateFilmComponent implements OnInit {
     return this.isMovie ? this.movieCriteria : this.seriesCriteria;
   }
 
-  ///  Dynmaic counts for Movie/Series (Count 1: Hours/Seasons - Count 2: Minutes/Episodes)  \\\
-  get count1Num(): number {
-    return this.isMovie ? this.runtimeHours : this.totalSeasons;
-  }
-  get count1Label(): string {
-    return this.isMovie ? 'Hours' : 'Seasons';
-  }
-  get count2Num(): number {
-    return this.isMovie ? this.runtimeMinutesRemainder : this.totalEpisodes;
-  }
-  get count2Label(): string {
-    return this.isMovie ? 'Minutes' : 'Episodes';
-  }
-
+  ///  Derived counts for Series  \\\
   get totalSeasons(): number {
     const list = this.film?.seasons ?? [];
-    return list.filter(season => (season?.episode_count ?? 0) > 0).length;
+    const fromList = list.filter(s => (s?.episode_count ?? 0) > 0).length;
+
+    return fromList;
   }
+  get seasonsLabel(): string {
+    if (!this.isSeries) return 'N/A';
+
+    const n = this.totalSeasons;
+
+    if (!n) return 'N/A';
+
+    return n === 1 ? 'Season' : 'Seasons';
+  }
+
   get totalEpisodes(): number {
     const list = this.film?.seasons ?? [];
-    return list.reduce((acc, season: any) => acc + (season?.episode_count ?? 0), 0);
+
+    return list.reduce((acc, s: any) => acc + (s?.episode_count ?? 0), 0);
+  }
+  get episodesLabel(): string {
+    if (!this.isSeries) return 'N/A';
+
+    const n = this.totalEpisodes;
+
+    if (!n) return 'N/A';
+
+    return n === 1 ? 'Episode' : 'Episodes';
   }
 
-  // ---------- Movie runtime helpers ----------
+  ///  Derived counts for Movie  \\\
+  get runtimeHours(): number {
+    return Math.floor(this.runtimeMinutes / 60);
+  }
+  get hoursLabel(): string {
+    if (!this.isMovie) return 'N/A';
+
+    const n = this.runtimeHours;
+
+    if (!n) return 'N/A';
+
+    return n === 1 ? 'Hour' : 'Hours';
+  }
+
   private parseRuntimeToMinutes(input: unknown): number {
     if (typeof input === 'number' && Number.isFinite(input)) return Math.max(0, input);
+
     const s = String(input ?? '').trim();
+
     if (!s || /^(n\/a|na|unknown)$/i.test(s)) return 0;
 
-    // Range like "45–60 min" or "45-60m" -> use the upper bound
+    ///  Range like "45–60 min" or "45-60m" -> use the upper bound  \\\
     const range = s.match(/(\d+)\s*[-–]\s*(\d+)/);
+
     if (range) return Math.max(0, parseInt(range[2], 10) || 0);
 
-    // "1 h 52 min", "1h52m", "2h", "130m"
+    ///  "1 h 52 min", "1h52m", "2h", "130m"  \\\
     const hours = s.match(/(\d+)\s*h(?:ours?)?/i);
     const mins  = s.match(/(\d+)\s*m(?:in(?:utes?)?)?/i);
+
     if (hours || mins) {
       const h = hours ? parseInt(hours[1], 10) : 0;
       const m = mins  ? parseInt(mins[1], 10)  : 0;
       return Math.max(0, h * 60 + m);
     }
 
-    // Plain "112" or "112 min"
+    ///  Plain "112" or "112 min"  \\\
     const firstNum = s.match(/\d+/)?.[0];
+
     return Math.max(0, firstNum ? parseInt(firstNum, 10) : 0);
   }
-
   get runtimeMinutes(): number {
-    // Prefer a numeric property if your model provides one
     const nLike =
-      (this.film as any)?.runTime ??            // your field
-      (this.film as any)?.runtimeMinutes ??     // alt naming
-      (this.film as any)?.runtime_min ??        // another common variant
+      (this.film as any)?.runTime ??
+      (this.film as any)?.runtimeMinutes ??
+      (this.film as any)?.runtime_min ??
       null;
 
     if (Number.isFinite(nLike)) return Math.max(0, Number(nLike));
 
-    // Fallback to strings like "112 min", "1 h 52 min", etc.
     const rt = (this.film as any)?.runtime ?? (this.film as any)?.Runtime ?? '';
+
     return this.parseRuntimeToMinutes(rt);
   }
-
-  get runtimeHours(): number {
-    return Math.floor(this.runtimeMinutes / 60);
-  }
-
   get runtimeMinutesRemainder(): number {
     return this.runtimeMinutes % 60;
   }
+  get minutesLabel(): string {
+    if (!this.isMovie) return 'N/A';
 
-  // ---------- IDs ----------
-  generateUniqueSeriesPostId() {
-    const allRated: RatedSeriesModel[] = this.localStorageService.getInformation('ratedSeries') ?? [];
-    let id = 's' + Math.random().toString(16).slice(2);
-    while (allRated.some(s => s.postId === id)) id = 's' + Math.random().toString(16).slice(2);
-    return id;
-  }
-  generateUniqueMoviePostId() {
-    const allRated: RatedMovieModel[] = this.localStorageService.getInformation('ratedMovies') ?? [];
-    let id = 'm' + Math.random().toString(16).slice(2);
-    while (allRated?.some?.(m => m.postId === id)) id = 'm' + Math.random().toString(16).slice(2);
-    return id;
+    const n = this.runtimeMinutesRemainder;
+
+    if (!n) return 'N/A';
+
+    return n === 1 ? 'Minute' : 'Minutes';
   }
 
-  // ---------- Dates & display ----------
+  ///  Dynmaic counts for Movie/Series (Count 1: Hours/Seasons - Count 2: Minutes/Episodes)  \\\
+  get count1Num(): number {
+    return this.isMovie ? this.runtimeHours : this.totalSeasons;
+  }
+  get count1Label(): string {
+    return this.isMovie ? this.hoursLabel : this.seasonsLabel;
+  }
+  get count2Num(): number {
+    return this.isMovie ? this.runtimeMinutesRemainder : this.totalEpisodes;
+  }
+  get count2Label(): string {
+    return this.isMovie ? 'Minutes' : this.episodesLabel;
+  }
+
+
+  /// ---------------------------------------- Formatting ----------------------------------------  \\\
   alterReleaseForDatabase(releaseDate: string) {
     if (!releaseDate || releaseDate.length < 4) return releaseDate || '';
-    // Handles "18 Dec 2009" or "2009" gracefully
+
+    ///  Handles "18 Dec 2009" or "2009" gracefully  \\\
     if (releaseDate.length >= 11) {
       const day = releaseDate.substring(0,2);
       let month = releaseDate.substring(3,6);
       const year = releaseDate.substring(7);
+
       const map: Record<string,string> = { Jan:'01', Feb:'02', Mar:'03', Apr:'04', May:'05', Jun:'06', Jul:'07', Aug:'08', Sep:'09', Oct:'10', Nov:'11', Dec:'12' };
       month = map[month] ?? '01';
+
       return `${year}-${month}-${day}`;
     }
-    return releaseDate; // keep as-is if it's only a year
+
+    return releaseDate;
   }
 
   fixRelease(releaseDate: string) {
     if (!releaseDate || releaseDate.length < 11) return releaseDate || '';
+
     const day = releaseDate.substring(0,2);
     let month = releaseDate.substring(3,6);
     const year = releaseDate.substring(7);
+
     const map: Record<string,string> = { Jan:'January', Feb:'February', Mar:'March', Apr:'April', May:'May', Jun:'June', Jul:'July', Aug:'August', Sep:'September', Oct:'October', Nov:'November', Dec:'December' };
     month = map[month] ?? month;
+    
     return `${month} ${day}, ${year}`;
   }
 }

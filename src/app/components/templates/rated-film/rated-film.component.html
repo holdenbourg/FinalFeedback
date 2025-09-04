@@ -1,0 +1,15 @@
+<div class="film-details-card" role="button" tabindex="0">
+    <img
+        class="film-poster"
+        [src]="posterSrc"
+        [attr.alt]="ratedFilm.title || 'Poster'"
+        (error)="setFallback($event)"
+        loading="lazy"
+        decoding="async"
+    />
+
+    <div class="film-details">
+        <p class="film-title">{{ ratedFilm.title }}</p>
+        <p class="film-rating" aria-label="Rating">{{ ratedFilm.rating }}</p>
+    </div>
+</div>
