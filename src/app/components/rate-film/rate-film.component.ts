@@ -19,6 +19,7 @@ import { PostsService } from '../../services/posts.service';
   templateUrl: './rate-film.component.html',
   styleUrl: './rate-film.component.css'
 })
+
 export class RateFilmComponent implements OnInit {
   private apiService = inject(ApiService);
   private activatedRoute = inject(ActivatedRoute);
@@ -269,7 +270,7 @@ export class RateFilmComponent implements OnInit {
     return this.isMovie ? this.runtimeMinutesRemainder : this.totalEpisodes;
   }
   get count2Label(): string {
-    return this.isMovie ? 'Minutes' : this.episodesLabel;
+    return this.isMovie ? this.minutesLabel : this.episodesLabel;
   }
 
 

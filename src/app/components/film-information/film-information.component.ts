@@ -380,7 +380,7 @@ export class FilmInformationComponent implements OnInit {
     return this.isMovie ? this.runtimeMinutesRemainder : this.totalEpisodes;
   }
   get count2Label(): string {
-    return this.isMovie ? 'Minutes' : this.episodesLabel;
+    return this.isMovie ?  this.minutesLabel : this.episodesLabel;
   }
 
 
