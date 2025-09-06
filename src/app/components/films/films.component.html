@@ -8,60 +8,66 @@
     <li class="list-item">
       <a (click)="routingService.navigateToHome()">
         <i class="bx bx-home-alt"></i>
-        <span class="link-name" style="--i:3;">Home</span>
+        <span class="link-name" [style.--i]="navDelay(0)">Home</span>
       </a>
     </li>
+
     <li class="list-item">
       <a (click)="routingService.navigateToSearchMovies()">
         <i class="bx bx-search"></i>
-        <span class="link-name" style="--i:2;">Search</span>
+        <span class="link-name" [style.--i]="navDelay(1)">Search</span>
       </a>
     </li>
-    <li class="list-item active">
+
+    <li class="list-item" [class.active]="filmKind()==='movie'">
       <a (click)="routingService.navigateToMovies()">
         <i class="bx bx-camera-movie"></i>
-        <span class="link-name" style="--i:1;">Movies</span>
+        <span class="link-name" [style.--i]="navDelay(2)">Movies</span>
       </a>
     </li>
-    <li class="list-item">
+
+    <li class="list-item" [class.active]="filmKind()==='series'">
       <a (click)="routingService.navigateToShows()">
         <i class="bx bx-collection"></i>
-        <span class="link-name" style="--i:2;">Shows</span>
+        <span class="link-name" [style.--i]="navDelay(3)">Shows</span>
       </a>
     </li>
+
     <li class="list-item">
       <a (click)="routingService.navigateToSummary()">
         <i class="bx bx-bar-chart-alt-2"></i>
-        <span class="link-name" style="--i:3;">Summary</span>
+        <span class="link-name" [style.--i]="navDelay(4)">Summary</span>
       </a>
     </li>
+
     <li class="list-item">
       <a (click)="routingService.navigateToAccountsPosts(currentUser.username)">
         <i class="bx bx-user"></i>
-        <span class="link-name" style="--i:4;">Account</span>
+        <span class="link-name" [style.--i]="navDelay(5)">Account</span>
       </a>
     </li>
+
     <li class="list-item">
       <a (click)="routingService.navigateToSettings()">
         <i class="bx bx-cog"></i>
-        <span class="link-name" style="--i:5;">Settings</span>
+        <span class="link-name" [style.--i]="navDelay(6)">Settings</span>
       </a>
     </li>
 
     <li class="username">
-      <p class="link-name" style="--i:6">Signed in as:</p>
-      <p class="link-name" style="--i:6">{{ currentUser.username }}</p>
+      <p class="link-name" [style.--i]="navDelay(7)">Signed in as:</p>
+      <p class="link-name" [style.--i]="navDelay(7)">{{ currentUser.username }}</p>
     </li>
   </ul>
 </nav>
 
 <div class="container" [class.active]="sidebarActive() === false">
-  <div class="left-side" *ngIf="activeMovie as am; else noSelection">
-    <div class="top-information" *ngIf="am.dateRated">
+  <div class="left-side" *ngIf="activeFilm as af; else noSelection">
+    <div class="top-information" *ngIf="af.dateRated">
       <img
         class="film-poster"
         [src]="posterSrc"
-        [attr.alt]="activeMovie.title || 'Poster'"
+        [attr.alt]="activeFilm.title || 'Poster'"
         (error)="setFallback($event)"
         loading="lazy"
         decoding="async"
@@ -69,14 +75,14 @@
 
       <div class="film-left">
         <div class="film-scroll">
-          <p class="title">{{ activeMovie.title }}</p>
-          <p class="release" *ngIf="activeMovie.releaseDate">{{ formatLongDate(activeMovie.releaseDate) }}</p>
+          <p class="title">{{ activeFilm.title }}</p>
+          <p class="release" *ngIf="activeFilm.releaseDate">{{ formatLongDate(activeFilm.releaseDate) }}</p>
 
           <div class="meta">
-            <span class="badge" *ngIf="activeMovie.rated">{{ activeMovie.rated }}</span>
+            <span class="badge" *ngIf="activeFilm.rated">{{ activeFilm.rated }}</span>
 
-            <span class="badge" *ngIf="(activeMovie.genres || '').length">
-              {{ (activeMovie.genres || '').join(' • ') }}
+            <span class="badge" *ngIf="(activeFilm.genres || '').length">
+              {{ (activeFilm.genres || '').join(' • ') }}
             </span>
           </div>
         </div>
@@ -95,33 +101,33 @@
       </div>
     </div>
 
-    <div class="bottom-information" *ngIf="am.dateRated">
+    <div class="bottom-information" *ngIf="af.dateRated">
       <div class="film-ratings">
         <div class="rating-titles">
           <p>Acting:</p>
           <p>Visuals:</p>
           <p>Story:</p>
           <p>Pacing:</p>
-          <p>Climax:</p>
+          <p>{{ filmKind()==='series' ? 'Length:' : 'Climax:' }}</p>
           <p>Ending:</p>
           <p class="ovr-rating">Total:</p>
         </div>
 
         <div class="rating-scores">
-          <p>{{ am.acting }}</p>
-          <p>{{ am.visuals }}</p>
-          <p>{{ am.story }}</p>
-          <p>{{ am.pacing }}</p>
-          <p>{{ am.climax }}</p>
-          <p>{{ am.ending }}</p>
-          <p class="ovr-rating">{{ am.rating }}</p>
+          <p>{{ af.acting }}</p>
+          <p>{{ af.visuals }}</p>
+          <p>{{ af.story }}</p>
+          <p>{{ af.pacing }}</p>
+          <p>{{ af.kind === 'series' ? (af.length ?? '—') : (af.climax ?? '—') }}</p>
+          <p>{{ af.ending }}</p>
+          <p class="ovr-rating">{{ af.rating }}</p>
         </div>
       </div>
 
       <div class="date-rated">
-        <p>Rated: {{ formatLongDate(am.dateRated) }}</p>
-        <button type="button" class="button" (click)="onEdit(am)">Edit Rating</button>
-        <button type="button" class="button" (click)="onDelete(am)">Delete Rating</button>
+        <p>Rated: {{ formatLongDate(af.dateRated) }}</p>
+        <button type="button" class="button" (click)="onEdit(af)">Edit Rating</button>
+        <button type="button" class="button" (click)="onDelete(af)">Delete Rating</button>
       </div>
     </div>
   </div>
@@ -142,7 +148,7 @@
           (ngModelChange)="searchInput.set($event)"
           name="searchInput"
           autocomplete="off"
-          aria-label="Search rated movies"
+          aria-label="Search rated items"
           placeholder=" "
         />
 
@@ -159,7 +165,7 @@
           <i class="bx bx-filter-alt"></i>
         </button>
 
-        <div class="filter-panel" *ngIf="filtersOpen()">
+        <div class="filter-panel" *ngIf="filtersOpen()" (click)="$event.stopPropagation()">
           <div class="filter-row">
             <span class="filter-heading">Sort by</span>
 
@@ -190,12 +196,18 @@
               </button>
 
               <div class="select-menu" *ngIf="genresOpen()">
-                <div class="option"
-                    *ngFor="let g of userGenres().slice(1)"
-                    (click)="toggleGenre(g)">
-                  <input type="checkbox" [checked]="selectedGenres().has(g)" />
-                  <label>{{ g }}</label>
+                <div
+                  class="option"
+                  *ngFor="let g of userGenres().slice(1)"
+                  (click)="toggleGenre(g)"
+                  [class.selected]="selectedGenres().has(g)"
+                  role="option"
+                  [attr.aria-selected]="selectedGenres().has(g)"
+                >
+                  <span class="tickbox" aria-hidden="true"></span>
+                  <span class="label">{{ g }}</span>
                 </div>
+
                 <div class="select-actions">
                   <button type="button" (click)="clearGenres()">Clear</button>
                   <button type="button" (click)="genresOpen.set(false)">Done</button>
@@ -215,12 +227,18 @@
               </button>
 
               <div class="select-menu" *ngIf="ratedOpen()">
-                <div class="option"
-                    *ngFor="let r of userRatedValues().slice(1)"
-                    (click)="toggleRated(r)">
-                  <input type="checkbox" [checked]="selectedRateds().has(r)" />
-                  <label>{{ r }}</label>
+                <div
+                  class="option"
+                  *ngFor="let r of userRatedValues().slice(1)"
+                  (click)="toggleRated(r)"
+                  [class.selected]="selectedRateds().has(r)"
+                  role="option"
+                  [attr.aria-selected]="selectedRateds().has(r)"
+                >
+                  <span class="tickbox" aria-hidden="true"></span>
+                  <span class="label">{{ r }}</span>
                 </div>
+
                 <div class="select-actions">
                   <button type="button" (click)="clearRateds()">Clear</button>
                   <button type="button" (click)="ratedOpen.set(false)">Done</button>

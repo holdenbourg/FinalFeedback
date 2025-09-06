@@ -4,7 +4,8 @@ import { HomeComponent } from './components/home/home.component';
 import { SearchComponent } from './components/search/search.component';
 import { FilmInformationComponent } from './components/film-information/film-information.component';
 import { RateFilmComponent } from './components/rate-film/rate-film.component';
-import { MoviesComponent } from './components/movies/movies.component';
+import { FilmsComponent } from './components/films/films.component';
+
 
 export const routes: Routes = [
     { path: '', component: LoginRegisterComponent },
@@ -17,8 +18,8 @@ export const routes: Routes = [
     { path: 'series/:imdbId', component: FilmInformationComponent },
     { path: 'rate/:type/:imdbId', component: RateFilmComponent },   ///  movies | series  \\\
 
-    { path: 'movies', component: MoviesComponent },
-
+    { path: 'movies', component: FilmsComponent, data: { kind: 'movie' } },
+    { path: 'shows', component: FilmsComponent, data: { kind: 'series' } },
 
     { path: '**', redirectTo: '' },
 ];

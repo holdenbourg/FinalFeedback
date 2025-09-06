@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, OnInit, inject, signal, computed, HostListener } from "@angular/core";
+import { Component, OnInit, inject, signal, computed, HostListener, ElementRef } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { AccountInformationModel } from "../../models/database-models/account-information-model";
 import { CommentModel } from "../../models/database-models/comment-model";
@@ -10,26 +10,38 @@ import { LocalStorageService } from "../../services/local-storage.service";
 import { RoutingService } from "../../services/routing.service";
 import { RawPostModel } from "../../models/database-models/raw-post-model";
 import { RatedFilmComponent } from "../templates/rated-film/rated-film.component";
+import { RatedSeriesModel } from "../../models/database-models/rated-series-model";
+import { NavigationEnd, Router } from "@angular/router";
+import { filter } from "rxjs/operators";
 
 type SortKey = 'rating' | 'runtime' | 'dateRated' | 'title';
 
+type RatedItem = | (RatedMovieModel & { kind: 'movie' }) | (RatedSeriesModel & { kind: 'series'; length?: number });
+type FilmKind = 'movie' | 'series';
+
+const MOVIE_RATED_ORDER = ['G','PG','PG-13','R','NC-17','NR'];
+const SERIES_RATED_ORDER = ['TV-Y','TV-Y7','TV-Y7-FV','TV-G','TV-PG','TV-14','TV-MA','NR'];
+
 @Component({
-  selector: 'app-movies',
+  selector: 'app-films',
   standalone: true,
   imports: [CommonModule, FormsModule, RatedFilmComponent],
-  templateUrl: './movies.component.html',
-  styleUrls: ['./movies.component.css'],
+  templateUrl: './films.component.html',
+  styleUrls: ['./films.component.css'],
 })
 
-export class MoviesComponent implements OnInit {
+export class FilmsComponent implements OnInit {
+  private elementRef = inject(ElementRef)
   readonly routingService = inject(RoutingService);
   public readonly localStorageService = inject(LocalStorageService);
+  private router = inject(Router);
 
   public currentUser: AccountInformationModel = this.localStorageService.getInformation('current-user');
 
   readonly sidebarActive = signal(true);
   readonly searchInput = signal('');
-  activeMovie: RatedMovieModel | null = null;
+
+  activeFilm: RatedItem | null = null;
 
   readonly filtersOpen = signal(false);
   readonly genresOpen = signal(false);
@@ -40,6 +52,8 @@ export class MoviesComponent implements OnInit {
   readonly selectedGenres = signal<Set<string>>(new Set());
   readonly selectedRated = signal<string>('All');
   readonly selectedRateds = signal<Set<string>>(new Set());
+
+  readonly filmKind = signal<FilmKind>('movie');
 
   genresLabel = computed(() => {
     const sel = this.selectedGenres();
@@ -57,85 +71,121 @@ export class MoviesComponent implements OnInit {
   private useFallback = false;
   readonly fallbackPoster = 'assets/images/no-poster.jpg';
 
+  ///  User's rated movies  \\\
   private allRatedMovies = signal<RatedMovieModel[]>([]);
 
   public usersRatedMovies = computed(() =>
     this.allRatedMovies()
-      .filter(movie => movie.username === this.currentUser.username)
-      .sort((a, b) => b.rating - a.rating)
+      .filter(m => m.username === this.currentUser.username)
+      .sort((a,b) => b.rating - a.rating)
+      .map(m => ({ ...m, kind: 'movie' as const }))
+  );
+  public usersRatedMoviesWithKind = computed<RatedItem[]>(() =>
+    this.usersRatedMovies().map(m => ({ ...m, kind: 'movie' as const }))
+  );
+
+  ///  User's rated series/shows  \\\ 
+  private allRatedSeries = signal<RatedSeriesModel[]>([]);
+
+  public usersRatedSeries = computed(() =>
+    this.allRatedSeries()
+      .filter(s => s.username === this.currentUser.username)
+      .sort((a,b) => b.rating - a.rating)
+      .map(s => ({ ...s, kind: 'series' as const }))
+  );
+  public usersRatedSeriesWithKind = computed<RatedItem[]>(() =>
+    this.usersRatedSeries().map(s => ({ ...s, kind: 'series' as const }))
+  );
+
+  public usersRatedList = computed<RatedItem[]>(() =>
+    this.filmKind() === 'series' ? this.usersRatedSeries() : this.usersRatedMovies()
   );
 
 
   ngOnInit(): void {
     this.allRatedMovies.set(this.localStorageService.getInformation('rated-movies') ?? []);
-    if (this.usersRatedMovies().length) {
-      this.activeMovie = this.usersRatedMovies()[0];
-    }
+    this.allRatedSeries.set(this.localStorageService.getInformation('rated-series') ?? []);
+
+    const setKindFromUrl = () => {
+      const url = (this.router.url || '').toLowerCase();
+      // treat /series OR /shows as series
+      this.filmKind.set(/\b(series|shows)\b/.test(url) ? 'series' : 'movie');
+
+      // keep left pane selection sane for the new list
+      const first = this.usersRatedList()[0];
+      this.activeFilm = (first as RatedItem) ?? null;
+
+      // optional: clear filters when switching kind
+      this.selectedGenres.set(new Set());
+      this.selectedRateds.set(new Set());
+      this.searchInput.set('');
+    };
+
+    setKindFromUrl();
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(setKindFromUrl);
 
     ///  Clear any in-progress edit  \\\
     this.localStorageService.clearInformation('current-edit-movie');
-
     this.localStorageService.cleanTemporaryLocalStorages();
   }
 
-
-  onDelete(movie: RatedMovieModel) {
-    ///  1) Load databases  \\\
+  onDelete(item: RatedItem) {
+    ///  Load databases  \\\
     const rawPosts: RawPostModel[] = this.localStorageService.getInformation('raw-posts') ?? [];
     const rawUsers: RawAccountInformationModel[] = this.localStorageService.getInformation('raw-users') ?? [];
     const comments: CommentModel[] = this.localStorageService.getInformation('comments') ?? [];
     const replies: ReplyModel[] = this.localStorageService.getInformation('replies') ?? [];
-    const ratedMovies: RatedMovieModel[] = this.localStorageService.getInformation('rated-movies') ?? [];
 
-    ///  2) Determine affected users from the post  \\\
-    const currentPost = rawPosts.find(p => p.postId === movie.postId);
+    const currentPost = rawPosts.find(p => p.postId === item.postId);
     const taggedUsernames = currentPost ? currentPost.taggedUsers.map(t => t.split('::::')[1]!).filter(Boolean) : [];
     const affectedUsernames = Array.from(new Set([...taggedUsernames, this.currentUser.username]));
 
-    ///  3) Update rawUsers: remove postId from currentUser.postIds  \\\
+    ///  Update rawUsers  \\\
     const updatedRawUsers: RawAccountInformationModel[] = rawUsers.map(u => {
       if (u.username === this.currentUser.username) {
-        return {
-          ...u,
-          postIds: u.postIds.filter(id => id !== movie.postId),
-        };
+        return { ...u, postIds: u.postIds.filter(id => id !== item.postId) };
       }
       if (affectedUsernames.includes(u.username) && u.username !== this.currentUser.username) {
-        return {
-          ...u,
-          taggedPostIds: u.taggedPostIds.filter(id => id !== movie.postId),
-        };
+        return { ...u, taggedPostIds: u.taggedPostIds.filter(id => id !== item.postId) };
       }
       return u;
     });
 
-    ///  4) Update currentUser mirror  \\\
+    ///  Update currentUser mirror  \\\
     const newCurrentUser: AccountInformationModel = {
       ...this.currentUser,
-      postIds: this.currentUser.postIds.filter(id => id !== movie.postId),
+      postIds: this.currentUser.postIds.filter(id => id !== item.postId),
     };
 
-    ///  5) Remove movie + post + its comments + replies  \\\
-    const newRatedMovies = ratedMovies.filter(m => m.postId !== movie.postId);
-    const newRawPosts = rawPosts.filter(p => p.postId !== movie.postId);
-    const newComments = comments.filter(c => c.postId !== movie.postId);
-    const newReplies = replies.filter(r => r.postId !== movie.postId);
+    ///  Remove the film + post + comments + replies  \\\
+    const newRawPosts  = rawPosts.filter(p => p.postId !== item.postId);
+    const newComments  = comments.filter(c => c.postId !== item.postId);
+    const newReplies   = replies.filter(r => r.postId !== item.postId);
 
-    ///  6) Persist all changes atomically-ish  \\\
+    if (item.kind === 'series') {
+      const ratedSeries: RatedSeriesModel[] = this.localStorageService.getInformation('rated-series') ?? [];
+      const newRatedSeries = ratedSeries.filter(s => s.postId !== item.postId);
+      this.localStorageService.setInformation('rated-series', newRatedSeries);
+      this.allRatedSeries.set(newRatedSeries);
+    } else {
+      const ratedMovies: RatedMovieModel[] = this.localStorageService.getInformation('rated-movies') ?? [];
+      const newRatedMovies = ratedMovies.filter(m => m.postId !== item.postId);
+      this.localStorageService.setInformation('rated-movies', newRatedMovies);
+      this.allRatedMovies.set(newRatedMovies);
+    }
+
+    ///  Persist shared stores  \\\
     this.localStorageService.setInformation('current-user', newCurrentUser);
     this.localStorageService.setInformation('raw-users', updatedRawUsers);
-    this.localStorageService.setInformation('rated-movies', newRatedMovies);
     this.localStorageService.setInformation('raw-posts', newRawPosts);
     this.localStorageService.setInformation('comments', newComments);
     this.localStorageService.setInformation('replies', newReplies);
 
-    ///  7) Update local state without reloading the page  \\\
+    ///  Update local state + selection  \\\
     this.currentUser = newCurrentUser;
-    this.allRatedMovies.set(newRatedMovies);
 
-    ///  Reset active selection if needed  \\\
-    if (this.activeMovie?.postId === movie.postId) {
-      this.activeMovie = this.usersRatedMovies()[0] ?? null;
+    if (this.activeFilm?.postId === item.postId) {
+      this.activeFilm = this.usersRatedList()[0] ?? null;
     }
   }
 
@@ -171,14 +221,14 @@ export class MoviesComponent implements OnInit {
   }
   get runtimeMinutes(): number {
     const nLike =
-      (this.activeMovie as any)?.runTime ??
-      (this.activeMovie as any)?.runtimeMinutes ??
-      (this.activeMovie as any)?.runtime_min ??
+      (this.activeFilm as any)?.runTime ??
+      (this.activeFilm as any)?.runtimeMinutes ??
+      (this.activeFilm as any)?.runtime_min ??
       null;
 
     if (Number.isFinite(nLike)) return Math.max(0, Number(nLike));
 
-    const rt = (this.activeMovie as any)?.runtime ?? (this.activeMovie as any)?.Runtime ?? '';
+    const rt = (this.activeFilm as any)?.runtime ?? (this.activeFilm as any)?.Runtime ?? '';
 
     return this.parseRuntimeToMinutes(rt);
   }
@@ -204,22 +254,22 @@ export class MoviesComponent implements OnInit {
     return n === 1 ? 'Hour' : 'Hours';
   }
 
-  onRatedFilmClicked(movie: RatedMovieModel) {
-    this.activeMovie = movie;
+  onRatedFilmClicked(film: RatedItem) {
+    this.activeFilm = film;
 
     this.useFallback = false;
   }
 
   //!  CHANGE TO USE CACHE TO PASS THE RATING MOVIE/SERIES (LIKE YOU PASS IT TO THIS COMPONENT)  !\\
-  onEdit(movie: RatedMovieModel) {
+  onEdit(film: RatedItem) {
     this.localStorageService.clearInformation('current-edit-movie');
-    this.localStorageService.setInformation('current-edit-movie', movie);
+    this.localStorageService.setInformation('current-edit-movie', film);
     this.routingService.navigateToEditMovie();
   }
 
   ///  Get poster if not use fallback "No Poster" image  \\\
   get posterSrc(): string {
-    const poster = this.activeMovie?.poster;
+    const poster = this.activeFilm?.poster;
     const hasPoster = !!poster && poster !== 'N/A';
 
     return (hasPoster && !this.useFallback) ? poster! : this.fallbackPoster;
@@ -233,7 +283,7 @@ export class MoviesComponent implements OnInit {
 
 
   /// ---------------------------------------- Filtering Functionality ----------------------------------------  \\\
-  private runtimeMinutesOf(movie: RatedMovieModel): number {
+  private runtimeMinutesOf(movie: RatedItem): number {
     const direct =
       (movie as any)?.runTime ??
       (movie as any)?.runtimeMinutes ??
@@ -263,7 +313,7 @@ export class MoviesComponent implements OnInit {
   public userGenres = computed(() => {
     const set = new Set<string>();
 
-    for (const m of this.usersRatedMovies()) {
+    for (const m of this.usersRatedList()) {
       const g = (m.genres ?? []) as any;
 
       if (Array.isArray(g)) {
@@ -286,7 +336,7 @@ export class MoviesComponent implements OnInit {
   public userRatedValues = computed(() => {
     const set = new Set<string>();
 
-    for (const m of this.usersRatedMovies()) {
+    for (const m of this.usersRatedList()) {
       const r = (m.rated ?? '').toString().trim();
       if (r) set.add(r);
     }
@@ -306,7 +356,7 @@ export class MoviesComponent implements OnInit {
     const direction = this.sortDirection();
     const sign      = direction === 'asc' ? 1 : -1;
 
-    let list = this.usersRatedMovies();
+    let list = this.usersRatedList();
 
     if (query) list = list.filter(m => m.title?.toLowerCase().includes(query));
 
@@ -359,8 +409,10 @@ export class MoviesComponent implements OnInit {
     this.sortDirection.set(d); 
   }
 
-  toggleGenresOpen() { 
-    this.genresOpen.update(v => !v); 
+  toggleGenresOpen() {
+    this.filtersOpen.set(true);
+    this.genresOpen.set(!this.genresOpen());
+    if (this.genresOpen()) this.ratedOpen.set(false);
   }
   setGenre(g: string) { 
     this.selectedGenre.set(g); 
@@ -369,8 +421,10 @@ export class MoviesComponent implements OnInit {
     this.selectedGenres.set(new Set()); 
   }
 
-  toggleRatedOpen()  { 
-    this.ratedOpen.update(v => !v); 
+  toggleRatedOpen() {
+    this.filtersOpen.set(true);
+    this.ratedOpen.set(!this.ratedOpen());
+    if (this.ratedOpen()) this.genresOpen.set(false);
   }
   setRated(v: string) { 
     this.selectedRated.set(v); 
@@ -379,6 +433,29 @@ export class MoviesComponent implements OnInit {
     this.selectedRateds.set(new Set()); 
   }
 
+  /// ---------- Clsoe filter lists if click outside or Esc ---------- \\\
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const host = this.elementRef.nativeElement as HTMLElement;
+
+    // Only keep the panel open if the click is inside the search "input-box"
+    const inputBox = host.querySelector('.input-box');
+    const target = event.target as Node;
+
+    if (!inputBox || !inputBox.contains(target)) {
+      this.filtersOpen.set(false);
+      this.genresOpen.set(false);
+      this.ratedOpen.set(false);
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    // Close everything on Esc
+    this.filtersOpen.set(false);
+    this.genresOpen.set(false);
+    this.ratedOpen.set(false);
+  }
 
   /// ---------------------------------------- Responsive Sidebar ----------------------------------------  \\\
   @HostListener('window:resize', ['$event'])
@@ -394,6 +471,12 @@ export class MoviesComponent implements OnInit {
   
   toggleSidebar() {
     this.sidebarActive.update(v => !v);
+  }
+
+  navDelay(i: number): number {
+    const active = this.filmKind() === 'series' ? 3 : 2;
+
+    return 1 + Math.abs(i - active);
   }
 
 

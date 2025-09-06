@@ -535,11 +535,133 @@
   outline: none;
 }
 
-
-
 @media (max-width: 900px) {
   .filter-panel { min-width: 260px; }
 }
+
+.select-multi { 
+  position: relative; 
+  width: 100%; 
+}
+
+.select-trigger {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.select-trigger .chevron {
+  font-size: 18px;
+  transition: transform 140ms ease;
+  transform-origin: center;
+}
+.select-multi.open .chevron { 
+  transform: rotate(180deg); 
+}
+
+.select-menu {
+  position: absolute;
+  left: 0; right: 0;
+  top: calc(100% + 6px);
+  background: rgba(20,20,20,0.85);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  padding: 8px;
+  max-height: 220px;
+  overflow: auto;
+  z-index: 50;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  scrollbar-width: thin;                 /* Firefox */
+  scrollbar-color: #ffffff transparent;
+}
+
+
+/* Keep your thumb styling */
+.select-menu::-webkit-scrollbar { width: 0.5em; }
+.select-menu::-webkit-scrollbar-thumb {
+  background: #fff;
+  border-radius: .25em;
+}
+.select-menu {
+  scrollbar-width: thin;
+  scrollbar-color: #ffffff transparent;
+}
+
+.select-menu .option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  min-height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  line-height: 1;            /* tighten vertical rhythm */
+}
+.select-menu .option:hover { background: rgba(255,255,255,0.12); }
+
+/* If anything elsewhere sets input width, undo it here */
+.select-menu .option input { width: auto; }
+
+.select-menu .label {
+  flex: 1 1 auto;
+  color: #fff !important;
+  opacity: 1 !important;
+  font-weight: 600;
+  font-size: clamp(12px, 1vw, 14px);
+  white-space: nowrap;        /* keep single line */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+.select-menu .tickbox {
+  flex: 0 0 12px;   /* was 14px */
+  width: 12px;
+  height: 12px;
+  border: 2px solid #fff;
+  border-radius: 3px;
+  display: inline-block;
+  position: relative;
+  box-sizing: content-box;
+}
+/* filled square when selected */
+.select-menu .option.selected .tickbox::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 9px; height: 9px;   /* match reduced box */
+  border-radius: 2px;
+  background: #fff;
+  transform: translate(-50%, -50%);
+}
+.select-menu .option input,
+.select-menu .option .tickbox { width: auto; }
+
+/* Actions at the bottom of the menu */
+.select-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 6px;
+}
+.select-actions button {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 6px;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.select-actions button:hover { background: rgba(255,255,255,0.18); }
 
 .scroll-box {
   margin-right: 6.5px; 
