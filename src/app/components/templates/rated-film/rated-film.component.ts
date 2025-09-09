@@ -20,6 +20,7 @@ export interface RatedMedia {
 
 export class RatedFilmComponent {
   @Input() ratedFilm!: RatedMedia;
+  @Input() active = false;
 
   private useFallback = false;
   readonly fallbackPoster = 'assets/images/no-poster.jpg';
@@ -39,20 +40,20 @@ export class RatedFilmComponent {
     if (ev) (ev.target as HTMLImageElement).src = this.fallbackPoster;
   }
 
-  // Robust year extraction: supports 'YYYY', 'YYYY-MM-DD', or 'DD Mon YYYY'
+  ///  Get film year (supports 'YYYY', 'YYYY-MM-DD', or 'DD Mon YYYY')  \\\
   getYear(dateStr?: string): string {
     if (!dateStr) return '';
 
-    // Try ISO first
+    ///  Try ISO first  \\\
     const isoMatch = /^(\d{4})/.exec(dateStr);
     if (isoMatch) return isoMatch[1];
 
-    // Try 'DD Mon YYYY'
+    ///  Try 'DD Mon YYYY'  \\\
     const parts = dateStr.split(' ');
     const maybeYear = parts[parts.length - 1];
     if (/^\d{4}$/.test(maybeYear)) return maybeYear;
 
-    // Fallback to Date
+    ///  Fallback to Date  \\\
     const d = new Date(dateStr);
     
     return Number.isNaN(d.getTime()) ? '' : String(d.getFullYear());

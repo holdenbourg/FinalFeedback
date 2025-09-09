@@ -21,5 +21,7 @@ export const routes: Routes = [
     { path: 'movies', component: FilmsComponent, data: { kind: 'movie' } },
     { path: 'shows', component: FilmsComponent, data: { kind: 'series' } },
 
+    
+
     { path: '**', redirectTo: '' },
 ];

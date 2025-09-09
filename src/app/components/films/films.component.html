@@ -88,14 +88,14 @@
         </div>
 
         <div class="film-counts">
-          <div class="count" *ngIf="runtimeHours !== 0">
-            <div class="count-num">{{ runtimeHours }}</div>
-            <div class="count-label">{{ hoursLabel }}</div>
+          <div class="count" *ngIf="runtimeHours !== 0 || totalSeasons !== 0">
+            <div class="count-num">{{ count1Num }}</div>
+            <div class="count-label">{{ count1Label }}</div>
           </div>
 
-          <div class="count" *ngIf="runtimeMinutesRemainder !== 0">
-            <div class="count-num">{{ runtimeMinutesRemainder }}</div>
-            <div class="count-label">{{ minutesLabel }}</div>
+          <div class="count" *ngIf="runtimeMinutesRemainder !== 0 || totalEpisodes !== 0">
+            <div class="count-num">{{ count2Num }}</div>
+            <div class="count-label">{{ count2Label }}</div>
           </div>
         </div>
       </div>
@@ -108,7 +108,7 @@
           <p>Visuals:</p>
           <p>Story:</p>
           <p>Pacing:</p>
-          <p>{{ filmKind()==='series' ? 'Length:' : 'Climax:' }}</p>
+          <p>{{ af.kind === 'series' ? 'Length:' : 'Climax:' }}</p>
           <p>Ending:</p>
           <p class="ovr-rating">Total:</p>
         </div>
@@ -118,7 +118,7 @@
           <p>{{ af.visuals }}</p>
           <p>{{ af.story }}</p>
           <p>{{ af.pacing }}</p>
-          <p>{{ af.kind === 'series' ? (af.length ?? '—') : (af.climax ?? '—') }}</p>
+          <p>{{ af.kind === 'series' ? af.length : af.climax }}</p>
           <p>{{ af.ending }}</p>
           <p class="ovr-rating">{{ af.rating }}</p>
         </div>
@@ -127,7 +127,7 @@
       <div class="date-rated">
         <p>Rated: {{ formatLongDate(af.dateRated) }}</p>
         <button type="button" class="button" (click)="onEdit(af)">Edit Rating</button>
-        <button type="button" class="button" (click)="onDelete(af)">Delete Rating</button>
+        <button type="button" class="button" (click)="openConfirm(af)">Delete Rating</button>
       </div>
     </div>
   </div>
@@ -216,7 +216,6 @@
             </div>
           </div>
 
-          <!-- Rated/MPAA (multi-select with checkboxes) -->
           <div class="filter-row">
             <span class="filter-heading">Rated</span>
 
@@ -251,16 +250,53 @@
     </div>
 
     <div class="scroll-box">
-      <div class="rated-films" *ngIf="filteredRatedMovies().length; else noRatedMovies">
-        <div class="rated-film" *ngFor="let movie of filteredRatedMovies(); trackBy: trackByPostId" (click)="onRatedFilmClicked(movie)">
-          <app-rated-film [ratedFilm]="movie"></app-rated-film> 
+      <div class="rated-films" *ngIf="filteredRatedFilms().length; else noRatedMovies">
+        <div class="rated-film" *ngFor="let film of filteredRatedFilms(); trackBy: trackByPostId" (click)="onRatedFilmClicked(film)" [attr.data-postid]="film.postId">
+          <app-rated-film
+            [ratedFilm]="film" 
+            [active]="film.postId === activeFilm?.postId" 
+            [attr.aria-selected]="film.postId === activeFilm?.postId">
+          </app-rated-film>
         </div>
       </div>
 
       <ng-template #noRatedMovies>
-        <div class="no-rated-movies">
-        </div>
+        <div class="no-rated-movies"></div>
       </ng-template>
+    </div>
+  </div>
+
+  <div
+    class="modal-backdrop"
+    *ngIf="confirmOpen()"
+    (click)="closeConfirm()"
+    aria-hidden="true">
+  </div>
+
+  <div
+    class="modal"
+    *ngIf="confirmOpen()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="confirmTitle"
+    (click)="$event.stopPropagation()">
+
+    <h3 id="confirmTitle" class="modal-title">
+      Are you sure you want to delete your rating for
+      <span class="modal-title-film">{{ confirmTarget()?.title }}</span>?
+    </h3>
+
+    <p class="modal-body">
+      This will delete your post as well.
+    </p>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-danger" (click)="confirmDelete()">
+        Yes, I’m sure
+      </button>
+      <button type="button" class="btn btn-ghost" (click)="closeConfirm()">
+        Never mind
+      </button>
     </div>
   </div>
 </div>

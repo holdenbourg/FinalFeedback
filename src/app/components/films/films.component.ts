@@ -19,9 +19,6 @@ type SortKey = 'rating' | 'runtime' | 'dateRated' | 'title';
 type RatedItem = | (RatedMovieModel & { kind: 'movie' }) | (RatedSeriesModel & { kind: 'series'; length?: number });
 type FilmKind = 'movie' | 'series';
 
-const MOVIE_RATED_ORDER = ['G','PG','PG-13','R','NC-17','NR'];
-const SERIES_RATED_ORDER = ['TV-Y','TV-Y7','TV-Y7-FV','TV-G','TV-PG','TV-14','TV-MA','NR'];
-
 @Component({
   selector: 'app-films',
   standalone: true,
@@ -41,8 +38,11 @@ export class FilmsComponent implements OnInit {
   readonly sidebarActive = signal(true);
   readonly searchInput = signal('');
 
+  readonly filmKind = signal<FilmKind>('movie');
+
   activeFilm: RatedItem | null = null;
 
+  ///  Filtering State  \\\
   readonly filtersOpen = signal(false);
   readonly genresOpen = signal(false);
   readonly ratedOpen  = signal(false);
@@ -53,7 +53,10 @@ export class FilmsComponent implements OnInit {
   readonly selectedRated = signal<string>('All');
   readonly selectedRateds = signal<Set<string>>(new Set());
 
-  readonly filmKind = signal<FilmKind>('movie');
+  ///  Delete Confirmation State  \\\
+  readonly confirmOpen = signal(false);
+  readonly confirmTarget = signal<RatedItem | null>(null);
+
 
   genresLabel = computed(() => {
     const sel = this.selectedGenres();
@@ -77,7 +80,6 @@ export class FilmsComponent implements OnInit {
   public usersRatedMovies = computed(() =>
     this.allRatedMovies()
       .filter(m => m.username === this.currentUser.username)
-      .sort((a,b) => b.rating - a.rating)
       .map(m => ({ ...m, kind: 'movie' as const }))
   );
   public usersRatedMoviesWithKind = computed<RatedItem[]>(() =>
@@ -90,7 +92,6 @@ export class FilmsComponent implements OnInit {
   public usersRatedSeries = computed(() =>
     this.allRatedSeries()
       .filter(s => s.username === this.currentUser.username)
-      .sort((a,b) => b.rating - a.rating)
       .map(s => ({ ...s, kind: 'series' as const }))
   );
   public usersRatedSeriesWithKind = computed<RatedItem[]>(() =>
@@ -108,14 +109,15 @@ export class FilmsComponent implements OnInit {
 
     const setKindFromUrl = () => {
       const url = (this.router.url || '').toLowerCase();
-      // treat /series OR /shows as series
-      this.filmKind.set(/\b(series|shows)\b/.test(url) ? 'series' : 'movie');
+      this.filmKind.set(/\b(shows)\b/.test(url) ? 'series' : 'movie');
 
-      // keep left pane selection sane for the new list
+      ///  keep left pane selection sane for the new list  \\\
       const first = this.usersRatedList()[0];
       this.activeFilm = (first as RatedItem) ?? null;
 
-      // optional: clear filters when switching kind
+      queueMicrotask(() => this.scrollActiveIntoViewIfNeeded());
+
+      ///  clear filters when switching kind  \\\
       this.selectedGenres.set(new Set());
       this.selectedRateds.set(new Set());
       this.searchInput.set('');
@@ -129,6 +131,8 @@ export class FilmsComponent implements OnInit {
     this.localStorageService.cleanTemporaryLocalStorages();
   }
 
+
+  /// ---------------------------------------- Delete Functionality ----------------------------------------  \\\
   onDelete(item: RatedItem) {
     ///  Load databases  \\\
     const rawPosts: RawPostModel[] = this.localStorageService.getInformation('raw-posts') ?? [];
@@ -189,8 +193,34 @@ export class FilmsComponent implements OnInit {
     }
   }
 
+  openConfirm(item: RatedItem) {
+    this.confirmTarget.set(item);
+    this.confirmOpen.set(true);
+  }
+  closeConfirm() {
+    this.confirmOpen.set(false);
+    this.confirmTarget.set(null);
+  }
+
+  confirmDelete() {
+    const item = this.confirmTarget();
+    if (!item) return;
+
+    this.closeConfirm();
+
+    this.onDelete(item);
+  }
+
 
   /// ---------------------------------------- Helpers ----------------------------------------  \\\
+  ///  Returns true if film is specified type, false if not \\\
+  get isMovie(): boolean { 
+    return (this.activeFilm?.kind ?? '').toLowerCase() === 'movie'; 
+  }
+  get isSeries(): boolean { 
+    return (this.activeFilm?.kind ?? '').toLowerCase() === 'series'; 
+  }
+
   ///  Derived counts for Movie  \\\
   private parseRuntimeToMinutes(input: unknown): number {
     if (typeof input === 'number' && Number.isFinite(input)) return Math.max(0, input);
@@ -254,10 +284,100 @@ export class FilmsComponent implements OnInit {
     return n === 1 ? 'Hour' : 'Hours';
   }
 
+  ///  Derived counts for Series  \\\
+  private toInt(n: any): number {
+    const v = Number(n);
+    return Number.isFinite(v) ? Math.max(0, Math.trunc(v)) : 0;
+  }
+
+  get totalSeasons(): number {
+    const af: any = this.activeFilm || {};
+
+    const asNumber = this.toInt(af.seasons);
+    if (asNumber) return asNumber;
+
+    if (Array.isArray(af.seasons)) {
+      return af.seasons.filter((s: any) => this.toInt(s?.episode_count) > 0).length;
+    }
+
+    return (
+      this.toInt(af.number_of_seasons) ||
+      this.toInt(af.numberOfSeasons) ||
+      this.toInt(af.totalSeasons) ||
+      0
+    );
+  }
+  get seasonsLabel(): string {
+    const n = this.totalSeasons;
+
+    if (!n) return 'N/A';
+
+    return n === 1 ? 'Season' : 'Seasons';
+  }
+
+  get totalEpisodes(): number {
+    const af: any = this.activeFilm || {};
+
+    const direct = this.toInt(af.episodes);
+    if (direct) return direct;
+
+    if (Array.isArray(af.seasons)) {
+      return af.seasons.reduce((acc: number, s: any) => acc + this.toInt(s?.episode_count), 0);
+    }
+
+    return (
+      this.toInt(af.number_of_episodes) ||
+      this.toInt(af.numberOfEpisodes) ||
+      this.toInt(af.totalEpisodes) ||
+      0
+    );
+  }
+  get episodesLabel(): string {
+    const n = this.totalEpisodes;
+
+    if (!n) return 'N/A';
+
+    return n === 1 ? 'Episode' : 'Episodes';
+  }
+
+  ///  Dynmaic counts for Movie/Series (Count 1: Hours/Seasons - Count 2: Minutes/Episodes)  \\\
+  get count1Num(): number {
+    return this.isMovie ? this.runtimeHours : this.totalSeasons;
+  }
+  get count1Label(): string {
+    return this.isMovie ? this.hoursLabel : this.seasonsLabel;
+  }
+  get count2Num(): number {
+    return this.isMovie ? this.runtimeMinutesRemainder : this.totalEpisodes;
+  }
+  get count2Label(): string {
+    return this.isMovie ?  this.minutesLabel : this.episodesLabel;
+  }
+
   onRatedFilmClicked(film: RatedItem) {
     this.activeFilm = film;
 
     this.useFallback = false;
+  }
+
+  private isRowVisible(el: HTMLElement, container: HTMLElement) {
+    const er = el.getBoundingClientRect();
+    const cr = container.getBoundingClientRect();
+    return er.top >= cr.top && er.bottom <= cr.bottom;
+  }
+
+  private scrollActiveIntoViewIfNeeded() {
+    const id = this.activeFilm?.postId;
+    if (!id) return;
+
+    const host = this.elementRef.nativeElement as HTMLElement;
+    const container = host.querySelector<HTMLElement>('.scroll-box');
+    const row = host.querySelector<HTMLElement>(`.rated-film[data-postid="${id}"]`);
+    if (!container || !row) return;
+
+    if (!this.isRowVisible(row, container)) {
+      row.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
   }
 
   //!  CHANGE TO USE CACHE TO PASS THE RATING MOVIE/SERIES (LIKE YOU PASS IT TO THIS COMPONENT)  !\\
@@ -348,10 +468,10 @@ export class FilmsComponent implements OnInit {
     return ['All', ...ordered];
   });
 
-  public filteredRatedMovies = computed(() => {
+  public filteredRatedFilms = computed(() => {
     const query     = this.searchInput().trim().toLowerCase();
-    const genres    = this.selectedGenres();   // Set<string>
-    const rateds    = this.selectedRateds();   // Set<string>
+    const genres    = this.selectedGenres();
+    const rateds    = this.selectedRateds();
     const key       = this.sortKey();
     const direction = this.sortDirection();
     const sign      = direction === 'asc' ? 1 : -1;
@@ -451,7 +571,11 @@ export class FilmsComponent implements OnInit {
 
   @HostListener('document:keydown.escape')
   onEscape() {
-    // Close everything on Esc
+    if (this.confirmOpen()) {
+      this.closeConfirm();
+      return;
+    }
+
     this.filtersOpen.set(false);
     this.genresOpen.set(false);
     this.ratedOpen.set(false);

@@ -152,6 +152,7 @@
   align-items: center; 
   justify-content: center;
 }
+
 .empty-text { 
   color: #fff; 
   font-size: 1.5vw; 
@@ -309,6 +310,19 @@
   font-weight: 600;
 }
 
+.date-rated {
+  position: absolute; 
+  right: 20px; 
+  bottom: 20px; 
+  margin-left: 40%;
+  text-align: right; 
+  font-size: 1.56vw; 
+  color: #fff; 
+  font-weight: 500; 
+  line-height: 2.7vw; 
+  width: auto;
+}
+
 .button {
   width: 100%; 
   height: 2.2vw; 
@@ -335,17 +349,81 @@
   outline-offset: 2px; 
 }
 
-.date-rated {
-  position: absolute; 
-  right: 20px; 
-  bottom: 20px; 
-  margin-left: 40%;
-  text-align: right; 
-  font-size: 1.56vw; 
-  color: #fff; 
-  font-weight: 500; 
-  line-height: 2.7vw; 
-  width: auto;
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+}
+
+.modal {
+  position: fixed;
+  z-index: 1001;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, 92vw);
+  background: rgba(20,20,20,0.9);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  padding: 18px 18px 14px;
+}
+
+.modal-title {
+  font-size: clamp(18px, 1.4vw, 22px);
+  font-weight: 700;
+  margin: 0 0 10px 0;
+}
+
+.modal-title-film {
+  font-weight: 800;
+  opacity: 0.95;
+}
+
+.modal-body {
+  margin: 0 0 16px 0;
+  font-size: clamp(14px, 1.05vw, 16px);
+  opacity: 0.9;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.10);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 80ms ease, background 140ms ease, opacity 140ms ease;
+}
+.btn:hover { 
+  background: rgba(255,255,255,0.16); 
+  transform: translateY(-1px); 
+}
+.btn:active { 
+  transform: translateY(0); 
+}
+
+.btn-danger {
+  border-color: rgba(255, 100, 100, 0.45);
+  background: rgba(255, 80, 80, 0.18);
+}
+.btn-danger:hover { background: rgba(255, 80, 80, 0.28); }
+
+.btn-ghost {
+  background: transparent;
+}
+.btn-ghost:hover {
+  background: rgba(255,255,255,0.10);
 }
 
 /* --- Right pane --- */
@@ -395,7 +473,6 @@
   opacity: 0;
 }
 
-/* Position the filter button inside the input box */
 .filter-btn {
   position: absolute;
   right: 4px;
@@ -425,7 +502,6 @@
   transform: translateX(-1px);
 }
 
-/* Popover panel */
 .filter-panel {
   position: absolute;
   right: 0;
@@ -440,7 +516,6 @@
   z-index: 10;
   box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
-
 .filter-panel select {
   width: 100%;
   backdrop-filter: blur(8px);
@@ -453,8 +528,6 @@
   appearance: none; 
   cursor: pointer;
 }
-
-/* Options inside the dropdown */
 .filter-panel select option {
   background: #111;
   color: #fff;    
@@ -475,13 +548,12 @@
   opacity: 0.9;
 }
 
-/* Segmented control */
 .segmented {
-  display: inline-flex;              /* you already had this */
+  display: inline-flex;
   border: 1px solid rgba(255,255,255,0.3);
   border-radius: 8px;
   overflow: hidden;
-  white-space: nowrap;               /* add this */
+  white-space: nowrap;
 }
 .segmented button {
   background: transparent;
@@ -502,9 +574,9 @@
 
 .direction-split {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* split equally */
+  grid-template-columns: 1fr 1fr;
   gap: 6px;
-  width: 100%;                   /* fill the right column */
+  width: 100%;
 }
 
 .direction-split button {
@@ -536,12 +608,17 @@
 }
 
 @media (max-width: 900px) {
-  .filter-panel { min-width: 260px; }
+  .filter-panel { 
+    min-width: 260px; 
+  }
 }
 
 .select-multi { 
   position: relative; 
   width: 100%; 
+}
+.select-multi.open .chevron { 
+  transform: rotate(180deg); 
 }
 
 .select-trigger {
@@ -558,14 +635,10 @@
   font-weight: 600;
   cursor: pointer;
 }
-
 .select-trigger .chevron {
   font-size: 18px;
   transition: transform 140ms ease;
   transform-origin: center;
-}
-.select-multi.open .chevron { 
-  transform: rotate(180deg); 
 }
 
 .select-menu {
@@ -580,13 +653,12 @@
   overflow: auto;
   z-index: 50;
   box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-  scrollbar-width: thin;                 /* Firefox */
+  scrollbar-width: thin;
   scrollbar-color: #ffffff transparent;
 }
-
-
-/* Keep your thumb styling */
-.select-menu::-webkit-scrollbar { width: 0.5em; }
+.select-menu::-webkit-scrollbar { 
+  width: 0.5em; 
+}
 .select-menu::-webkit-scrollbar-thumb {
   background: #fff;
   border-radius: .25em;
@@ -595,7 +667,6 @@
   scrollbar-width: thin;
   scrollbar-color: #ffffff transparent;
 }
-
 .select-menu .option {
   display: flex;
   align-items: center;
@@ -604,26 +675,27 @@
   min-height: 28px;
   border-radius: 6px;
   cursor: pointer;
-  line-height: 1;            /* tighten vertical rhythm */
+  line-height: 1;
 }
-.select-menu .option:hover { background: rgba(255,255,255,0.12); }
-
-/* If anything elsewhere sets input width, undo it here */
-.select-menu .option input { width: auto; }
-
+.select-menu .option:hover { 
+  background: rgba(255,255,255,0.12); 
+}
+.select-menu .option input { 
+  width: auto; 
+}
 .select-menu .label {
   flex: 1 1 auto;
   color: #fff !important;
   opacity: 1 !important;
   font-weight: 600;
   font-size: clamp(12px, 1vw, 14px);
-  white-space: nowrap;        /* keep single line */
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   pointer-events: none;
 }
 .select-menu .tickbox {
-  flex: 0 0 12px;   /* was 14px */
+  flex: 0 0 12px;
   width: 12px;
   height: 12px;
   border: 2px solid #fff;
@@ -632,20 +704,20 @@
   position: relative;
   box-sizing: content-box;
 }
-/* filled square when selected */
 .select-menu .option.selected .tickbox::after {
   content: "";
   position: absolute;
   left: 50%; top: 50%;
-  width: 9px; height: 9px;   /* match reduced box */
+  width: 9px; height: 9px;
   border-radius: 2px;
   background: #fff;
   transform: translate(-50%, -50%);
 }
 .select-menu .option input,
-.select-menu .option .tickbox { width: auto; }
+.select-menu .option .tickbox { 
+  width: auto; 
+}
 
-/* Actions at the bottom of the menu */
 .select-actions {
   display: flex;
   justify-content: space-between;
@@ -661,7 +733,9 @@
   padding: 6px 10px;
   cursor: pointer;
 }
-.select-actions button:hover { background: rgba(255,255,255,0.18); }
+.select-actions button:hover { 
+  background: rgba(255,255,255,0.18); 
+}
 
 .scroll-box {
   margin-right: 6.5px; 
