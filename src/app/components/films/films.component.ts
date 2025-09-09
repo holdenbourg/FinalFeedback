@@ -13,6 +13,7 @@ import { RatedFilmComponent } from "../templates/rated-film/rated-film.component
 import { RatedSeriesModel } from "../../models/database-models/rated-series-model";
 import { NavigationEnd, Router } from "@angular/router";
 import { filter } from "rxjs/operators";
+import { FilmCacheService } from "../../services/film-cache.service";
 
 type SortKey = 'rating' | 'runtime' | 'dateRated' | 'title';
 
@@ -31,6 +32,7 @@ export class FilmsComponent implements OnInit {
   private elementRef = inject(ElementRef)
   readonly routingService = inject(RoutingService);
   public readonly localStorageService = inject(LocalStorageService);
+  readonly filmCache = inject(FilmCacheService);
   private router = inject(Router);
 
   public currentUser: AccountInformationModel = this.localStorageService.getInformation('current-user');
@@ -380,11 +382,9 @@ export class FilmsComponent implements OnInit {
     }
   }
 
-  //!  CHANGE TO USE CACHE TO PASS THE RATING MOVIE/SERIES (LIKE YOU PASS IT TO THIS COMPONENT)  !\\
   onEdit(film: RatedItem) {
-    this.localStorageService.clearInformation('current-edit-movie');
-    this.localStorageService.setInformation('current-edit-movie', film);
-    this.routingService.navigateToEditMovie();
+    this.filmCache.setDraft(film.postId, film);
+    this.routingService.navigateToEditFilm(film.kind, film.postId);
   }
 
   ///  Get poster if not use fallback "No Poster" image  \\\

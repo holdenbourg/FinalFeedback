@@ -242,6 +242,7 @@ export class FilmInformationComponent implements OnInit {
       (film as any).imdbID ??
       (film as any).id ??
       '';
+      
     if (!imdbId) {
       console.warn('onRateThisFilm(): missing imdbId');
       return;

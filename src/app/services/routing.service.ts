@@ -47,15 +47,19 @@ export class RoutingService {
     this.router.navigate(['/post-series', postId]);
   }
 
-
-
-
   navigateToMovies() {
     this.router.navigate(['/movies']);
   }
   navigateToShows() {
     this.router.navigate(['/shows']);
   }
+
+  navigateToEditFilm(type: 'movie' | 'series', postId: string) {
+
+    this.router.navigate(['/edit', type, postId]);
+  }
+
+
   navigateToSummary() {
     this.router.navigate(['/summary']);
   }
@@ -80,10 +84,5 @@ export class RoutingService {
   }
 
   // edit
-  navigateToEditMovie() {
-    this.router.navigate(['/edit-movie']);
-  }
-  navigateToEditSeries() {
-    this.router.navigate(['/edit-series']);
-  }
+
 }

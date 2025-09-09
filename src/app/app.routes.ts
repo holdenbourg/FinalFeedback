@@ -5,6 +5,7 @@ import { SearchComponent } from './components/search/search.component';
 import { FilmInformationComponent } from './components/film-information/film-information.component';
 import { RateFilmComponent } from './components/rate-film/rate-film.component';
 import { FilmsComponent } from './components/films/films.component';
+import { EditFilmRatingComponent } from './components/edit-film-rating/edit-film-rating.component';
 
 
 export const routes: Routes = [
@@ -21,7 +22,8 @@ export const routes: Routes = [
     { path: 'movies', component: FilmsComponent, data: { kind: 'movie' } },
     { path: 'shows', component: FilmsComponent, data: { kind: 'series' } },
 
-    
+    { path: 'edit/:type/:postId', component: EditFilmRatingComponent },
+
 
     { path: '**', redirectTo: '' },
 ];

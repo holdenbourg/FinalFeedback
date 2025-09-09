@@ -1,0 +1,64 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
+
+* { 
+  margin: 0; 
+  padding: 0; 
+  box-sizing: border-box; 
+  font-family: "Poppins", sans-serif; 
+}
+
+:host {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: url('/assets/images/shaded-background.jpg');
+}
+
+.container {
+  position: absolute; left: 40px; right: 40px; top: 40px; bottom: 40px;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+
+.film-information {
+  display: flex; width: 100%; height: 56%;
+  border: .2vw solid #fff; border-radius: 5px; backdrop-filter: blur(3px);
+}
+
+.film-poster { margin: 10px; border-radius: 5px; height: auto; width: auto; }
+
+.film-text {
+  display: flex; flex-direction: column;
+  margin-top: 15px; margin-left: 20px; color: #fff;
+  line-height: 2.25vw; font-size: 1.82vw; font-weight: 500;
+}
+
+.title { line-height: 2.85vw; font-size: 2.85vw; font-weight: 600; padding-bottom: 10px; color: #fff; }
+.release, .film-runtime, .film-rating { color: #fff; }
+
+.date-rated {
+  position: absolute; right: 20px; bottom: 10px; text-align: right;
+  font-size: 1.8vw; color: #fff; font-weight: 500;
+}
+
+.bottom-half {
+  display: flex; flex-direction: column; width: 100%; height: 40.5%;
+  border: .2vw solid #fff; border-radius: 5px; backdrop-filter: blur(3px);
+  justify-content: space-between; padding: 40px 0 30px;
+}
+
+.ratings {
+  display: flex; flex-direction: row; justify-content: space-between;
+  color: #fff; font-size: 2.6vw; font-weight: 600; padding: 0 4.2vw;
+}
+
+.rating { display: flex; flex-direction: column; align-items: center; }
+.edit-ratings { display: flex; flex-direction: row; justify-content: center; }
+.edit-ratings p { transform: translateY(-5%); }
+.edit-ratings a i { color: #fff; }
+
+.button {
+  width: 40%; height: 2.8vw; background: transparent; border: .2vw solid #fff;
+  box-shadow: 0 0 30px rgba(0,0,0,.5); border-radius: 6px; cursor: pointer;
+  font-size: 1.55vw; color: #fff; font-weight: 600; margin: 0 auto;
+}

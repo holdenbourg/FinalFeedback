@@ -1,0 +1,100 @@
+<div class="container" *ngIf="draft() as d">
+  <div class="film-information">
+    <img class="film-poster" [src]="d.poster" [attr.alt]="d.title" />
+
+    <div class="film-text">
+      <p class="title">{{ d.title }}</p>
+      <p class="release">{{ d.releaseDate }}</p>
+
+    <ng-container *ngIf="movie() as m">
+    <p class="film-runtime" *ngIf="m.runTime != null">
+        {{ fixRuntime(m.runTime) }}
+    </p>
+    </ng-container>
+
+      <p class="film-rating" *ngIf="d.rated">{{ d.rated }}</p>
+    </div>
+
+    <div class="date-rated">
+      <p>Rated: {{ d.dateRated }}</p>
+    </div>
+  </div>
+
+  <div class="bottom-half">
+    <div class="ratings">
+      <div class="rating">
+        <p>Acting:</p>
+        <div class="edit-ratings">
+          <a (click)="onDown('acting')"><i class='bx bx-chevron-left'></i></a>
+          <p>{{ d.acting }}</p>
+          <a (click)="onUp('acting')"><i class='bx bx-chevron-right'></i></a>
+        </div>
+      </div>
+
+      <div class="rating">
+        <p>Visuals:</p>
+        <div class="edit-ratings">
+          <a (click)="onDown('visuals')"><i class='bx bx-chevron-left'></i></a>
+          <p>{{ d.visuals }}</p>
+          <a (click)="onUp('visuals')"><i class='bx bx-chevron-right'></i></a>
+        </div>
+      </div>
+
+      <div class="rating">
+        <p>Story:</p>
+        <div class="edit-ratings">
+          <a (click)="onDown('story')"><i class='bx bx-chevron-left'></i></a>
+          <p>{{ d.story }}</p>
+          <a (click)="onUp('story')"><i class='bx bx-chevron-right'></i></a>
+        </div>
+      </div>
+
+      <div class="rating">
+        <p>Pacing:</p>
+        <div class="edit-ratings">
+          <a (click)="onDown('pacing')"><i class='bx bx-chevron-left'></i></a>
+          <p>{{ d.pacing }}</p>
+          <a (click)="onUp('pacing')"><i class='bx bx-chevron-right'></i></a>
+        </div>
+      </div>
+
+      <!-- Movie uses Climax; Series uses Length -->
+    <ng-container *ngIf="movie() as m; else seriesBlock">
+    <div class="rating">
+        <p>Climax:</p>
+        <div class="edit-ratings">
+        <a (click)="onDown('climax')"><i class="bx bx-chevron-left"></i></a>
+        <p>{{ m.climax }}</p>
+        <a (click)="onUp('climax')"><i class="bx bx-chevron-right"></i></a>
+        </div>
+    </div>
+    </ng-container>
+
+    <ng-template #seriesBlock>
+    <ng-container *ngIf="series() as s">
+        <div class="rating">
+        <p>Length:</p>
+        <div class="edit-ratings">
+            <a (click)="onDown('length')"><i class="bx bx-chevron-left"></i></a>
+            <p>{{ s.length }}</p>
+            <a (click)="onUp('length')"><i class="bx bx-chevron-right"></i></a>
+        </div>
+        </div>
+    </ng-container>
+    </ng-template>
+
+      <div class="rating">
+        <p>Ending:</p>
+        <div class="edit-ratings">
+          <a (click)="onDown('ending')"><i class='bx bx-chevron-left'></i></a>
+          <p>{{ d.ending }}</p>
+          <a (click)="onUp('ending')"><i class='bx bx-chevron-right'></i></a>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" class="button" (click)="onSave()">
+      Rate {{ d.rating }}/10
+    </button>
+  </div>
+</div>
