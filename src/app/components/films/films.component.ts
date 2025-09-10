@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, OnInit, inject, signal, computed, HostListener, ElementRef } from "@angular/core";
+import { Component, OnInit, inject, signal, computed, HostListener, ElementRef, ViewChild, NgZone, AfterViewInit } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { AccountInformationModel } from "../../models/database-models/account-information-model";
 import { CommentModel } from "../../models/database-models/comment-model";
@@ -20,6 +20,11 @@ type SortKey = 'rating' | 'runtime' | 'dateRated' | 'title';
 type RatedItem = | (RatedMovieModel & { kind: 'movie' }) | (RatedSeriesModel & { kind: 'series'; length?: number });
 type FilmKind = 'movie' | 'series';
 
+type FilmUIState = {
+  movie: { activePostId?: string; scrollTop?: number };
+  series: { activePostId?: string; scrollTop?: number };
+};
+
 @Component({
   selector: 'app-films',
   standalone: true,
@@ -28,12 +33,17 @@ type FilmKind = 'movie' | 'series';
   styleUrls: ['./films.component.css'],
 })
 
-export class FilmsComponent implements OnInit {
+export class FilmsComponent implements OnInit, AfterViewInit {
   private elementRef = inject(ElementRef)
+  readonly ngZone = inject(NgZone);
   readonly routingService = inject(RoutingService);
   public readonly localStorageService = inject(LocalStorageService);
   readonly filmCache = inject(FilmCacheService);
   private router = inject(Router);
+
+  private readonly SLOW_SCROLL_MS = 500;
+  private readonly UI_STATE_KEY = 'films-ui-state';
+  @ViewChild('scrollBox', { static: false }) scrollBoxRef?: ElementRef<HTMLElement>;
 
   public currentUser: AccountInformationModel = this.localStorageService.getInformation('current-user');
 
@@ -113,11 +123,7 @@ export class FilmsComponent implements OnInit {
       const url = (this.router.url || '').toLowerCase();
       this.filmKind.set(/\b(shows)\b/.test(url) ? 'series' : 'movie');
 
-      ///  keep left pane selection sane for the new list  \\\
-      const first = this.usersRatedList()[0];
-      this.activeFilm = (first as RatedItem) ?? null;
-
-      queueMicrotask(() => this.scrollActiveIntoViewIfNeeded());
+      this.restoreActiveAndScroll();
 
       ///  clear filters when switching kind  \\\
       this.selectedGenres.set(new Set());
@@ -132,6 +138,16 @@ export class FilmsComponent implements OnInit {
     this.localStorageService.clearInformation('current-edit-movie');
     this.localStorageService.cleanTemporaryLocalStorages();
   }
+
+  ngAfterViewInit() {
+    const element = this.scrollBoxRef?.nativeElement;
+    if (!element) return;
+
+    element.addEventListener('scroll', () => this.saveScrollTop(), { passive: true });
+
+    this.afterRender(() => this.scrollActiveIntoViewIfNeeded(true));
+  }
+
 
 
   /// ---------------------------------------- Delete Functionality ----------------------------------------  \\\
@@ -193,6 +209,14 @@ export class FilmsComponent implements OnInit {
     if (this.activeFilm?.postId === item.postId) {
       this.activeFilm = this.usersRatedList()[0] ?? null;
     }
+
+    if (this.activeFilm) {
+      this.saveActive(this.activeFilm.postId);
+    } else {
+      this.saveActive(undefined);
+    }
+
+    this.saveScrollTop();
   }
 
   openConfirm(item: RatedItem) {
@@ -358,31 +382,16 @@ export class FilmsComponent implements OnInit {
 
   onRatedFilmClicked(film: RatedItem) {
     this.activeFilm = film;
-
     this.useFallback = false;
-  }
 
-  private isRowVisible(el: HTMLElement, container: HTMLElement) {
-    const er = el.getBoundingClientRect();
-    const cr = container.getBoundingClientRect();
-    return er.top >= cr.top && er.bottom <= cr.bottom;
-  }
-
-  private scrollActiveIntoViewIfNeeded() {
-    const id = this.activeFilm?.postId;
-    if (!id) return;
-
-    const host = this.elementRef.nativeElement as HTMLElement;
-    const container = host.querySelector<HTMLElement>('.scroll-box');
-    const row = host.querySelector<HTMLElement>(`.rated-film[data-postid="${id}"]`);
-    if (!container || !row) return;
-
-    if (!this.isRowVisible(row, container)) {
-      row.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    }
+    this.saveActive(film.postId);
+    this.saveScrollTop();
   }
 
   onEdit(film: RatedItem) {
+    this.saveActive(film.postId);
+    this.saveScrollTop();
+
     this.filmCache.setDraft(film.postId, film);
     this.routingService.navigateToEditFilm(film.kind, film.postId);
   }
@@ -399,6 +408,154 @@ export class FilmsComponent implements OnInit {
     this.useFallback = true;
 
     if (ev) (ev.target as HTMLImageElement).src = this.fallbackPoster;
+  }
+
+
+  /// ---------------------------------------- Scroll to Active Film Functionality ----------------------------------------  \\\
+  private scrollActiveIntoViewIfNeeded(center = false) {
+    const id = this.activeFilm?.postId;
+    if (!id) return;
+
+    const container = this.scrollBoxRef?.nativeElement;
+    if (!container) return;
+
+    const row = container.querySelector<HTMLElement>(`.rated-film[data-postid="${id}"]`);
+    if (!row) return;
+
+    const er = row.getBoundingClientRect();
+    const cr = container.getBoundingClientRect();
+    const fullyVisible = er.top >= cr.top && er.bottom <= cr.bottom;
+
+    if (fullyVisible) return;
+
+    // Compute the desired scrollTop (center or nearest) using rects,
+    // so it works regardless of offsetParent quirks.
+    const currentTop = container.scrollTop;
+    const deltaFromTop = er.top - cr.top; // distance of row from container's visible top
+    let targetTop: number;
+
+    if (center) {
+      const centerOffset = (container.clientHeight - row.clientHeight) / 2;
+      targetTop = currentTop + deltaFromTop - centerOffset;
+    } else {
+      const rowAbove = er.top < cr.top;
+      const margin = 8;
+      targetTop = rowAbove
+        ? currentTop + deltaFromTop - margin // bring to top-ish
+        : currentTop + (er.bottom - cr.bottom) + margin; // bring to bottom-ish
+    }
+
+    // Clamp target to bounds
+    targetTop = Math.max(0, Math.min(targetTop, container.scrollHeight - container.clientHeight));
+
+    this.smoothScrollTo(container, targetTop, this.SLOW_SCROLL_MS);
+  }
+
+  private readUIState(): FilmUIState {
+    return (
+      this.localStorageService.getInformation(this.UI_STATE_KEY) ?? {
+        movie: {},
+        series: {},
+      }
+    );
+  }
+  private writeUIState(next: FilmUIState) {
+    this.localStorageService.setInformation(this.UI_STATE_KEY, next);
+  }
+
+  private saveActive(postId: string | undefined) {
+    const kind = this.filmKind();
+    const state = this.readUIState();
+    state[kind].activePostId = postId;
+    this.writeUIState(state);
+  }
+
+  private saveScrollTop() {
+    const container = this.scrollBoxRef?.nativeElement;
+    if (!container) return;
+
+    const kind = this.filmKind();
+    const state = this.readUIState();
+
+    state[kind].scrollTop = container.scrollTop;
+    this.writeUIState(state);
+  }
+
+  private restoreActiveAndScroll() {
+    const kind = this.filmKind();
+    const state = this.readUIState();
+    const wantedId = state[kind].activePostId;
+    const list = this.usersRatedList();
+
+    // restore active item (fallback to first)
+    const found = wantedId ? list.find(x => x.postId === wantedId) : list[0];
+    this.activeFilm = found ?? null;
+
+    // restore scrollTop *after* DOM paints
+    this.afterRender(() => {
+      const container = this.scrollBoxRef?.nativeElement;
+      if (!container) return;
+
+      const st = state[kind].scrollTop;
+      if (typeof st === 'number') {
+        container.scrollTop = st;
+        // also ensure the active row is visible (list may have re-sorted)
+        this.afterRender(() => this.scrollActiveIntoViewIfNeeded());
+      } else {
+        this.scrollActiveIntoViewIfNeeded(true);
+      }
+    });
+  }
+
+  /** Call this whenever filters/sort/search change and the list is rederived */
+  private ensureActiveStillValid() {
+    const cur = this.activeFilm?.postId;
+    if (!cur) return;
+
+    const exists = this.filteredRatedFilms().some(x => x.postId === cur);
+    if (!exists) {
+      // If filtered out or deleted → pick first visible
+      const first = this.filteredRatedFilms()[0] ?? null;
+      this.activeFilm = first;
+      this.saveActive(first?.postId);
+    }
+  }
+
+  private afterRender(fn: () => void) {
+    this.ngZone.runOutsideAngular(() => {
+      requestAnimationFrame(() => setTimeout(fn, 0));
+    });
+  }
+
+  private prefersReducedMotion(): boolean {
+    return typeof window !== 'undefined' &&
+          window.matchMedia &&
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  private easeInOutQuad(t: number) {
+    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  }
+
+  private smoothScrollTo(container: HTMLElement, targetTop: number, duration = this.SLOW_SCROLL_MS) {
+    if (this.prefersReducedMotion() || duration <= 0) {
+      container.scrollTop = targetTop;
+      return;
+    }
+
+    const startTop = container.scrollTop;
+    const change = targetTop - startTop;
+    const startTime = performance.now();
+
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / duration);
+      const eased = this.easeInOutQuad(t);
+      container.scrollTop = startTop + change * eased;
+      if (t < 1) requestAnimationFrame(step);
+    };
+
+    requestAnimationFrame(step);
   }
 
 
@@ -499,16 +656,25 @@ export class FilmsComponent implements OnInit {
       list = list.filter(m => rateds.has(String(m.rated ?? '').trim()));
     }
 
-    return [...list].sort((a, b) => {
+    const sorted = [...list].sort((a, b) => {
       let av = 0, bv = 0;
+
       switch (key) {
         case 'rating':    av = a.rating ?? 0;                 bv = b.rating ?? 0;                 break;
         case 'runtime':   av = this.runtimeMinutesOf(a);      bv = this.runtimeMinutesOf(b);      break;
         case 'dateRated': av = this.dateValue(a.dateRated);   bv = this.dateValue(b.dateRated);   break;
         case 'title':     return sign * a.title.localeCompare(b.title);
       }
+
       return sign * (av - bv);
     });
+
+    queueMicrotask(() => {
+      this.ensureActiveStillValid();
+      this.afterRender(() => this.scrollActiveIntoViewIfNeeded());
+    });
+
+    return sorted;
   });
 
   toggleRated(r: string) {

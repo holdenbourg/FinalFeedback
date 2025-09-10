@@ -161,6 +161,20 @@
       <strong>{{ newRating() }}</strong>.
     </p>
 
+    <div class="changes" *ngIf="changeList().length">
+      <div class="changes-title">Changes made</div>
+      <ul class="changes-list">
+        <li class="change-item" *ngFor="let c of changeList()">
+          <span class="change-label">{{ c.label }}:</span>
+          <span class="change-fromto">
+            <span class="change-from">{{ c.from }}</span>
+            <span class="change-sep">→</span>
+            <span class="change-to">{{ c.to }}</span>
+          </span>
+        </li>
+      </ul>
+    </div>
+
     <div class="modal-actions">
       <button type="button" class="btn btn-success" (click)="confirmEdit()">
         Yes, update it

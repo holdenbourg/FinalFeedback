@@ -135,12 +135,13 @@
   <ng-template #noSelection>
     <div class="left-side empty">
       <p class="empty-text">You don’t have any ratings yet</p>
-      <button type="button" class="empty-button" (click)="this.routingService.navigateToSearchMovies()">Find Movie To Rate</button>
+      <button type="button" class="empty-button" (click)="this.routingService.navigateToSearchMovies()" *ngIf="this.filmKind() === 'movie'">Find Movie To Rate</button>
+      <button type="button" class="empty-button" (click)="this.routingService.navigateToSearchSeries()" *ngIf="this.filmKind() === 'series'">Find Series To Rate</button>
     </div>
   </ng-template>
 
   <div class="rated-films-container">
-    <div class="seach-bar">
+    <div class="seach-bar" *ngIf="filteredRatedFilms().length > 0">
       <div class="input-box">
         <input
           type="text"
@@ -249,7 +250,7 @@
       </div>
     </div>
 
-    <div class="scroll-box">
+    <div class="scroll-box" #scrollBox>
       <div class="rated-films" *ngIf="filteredRatedFilms().length; else noRatedMovies">
         <div class="rated-film" *ngFor="let film of filteredRatedFilms(); trackBy: trackByPostId" (click)="onRatedFilmClicked(film)" [attr.data-postid]="film.postId">
           <app-rated-film

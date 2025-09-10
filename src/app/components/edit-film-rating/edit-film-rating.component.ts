@@ -23,6 +23,9 @@ type Criteria = {
   midKey: MidKey;
 };
 
+type Delta = { label: string; from: number; to: number };
+
+
 @Component({
   selector: 'app-edit-film-rating',
   standalone: true,
@@ -53,6 +56,8 @@ export class EditFilmRatingComponent implements OnInit {
   readonly initialRating = signal<number | null>(null);
   readonly oldRating = signal<number | null>(null);
   readonly newRating = signal<number | null>(null);
+
+  readonly changeList = signal<Delta[]>([]);
 
 
   ngOnInit(): void {
@@ -130,6 +135,32 @@ export class EditFilmRatingComponent implements OnInit {
 
 
   /// ---------------------------------------- Helpers ----------------------------------------  \\\
+  private buildChangeList(oldC: Criteria, curC: Criteria): Delta[] {
+    const pretty = (k: keyof Criteria): string => {
+      if (k === 'mid') return curC.midKey === 'climax' ? 'Climax' : 'Length';
+      return ({
+        acting: 'Acting',
+        visuals: 'Visuals',
+        story: 'Story',
+        pacing: 'Pacing',
+        ending: 'Ending',
+      } as Record<keyof Criteria, string>)[k];
+    };
+
+    const entries: Array<[keyof Criteria, number, number]> = [
+      ['acting', oldC.acting, curC.acting],
+      ['visuals', oldC.visuals, curC.visuals],
+      ['story',   oldC.story,   curC.story],
+      ['pacing',  oldC.pacing,  curC.pacing],
+      ['ending',  oldC.ending,  curC.ending],
+      ['mid',     oldC.mid,     curC.mid],
+    ];
+
+    return entries
+      .filter(([, from, to]) => Number(from) !== Number(to))
+      .map(([key, from, to]) => ({ label: pretty(key), from, to }));
+}
+
   private getCriteria(item: RatedItem): Criteria {
     const midKey: MidKey = item.kind === 'movie' ? 'climax' : 'length';
     const mid = Number((item as any)[midKey] ?? 0);
@@ -205,15 +236,22 @@ export class EditFilmRatingComponent implements OnInit {
     if (!d) return;
 
     const currentCriteria = this.getCriteria(d);
-    const changed = this.criteriaChanged(this.initialCriteria(), currentCriteria);
+    const init = this.initialCriteria();
 
+    const changed = this.criteriaChanged(init, currentCriteria);
     if (!changed) {
       this.navigateBackByKind(d.kind);
       return;
     }
-    
-    this.oldRating.set(this.initialRating());
+
+    this.oldRating.set(this.initialRating() ?? d.rating ?? 0);
     this.newRating.set(d.rating ?? this.computeAverage(d));
+
+    if (init) {
+      this.changeList.set(this.buildChangeList(init, currentCriteria));
+    } else {
+      this.changeList.set([]);
+    }
 
     this.confirmOpen.set(true);
   }
