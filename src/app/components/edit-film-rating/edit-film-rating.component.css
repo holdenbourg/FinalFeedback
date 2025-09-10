@@ -33,8 +33,83 @@
   line-height: 2.25vw; font-size: 1.82vw; font-weight: 500;
 }
 
-.title { line-height: 2.85vw; font-size: 2.85vw; font-weight: 600; padding-bottom: 10px; color: #fff; }
-.release, .film-runtime, .film-rating { color: #fff; }
+.film-left {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.film-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable both-edges;
+  text-align: left;  
+  padding-top: 12px;
+  transform: translateX(-12px);
+}
+
+.film-counts {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 14px;
+  justify-content: flex-start;
+  padding-top: 8px;
+  padding-bottom: 10px;
+  padding-left: 6px;
+}
+.count { 
+  display: grid; 
+  grid-template-rows: auto auto; 
+  text-align: left; 
+}
+.count-num { 
+  font-size: 1.8vw; 
+  font-weight: 800; 
+  line-height: 1; 
+  color: #fff;
+}
+.count-label { 
+  font-size: .9vw; 
+  color: rgba(255,255,255,0.8); 
+}
+
+.title { 
+  overflow-wrap: anywhere; 
+  line-height: 2.4vw; 
+  font-size: 2.4vw; 
+  color: #fff; 
+  font-weight: 700; 
+  margin: 0; 
+  padding-bottom: 6px;
+}
+.release { 
+  font-size:1.65vw; 
+  line-height:1.65vw; 
+  color:rgba(255,255,255,0.8); 
+  font-weight:500; 
+  margin:0; 
+  padding-bottom: 6px;
+}
+.meta { 
+  display: inline-flex; 
+  flex-wrap: wrap; 
+  gap: 6px; 
+  justify-content: flex-end; 
+}
+
+.badge { 
+  color: #fff;
+  border: 2px solid rgba(255,255,255,0.8); 
+  border-radius: 999px; 
+  padding: 4px 10px; 
+  font-size: .9vw; 
+  font-weight: 600; 
+  opacity: .95; 
+  backdrop-filter: blur(2px); 
+}
 
 .date-rated {
   position: absolute; right: 20px; bottom: 10px; text-align: right;
@@ -55,10 +130,114 @@
 .rating { display: flex; flex-direction: column; align-items: center; }
 .edit-ratings { display: flex; flex-direction: row; justify-content: center; }
 .edit-ratings p { transform: translateY(-5%); }
+.edit-ratings a {
+  cursor: pointer;
+}
+.edit-ratings a:hover {
+  transform: scale(1.1);
+}
 .edit-ratings a i { color: #fff; }
 
 .button {
-  width: 40%; height: 2.8vw; background: transparent; border: .2vw solid #fff;
-  box-shadow: 0 0 30px rgba(0,0,0,.5); border-radius: 6px; cursor: pointer;
-  font-size: 1.55vw; color: #fff; font-weight: 600; margin: 0 auto;
+  width: 40%; 
+  height: 2.8vw; 
+  background: transparent; 
+  border: .2vw solid #fff;
+  box-shadow: 0 0 30px rgba(0,0,0,.5); 
+  border-radius: 6px; 
+  cursor: pointer;
+  font-size: 1.55vw; 
+  color: #fff; 
+  font-weight: 600; 
+  margin: 0 auto;
+}
+.button:hover { 
+  transform: scale(1.0125); 
+  background: rgba(255,255,255,0.12); 
+}
+.button:active { 
+  transform: translateY(1px); 
+}
+.button:focus-visible { 
+  outline: 2px solid rgba(255,255,255,0.7); 
+  outline-offset: 2px; 
+}
+
+.modal-backdrop { 
+  position: fixed; 
+  inset: 0; 
+  background: rgba(0,0,0,0.6); 
+  backdrop-filter: blur(2px); 
+  z-index: 1000; 
+} 
+
+.modal { 
+  position: fixed; 
+  z-index: 1001; 
+  left: 50%; 
+  top: 50%; 
+  transform: translate(-50%, -50%); 
+  width: min(520px, 92vw); 
+  background: rgba(20,20,20,0.9); 
+  color: #fff; 
+  border: 1px solid rgba(255,255,255,0.25); 
+  border-radius: 12px; 
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5); 
+  padding: 18px 18px 14px; 
+} 
+
+.modal-title { 
+  font-size: clamp(18px, 1.4vw, 22px); 
+  font-weight: 700; 
+  margin: 0 0 10px 0; 
+} 
+
+.modal-title-film { 
+  font-weight: 800; 
+  opacity: 0.95; 
+} 
+
+.modal-body { 
+  margin: 0 0 16px 0; 
+  font-size: clamp(14px, 1.05vw, 16px); 
+  opacity: 0.9; 
+} 
+
+.modal-actions { 
+  display: flex; 
+  gap: 10px; 
+  justify-content: flex-end; 
+} 
+
+.btn { 
+  padding: 8px 12px; 
+  border-radius: 8px; 
+  font-weight: 700; 
+  border: 1px solid rgba(255,255,255,0.25); 
+  background: rgba(255,255,255,0.10); 
+  color: #fff; 
+  cursor: pointer; 
+  transition: transform 80ms ease, background 140ms ease, opacity 140ms ease; 
+} 
+.btn:hover { 
+  background: rgba(255,255,255,0.16); 
+  transform: translateY(-1px); 
+} 
+.btn:active { 
+  transform: translateY(0); 
+} 
+
+.btn-success {
+  border-color: rgba(100, 255, 100, 0.45);
+  background: rgba(80, 255, 80, 0.18);
+}
+.btn-success:hover {
+  background: rgba(80, 255, 80, 0.28);
+}
+
+.btn-ghost { 
+  background: transparent; 
+} 
+.btn-ghost:hover { 
+  background: rgba(255,255,255,0.10); 
 }

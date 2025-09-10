@@ -1,100 +1,173 @@
-<div class="container" *ngIf="draft() as d">
+<div class="container" *ngIf="draft() as draft">
   <div class="film-information">
-    <img class="film-poster" [src]="d.poster" [attr.alt]="d.title" />
+    <img 
+      class="film-poster"
+      [src]="posterSrc"
+      [attr.alt]="draft.title || 'Poster'"
+      (error)="setFallback($event)"
+      loading="lazy"
+      decoding="async"
+    />
 
-    <div class="film-text">
-      <p class="title">{{ d.title }}</p>
-      <p class="release">{{ d.releaseDate }}</p>
+    <div class="film-left">
+      <div class="film-scroll">
+        <p class="title">{{ draft.title }}</p>
+        <p class="release" *ngIf="draft.releaseDate">{{ formatLongDate(draft.releaseDate) }}</p>
 
-    <ng-container *ngIf="movie() as m">
-    <p class="film-runtime" *ngIf="m.runTime != null">
-        {{ fixRuntime(m.runTime) }}
-    </p>
-    </ng-container>
+        <div class="meta">
+          <span class="badge" *ngIf="draft.rated">{{ draft.rated }}</span>
 
-      <p class="film-rating" *ngIf="d.rated">{{ d.rated }}</p>
-    </div>
+          <span class="badge" *ngIf="(draft.genres || '').length">
+            {{ (draft.genres || '').join(' • ') }}
+          </span>
+        </div>
+      </div>
 
-    <div class="date-rated">
-      <p>Rated: {{ d.dateRated }}</p>
+      <div class="film-counts">
+        <div class="count" *ngIf="runtimeHours !== 0 || totalSeasons !== 0">
+          <div class="count-num">{{ count1Num }}</div>
+          <div class="count-label">{{ count1Label }}</div>
+        </div>
+
+        <div class="count" *ngIf="runtimeMinutesRemainder !== 0 || totalEpisodes !== 0">
+          <div class="count-num">{{ count2Num }}</div>
+          <div class="count-label">{{ count2Label }}</div>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="bottom-half">
     <div class="ratings">
       <div class="rating">
-        <p>Acting:</p>
+        <p>Acting</p>
+
         <div class="edit-ratings">
           <a (click)="onDown('acting')"><i class='bx bx-chevron-left'></i></a>
-          <p>{{ d.acting }}</p>
+
+          <p>{{ draft.acting }}</p>
+
           <a (click)="onUp('acting')"><i class='bx bx-chevron-right'></i></a>
         </div>
       </div>
 
       <div class="rating">
-        <p>Visuals:</p>
+        <p>Visuals</p>
+
         <div class="edit-ratings">
           <a (click)="onDown('visuals')"><i class='bx bx-chevron-left'></i></a>
-          <p>{{ d.visuals }}</p>
+
+          <p>{{ draft.visuals }}</p>
+
           <a (click)="onUp('visuals')"><i class='bx bx-chevron-right'></i></a>
         </div>
       </div>
 
       <div class="rating">
-        <p>Story:</p>
+        <p>Story</p>
+
         <div class="edit-ratings">
           <a (click)="onDown('story')"><i class='bx bx-chevron-left'></i></a>
-          <p>{{ d.story }}</p>
+          
+          <p>{{ draft.story }}</p>
+          
           <a (click)="onUp('story')"><i class='bx bx-chevron-right'></i></a>
         </div>
       </div>
 
       <div class="rating">
-        <p>Pacing:</p>
+        <p>Pacing</p>
+
         <div class="edit-ratings">
           <a (click)="onDown('pacing')"><i class='bx bx-chevron-left'></i></a>
-          <p>{{ d.pacing }}</p>
+          
+          <p>{{ draft.pacing }}</p>
+          
           <a (click)="onUp('pacing')"><i class='bx bx-chevron-right'></i></a>
         </div>
       </div>
 
       <!-- Movie uses Climax; Series uses Length -->
-    <ng-container *ngIf="movie() as m; else seriesBlock">
-    <div class="rating">
-        <p>Climax:</p>
-        <div class="edit-ratings">
-        <a (click)="onDown('climax')"><i class="bx bx-chevron-left"></i></a>
-        <p>{{ m.climax }}</p>
-        <a (click)="onUp('climax')"><i class="bx bx-chevron-right"></i></a>
-        </div>
-    </div>
-    </ng-container>
-
-    <ng-template #seriesBlock>
-    <ng-container *ngIf="series() as s">
+      <ng-container *ngIf="movie() as movie; else seriesBlock">
         <div class="rating">
-        <p>Length:</p>
-        <div class="edit-ratings">
-            <a (click)="onDown('length')"><i class="bx bx-chevron-left"></i></a>
-            <p>{{ s.length }}</p>
-            <a (click)="onUp('length')"><i class="bx bx-chevron-right"></i></a>
+            <p>Climax</p>
+
+            <div class="edit-ratings">
+              <a (click)="onDown('climax')"><i class="bx bx-chevron-left"></i></a>
+              
+              <p>{{ movie.climax }}</p>
+              
+              <a (click)="onUp('climax')"><i class="bx bx-chevron-right"></i></a>
+            </div>
         </div>
-        </div>
-    </ng-container>
-    </ng-template>
+      </ng-container>
+
+      <ng-template #seriesBlock>
+        <ng-container *ngIf="series() as series">
+          <div class="rating">
+            <p>Length</p>
+
+            <div class="edit-ratings">
+              <a (click)="onDown('length')"><i class="bx bx-chevron-left"></i></a>
+              
+              <p>{{ series.length }}</p>
+              
+              <a (click)="onUp('length')"><i class="bx bx-chevron-right"></i></a>
+            </div>
+          </div>
+        </ng-container>
+      </ng-template>
 
       <div class="rating">
-        <p>Ending:</p>
+        <p>Ending</p>
+
         <div class="edit-ratings">
           <a (click)="onDown('ending')"><i class='bx bx-chevron-left'></i></a>
-          <p>{{ d.ending }}</p>
+          
+          <p>{{ draft.ending }}</p>
+          
           <a (click)="onUp('ending')"><i class='bx bx-chevron-right'></i></a>
         </div>
       </div>
     </div>
 
-    <button type="button" class="button" (click)="onSave()">
-      Rate {{ d.rating }}/10
-    </button>
+    <button type="button" class="button" (click)="openConfirmEdit()">Rate {{ draft.rating }}/10</button>
+  </div>
+
+  <div
+    class="modal-backdrop"
+    *ngIf="confirmOpen()"
+    (click)="closeConfirmEdit()"
+    aria-hidden="true">
+  </div>
+
+  <div
+    class="modal"
+    *ngIf="confirmOpen()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="confirmTitle"
+    (click)="$event.stopPropagation()">
+
+    <h3 id="confirmTitle" class="modal-title">
+      Are you sure you want to alter your rating for
+      <span class="modal-title-film">{{ draft?.title }}</span>?
+    </h3>
+
+    <p class="modal-body">
+      Your rating will go from
+      <strong>{{ oldRating() }}</strong>
+      to
+      <strong>{{ newRating() }}</strong>.
+    </p>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-success" (click)="confirmEdit()">
+        Yes, update it
+      </button>
+      <button type="button" class="btn btn-ghost" (click)="closeConfirmEdit()">
+        Never mind
+      </button>
+    </div>
   </div>
 </div>

@@ -322,6 +322,11 @@
   line-height: 2.7vw; 
   width: auto;
 }
+.date-rated p {
+  font-size: 1.25vw;
+  font-weight: 600;
+  transform: translateY(10px);
+}
 
 .button {
   width: 100%; 
@@ -417,7 +422,9 @@
   border-color: rgba(255, 100, 100, 0.45);
   background: rgba(255, 80, 80, 0.18);
 }
-.btn-danger:hover { background: rgba(255, 80, 80, 0.28); }
+.btn-danger:hover { 
+  background: rgba(255, 80, 80, 0.28); 
+}
 
 .btn-ghost {
   background: transparent;

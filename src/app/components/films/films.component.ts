@@ -553,6 +553,7 @@ export class FilmsComponent implements OnInit {
     this.selectedRateds.set(new Set()); 
   }
 
+
   /// ---------- Clsoe filter lists if click outside or Esc ---------- \\\
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent) {
@@ -581,6 +582,7 @@ export class FilmsComponent implements OnInit {
     this.ratedOpen.set(false);
   }
 
+
   /// ---------------------------------------- Responsive Sidebar ----------------------------------------  \\\
   @HostListener('window:resize', ['$event'])
   onWindowResize(evt: UIEvent) {
@@ -607,26 +609,26 @@ export class FilmsComponent implements OnInit {
   /// ---------------------------------------- Formatting ----------------------------------------  \\\
   ///  input: '2009-12-18' -> 'December 18, 2009'  \\\
   formatLongDate(dateLike?: string): string {
-  if (!dateLike) return '';
+    if (!dateLike) return '';
 
-  // If it's a full ISO string, keep only the date part
-  const ymd = dateLike.includes('T') ? dateLike.slice(0, 10) : dateLike;
+    // If it's a full ISO string, keep only the date part
+    const ymd = dateLike.includes('T') ? dateLike.slice(0, 10) : dateLike;
 
-  // Strictly parse YYYY-MM-DD
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
-  if (!match) return ymd; // fallback (don’t crash)
+    // Strictly parse YYYY-MM-DD
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+    if (!match) return ymd; // fallback (don’t crash)
 
-  const [, year, month, day] = match;
+    const [, year, month, day] = match;
 
-  const months = [
-    'January','February','March','April','May','June',
-    'July','August','September','October','November','December'
-  ];
+    const months = [
+      'January','February','March','April','May','June',
+      'July','August','September','October','November','December'
+    ];
 
-  const monthName = months[parseInt(month, 10) - 1];
-  const dayNum = parseInt(day, 10);
+    const monthName = months[parseInt(month, 10) - 1];
+    const dayNum = parseInt(day, 10);
 
-  return `${monthName} ${dayNum}, ${year}`;
+    return `${monthName} ${dayNum}, ${year}`;
   }
 
   ///  Format runtime (123 minutes → 2 HR 3 MIN)   \\\

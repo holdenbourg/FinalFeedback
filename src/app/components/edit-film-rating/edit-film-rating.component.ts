@@ -12,6 +12,17 @@ type RatedItem =
   | (RatedMovieModel & { kind: 'movie' })
   | (RatedSeriesModel & { kind: 'series' });
 
+type MidKey = 'climax' | 'length';
+type Criteria = {
+  acting: number;
+  visuals: number;
+  story: number;
+  pacing: number;
+  ending: number;
+  mid: number;     ///  Climax (movie) or Length (series)  \\\
+  midKey: MidKey;
+};
+
 @Component({
   selector: 'app-edit-film-rating',
   standalone: true,
@@ -19,6 +30,7 @@ type RatedItem =
   templateUrl: './edit-film-rating.component.html',
   styleUrls: ['./edit-film-rating.component.css'],
 })
+
 export class EditFilmRatingComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -31,6 +43,17 @@ export class EditFilmRatingComponent implements OnInit {
 
   readonly isMovie = computed(() => this.draft()?.kind === 'movie');
   readonly isSeries = computed(() => this.draft()?.kind === 'series');
+
+  private useFallback = false;
+  readonly fallbackPoster = 'assets/images/no-poster.jpg';
+
+  readonly initialCriteria = signal<Criteria | null>(null);
+
+  readonly confirmOpen = signal(false);
+  readonly initialRating = signal<number | null>(null);
+  readonly oldRating = signal<number | null>(null);
+  readonly newRating = signal<number | null>(null);
+
 
   ngOnInit(): void {
     const typeParam = (this.route.snapshot.paramMap.get('type') || 'movie') as FilmKind;
@@ -68,9 +91,77 @@ export class EditFilmRatingComponent implements OnInit {
     }
 
     this.draft.set(editDraft);
+
+    if (editDraft && this.initialCriteria() == null) {
+      this.initialCriteria.set(this.getCriteria(editDraft));
+    }
+    if (editDraft && this.initialRating() == null) {
+      this.initialRating.set(editDraft.rating ?? 0);
+    }
   }
 
-  // ---------- rating changes (autosave to draft) ----------
+
+  /// ---------------------------------------- Save Functionality ----------------------------------------  \\\
+  onSave() {
+    const editDraft = this.draft(); 
+    if (!editDraft) return;
+
+    if (editDraft.kind === 'movie') {
+      const ratedMovies: RatedMovieModel[] = this.localStorageService.getInformation('rated-movies') ?? [];
+      const index = ratedMovies.findIndex(x => x.postId === editDraft.postId);
+
+      if (index >= 0) ratedMovies[index] = editDraft; 
+      else ratedMovies.unshift(editDraft);
+
+      this.localStorageService.setInformation('rated-movies', ratedMovies);
+    } else {
+      const ratedSeries: RatedSeriesModel[] = this.localStorageService.getInformation('rated-series') ?? [];
+      const index = ratedSeries.findIndex(x => x.postId === editDraft.postId);
+
+      if (index >= 0) ratedSeries[index] = editDraft; 
+      else ratedSeries.unshift(editDraft);
+
+      this.localStorageService.setInformation('rated-series', ratedSeries);
+    }
+    
+    this.filmCache.clearDraft(editDraft.postId);
+    this.navigateBackByKind(editDraft.kind);
+  }
+
+
+  /// ---------------------------------------- Helpers ----------------------------------------  \\\
+  private getCriteria(item: RatedItem): Criteria {
+    const midKey: MidKey = item.kind === 'movie' ? 'climax' : 'length';
+    const mid = Number((item as any)[midKey] ?? 0);
+    return {
+      acting: Number(item.acting ?? 0),
+      visuals: Number(item.visuals ?? 0),
+      story: Number(item.story ?? 0),
+      pacing: Number(item.pacing ?? 0),
+      ending: Number(item.ending ?? 0),
+      mid,
+      midKey,
+    };
+  }
+
+  private criteriaChanged(a: Criteria | null, b: Criteria | null): boolean {
+    if (!a || !b) return true;
+    return (
+      a.midKey !== b.midKey ||
+      a.acting !== b.acting ||
+      a.visuals !== b.visuals ||
+      a.story !== b.story ||
+      a.pacing !== b.pacing ||
+      a.ending !== b.ending ||
+      a.mid !== b.mid
+    );
+  }
+
+  private navigateBackByKind(kind: FilmKind) {
+    if (kind === 'movie') this.router.navigate(['/movies']);
+    else this.router.navigate(['/shows']);
+  }
+
   private clamp(v: number) { return Math.max(1, Math.min(10, v)); }
 
   private setField<K extends keyof RatedItem>(key: K, val: any) {
@@ -109,36 +200,178 @@ export class EditFilmRatingComponent implements OnInit {
     return Number((vals.reduce((a,b)=>a+b,0) / 6).toFixed(1));
   }
 
-  // ---------- save ----------
-  onSave() {
-    const editDraft = this.draft(); 
-    if (!editDraft) return;
+  openConfirmEdit() {
+    const d = this.draft();
+    if (!d) return;
 
-    if (editDraft.kind === 'movie') {
-      const ratedMovies: RatedMovieModel[] = this.localStorageService.getInformation('rated-movies') ?? [];
-      const index = ratedMovies.findIndex(x => x.postId === editDraft.postId);
+    const currentCriteria = this.getCriteria(d);
+    const changed = this.criteriaChanged(this.initialCriteria(), currentCriteria);
 
-      if (index >= 0) ratedMovies[index] = editDraft; 
-      else ratedMovies.unshift(editDraft);
-
-      this.localStorageService.setInformation('rated-movies', ratedMovies);
-    } else {
-      const ratedSeries: RatedSeriesModel[] = this.localStorageService.getInformation('rated-series') ?? [];
-      const index = ratedSeries.findIndex(x => x.postId === editDraft.postId);
-
-      if (index >= 0) ratedSeries[index] = editDraft; 
-      else ratedSeries.unshift(editDraft);
-
-      this.localStorageService.setInformation('rated-series', ratedSeries);
+    if (!changed) {
+      this.navigateBackByKind(d.kind);
+      return;
     }
     
-    this.filmCache.clearDraft(editDraft.postId);
+    this.oldRating.set(this.initialRating());
+    this.newRating.set(d.rating ?? this.computeAverage(d));
 
-    if (editDraft.kind === 'movie') {
-      this.router.navigate(['/movies']);
-    } else {
-      this.router.navigate(['/shows']);
+    this.confirmOpen.set(true);
+  }
+
+  closeConfirmEdit() {
+    this.confirmOpen.set(false);
+  }
+
+  confirmEdit() {
+    this.confirmOpen.set(false);
+    this.onSave();
+  }
+
+  ///  Derived counts for Movie  \\\
+  private parseRuntimeToMinutes(input: unknown): number {
+    if (typeof input === 'number' && Number.isFinite(input)) return Math.max(0, input);
+
+    const s = String(input ?? '').trim();
+
+    if (!s || /^(n\/a|na|unknown)$/i.test(s)) return 0;
+
+    ///  Range like "45–60 min" or "45-60m" -> use the upper bound  \\\
+    const range = s.match(/(\d+)\s*[-–]\s*(\d+)/);
+
+    if (range) return Math.max(0, parseInt(range[2], 10) || 0);
+
+    ///  "1 h 52 min", "1h52m", "2h", "130m"  \\\
+    const hours = s.match(/(\d+)\s*h(?:ours?)?/i);
+    const mins  = s.match(/(\d+)\s*m(?:in(?:utes?)?)?/i);
+
+    if (hours || mins) {
+      const h = hours ? parseInt(hours[1], 10) : 0;
+      const m = mins  ? parseInt(mins[1], 10)  : 0;
+      return Math.max(0, h * 60 + m);
     }
+
+    ///  Plain "112" or "112 min"  \\\
+    const firstNum = s.match(/\d+/)?.[0];
+
+    return Math.max(0, firstNum ? parseInt(firstNum, 10) : 0);
+  }
+  get runtimeMinutes(): number {
+    const nLike =
+      (this.draft() as any)?.runTime ??
+      (this.draft() as any)?.runtimeMinutes ??
+      (this.draft() as any)?.runtime_min ??
+      null;
+
+    if (Number.isFinite(nLike)) return Math.max(0, Number(nLike));
+
+    const rt = (this.draft() as any)?.runtime ?? (this.draft() as any)?.Runtime ?? '';
+
+    return this.parseRuntimeToMinutes(rt);
+  }
+  get runtimeMinutesRemainder(): number {
+    return this.runtimeMinutes % 60;
+  }
+  get minutesLabel(): string {
+    const n = this.runtimeMinutesRemainder;
+
+    if (!n) return 'N/A';
+
+    return n === 1 ? 'Minute' : 'Minutes';
+  }
+
+  get runtimeHours(): number {
+    return Math.floor(this.runtimeMinutes / 60);
+  }
+  get hoursLabel(): string {
+    const n = this.runtimeHours;
+
+    if (!n) return 'N/A';
+
+    return n === 1 ? 'Hour' : 'Hours';
+  }
+
+  ///  Derived counts for Series  \\\
+  private toInt(n: any): number {
+    const v = Number(n);
+    return Number.isFinite(v) ? Math.max(0, Math.trunc(v)) : 0;
+  }
+
+  get totalSeasons(): number {
+    const af: any = this.draft() || {};
+
+    const asNumber = this.toInt(af.seasons);
+    if (asNumber) return asNumber;
+
+    if (Array.isArray(af.seasons)) {
+      return af.seasons.filter((s: any) => this.toInt(s?.episode_count) > 0).length;
+    }
+
+    return (
+      this.toInt(af.number_of_seasons) ||
+      this.toInt(af.numberOfSeasons) ||
+      this.toInt(af.totalSeasons) ||
+      0
+    );
+  }
+  get seasonsLabel(): string {
+    const n = this.totalSeasons;
+
+    if (!n) return 'N/A';
+
+    return n === 1 ? 'Season' : 'Seasons';
+  }
+
+  get totalEpisodes(): number {
+    const af: any = this.draft() || {};
+
+    const direct = this.toInt(af.episodes);
+    if (direct) return direct;
+
+    if (Array.isArray(af.seasons)) {
+      return af.seasons.reduce((acc: number, s: any) => acc + this.toInt(s?.episode_count), 0);
+    }
+
+    return (
+      this.toInt(af.number_of_episodes) ||
+      this.toInt(af.numberOfEpisodes) ||
+      this.toInt(af.totalEpisodes) ||
+      0
+    );
+  }
+  get episodesLabel(): string {
+    const n = this.totalEpisodes;
+
+    if (!n) return 'N/A';
+
+    return n === 1 ? 'Episode' : 'Episodes';
+  }
+
+  ///  Dynmaic counts for Movie/Series (Count 1: Hours/Seasons - Count 2: Minutes/Episodes)  \\\
+  get count1Num(): number {
+    return this.isMovie() ? this.runtimeHours : this.totalSeasons;
+  }
+  get count1Label(): string {
+    return this.isMovie() ? this.hoursLabel : this.seasonsLabel;
+  }
+  get count2Num(): number {
+    return this.isMovie() ? this.runtimeMinutesRemainder : this.totalEpisodes;
+  }
+  get count2Label(): string {
+    return this.isMovie() ?  this.minutesLabel : this.episodesLabel;
+  }
+
+  ///  Get poster if not use fallback "No Poster" image  \\\
+  get posterSrc(): string {
+    const poster = this.draft()?.poster;
+    const hasPoster = !!poster && poster !== 'N/A';
+
+    return (hasPoster && !this.useFallback) ? poster! : this.fallbackPoster;
+  }
+  ///  If poster fails to load, use fallback "No Poster" image  \\\
+  setFallback(ev?: Event) {
+    this.useFallback = true;
+
+    if (ev) (ev.target as HTMLImageElement).src = this.fallbackPoster;
   }
 
   movie(): (RatedMovieModel & { kind: 'movie' }) | null {
@@ -150,11 +383,29 @@ export class EditFilmRatingComponent implements OnInit {
     return d?.kind === 'series' ? (d as any) : null;
   }
 
-  fixRuntime(runtime?: number) {
-    const r = Number(runtime ?? 0);
-    const hours = Math.floor(r / 60);
-    const minutes = r - hours * 60;
 
-    return `${hours} HR ${minutes} MIN`;
+  /// ---------------------------------------- Formatting ----------------------------------------  \\\
+  ///  input: '2009-12-18' -> 'December 18, 2009'  \\\
+  formatLongDate(dateLike?: string): string {
+    if (!dateLike) return '';
+
+    // If it's a full ISO string, keep only the date part
+    const ymd = dateLike.includes('T') ? dateLike.slice(0, 10) : dateLike;
+
+    // Strictly parse YYYY-MM-DD
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+    if (!match) return ymd; // fallback (don’t crash)
+
+    const [, year, month, day] = match;
+
+    const months = [
+      'January','February','March','April','May','June',
+      'July','August','September','October','November','December'
+    ];
+
+    const monthName = months[parseInt(month, 10) - 1];
+    const dayNum = parseInt(day, 10);
+
+    return `${monthName} ${dayNum}, ${year}`;
   }
 }
