@@ -35,6 +35,8 @@ export class HomeComponent implements OnInit {
   searchInput = '';
 
   ngOnInit() {
+    this.addRandomStartPointForRows();
+    
     /// provides the users feed/memory lane (if they view all feed posts) \\\
     this.populateUsersFeed();
 
@@ -102,4 +104,15 @@ export class HomeComponent implements OnInit {
   }
 
   trackPost = (_: number, post: UserPostModel) => post.postId ?? `${post.username}-${post.postDate}`;
+
+
+  /// ---------------------------------------- Helper Methods ---------------------------------------- \\\
+  addRandomStartPointForRows() {
+    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
+      const durStr = getComputedStyle(el).animationDuration;
+      const dur = parseFloat(durStr.split(',')[0]) || 140;
+
+      el.style.animationDelay = `${-(Math.random() * dur)}s`;
+    });
+  }
 }

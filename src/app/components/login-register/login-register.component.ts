@@ -65,6 +65,8 @@ export class LoginRegisterComponent {
   ngOnInit() {
     this.rememberMeChecked = this.localStorageService.getInformation('remember-me') === true;
 
+    this.addRandomStartPointForRows();
+
     if(this.currentUser !== undefined && this.rememberMeChecked) {
       this.loginObject = {
         username: this.currentUser.username,
@@ -262,6 +264,17 @@ export class LoginRegisterComponent {
     const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     return emailFormat.test(email);
+  }
+
+
+  /// ---------------------------------------- Helper Methods ---------------------------------------- \\\
+  addRandomStartPointForRows() {
+    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
+      const durStr = getComputedStyle(el).animationDuration;
+      const dur = parseFloat(durStr.split(',')[0]) || 140;
+
+      el.style.animationDelay = `${-(Math.random() * dur)}s`;
+    });
   }
 
   resetMockDatabses() {

@@ -1,3 +1,16 @@
+<div class="poster-rows" aria-hidden="true">
+  <div class="row r1"><div class="inner"></div></div>
+  <div class="row r2"><div class="inner"></div></div>
+  <div class="row r3"><div class="inner"></div></div>
+  <div class="row r4"><div class="inner"></div></div>
+  <div class="row r5"><div class="inner"></div></div>
+  <div class="row r6"><div class="inner"></div></div>
+  <div class="row r7"><div class="inner"></div></div>
+  <div class="row r8"><div class="inner"></div></div>
+  <div class="row r9"><div class="inner"></div></div>
+  <div class="row r10"><div class="inner"></div></div>
+</div>
+
 <div class="wrapper" [class.active]="activePanel === 'register'">
     <div class="form-box login">
         <h2>Login</h2>
@@ -25,7 +38,7 @@
             </div>
 
             <div class="remember-forgot">
-                <label><input type="checkbox" [checked]="rememberMeChecked" (click)="toggleRememberMe()" />Remember me</label>
+                <label><input type="checkbox" class="w2w-checkbox" [checked]="rememberMeChecked" (click)="toggleRememberMe()"/>Remember me</label>                
                 
                 <a (click)="$event.preventDefault()">Forgot password?</a>
             </div>
@@ -33,7 +46,7 @@
             <button type="submit" class="button">Login</button>
 
             <div class="login-register">
-                <p>Don't have an account?<a (click)="toggleLoginRegister()" class="register-link">Register</a></p>
+                <p>Don't have an account? <a (click)="toggleLoginRegister()" class="register-link">Register</a></p>
             </div>
         </form>
     </div>
@@ -81,9 +94,7 @@
             </div>
 
             <div class="agree-to-terms">
-                <label>
-                    <input type="checkbox" [(ngModel)]="termsChecked" name="terms"/>I agree to the terms &amp; conditions
-                </label>
+                <label><input type="checkbox" class="w2w-checkbox" [(ngModel)]="termsChecked" name="terms"/>I agree to the terms &amp; conditions</label>
 
                 <a (click)="$event.preventDefault()">terms</a>
             </div>
@@ -91,7 +102,7 @@
             <button type="submit" class="button">Register</button>
 
             <div class="login-register">
-                <p>Already have an account?<a (click)="toggleLoginRegister()" class="login-link">Login</a></p>
+                <p>Already have an account? <a (click)="toggleLoginRegister()" class="login-link">Login</a></p>
             </div>
         </form>
     </div>

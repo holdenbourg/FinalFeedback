@@ -1,76 +1,164 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Poppins", sans-serif;
+:root {
+    --white: #fff;
+    --border: rgba(255,255,255,0.5);
+    --panel-blur: 3px;
+}
+
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+    font-family: "Poppins", sans-serif; 
 }
 
 :host {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: absolute;
+    position: fixed;
     inset: 0;
-    width: 100%;
+    display: grid;
+    place-items: center;
+    min-height: 100dvh;
+    background: #000;
+    color: var(--white);
+    overflow: hidden;
+    z-index: 0;
+}
+:host::after {
+    content:"";
+    position: fixed;
+    inset:0;
+    pointer-events:none;
+    z-index: 1;
+    background-image:
+        linear-gradient(135deg,
+        rgba(0,0,0,.88) 0%,
+        rgba(0,0,0,.68) 32%,
+        rgba(0,0,0,.24) 50%,
+        rgba(0,0,0,.68) 68%,
+        rgba(0,0,0,.92) 100%
+        ),
+        radial-gradient(120% 120% at 50% 0%,
+        rgba(0,0,0,0) 0%,
+        rgba(0,0,0,.25) 55%,
+        rgba(0,0,0,.55) 100%
+        );
+    background-position: center, center;
+    background-size: cover, cover;
+    background-repeat: no-repeat, no-repeat;
+}
+
+.poster-rows {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    display: grid;
+    grid-template-rows: repeat(10, 1fr);
+}
+.poster-rows .row {
+    overflow: hidden;
+    position: relative;
+}
+.poster-rows .row .inner {
+    position: absolute;
+    top: 0; left: 0;
+    width: 200%;
     height: 100%;
-    background: url('/assets/images/main-background.jpg') center/cover no-repeat;
+    background-size: 50% 100%;
+    background-repeat: repeat-x;
+    will-change: transform;
+    animation-delay: var(--ad, 0s);
+    animation-fill-mode: both;
+}
+
+@keyframes marquee-right {
+    from { 
+        transform: translateX(0); 
+    }
+    to   { 
+        transform: translateX(-50%); 
+    }
+}
+
+.poster-rows .r1  .inner { background-image: url('/assets/images/background-rows/row1.png'),  url('/assets/images/background-rows/row1.png');  animation: marquee-right 194s linear infinite; }
+.poster-rows .r2  .inner { background-image: url('/assets/images/background-rows/row2.png'),  url('/assets/images/background-rows/row2.png');  animation: marquee-right 134s linear infinite; }
+.poster-rows .r3  .inner { background-image: url('/assets/images/background-rows/row3.png'),  url('/assets/images/background-rows/row3.png');  animation: marquee-right 189s linear infinite; }
+.poster-rows .r4  .inner { background-image: url('/assets/images/background-rows/row4.png'),  url('/assets/images/background-rows/row4.png');  animation: marquee-right 128s linear infinite; }
+.poster-rows .r5  .inner { background-image: url('/assets/images/background-rows/row5.png'),  url('/assets/images/background-rows/row5.png');  animation: marquee-right 143s linear infinite; }
+.poster-rows .r6  .inner { background-image: url('/assets/images/background-rows/row6.png'),  url('/assets/images/background-rows/row6.png');  animation: marquee-right 165s linear infinite; }
+.poster-rows .r7  .inner { background-image: url('/assets/images/background-rows/row7.png'),  url('/assets/images/background-rows/row7.png');  animation: marquee-right 181s linear infinite; }
+.poster-rows .r8  .inner { background-image: url('/assets/images/background-rows/row8.png'),  url('/assets/images/background-rows/row8.png');  animation: marquee-right 189s linear infinite; }
+.poster-rows .r9  .inner { background-image: url('/assets/images/background-rows/row9.png'),  url('/assets/images/background-rows/row9.png');  animation: marquee-right 125s linear infinite; }
+.poster-rows .r10 .inner { background-image: url('/assets/images/background-rows/row10.png'), url('/assets/images/background-rows/row10.png'); animation: marquee-right 137s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+    .poster-rows .row .inner { 
+        animation: none !important; 
+    }
 }
 
 .wrapper {
     position: relative;
+    z-index: 2;
     width: 20.8%;
     min-width: 320px;
     height: 48%;
     min-height: 420px;
-    background: transparent;
-    border: 0.15vw solid rgba(255, 255, 255, 0.5);
+    background: rgba(0,0,0,0.12);
+    border: 0.15vw solid rgba(255,255,255,0.5);
     border-radius: 20px;
     backdrop-filter: blur(3px);
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    -webkit-backdrop-filter: blur(3px);
+    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    transition: border-color 900ms ease;
     display: flex;
     justify-content: center;
     align-items: center;
     overflow: hidden;
-    transition: height 0.2s ease;
+    transition-property: height, border-color;
+    transition-duration: 0.2s, 900ms;
+    transition-timing-function: ease, ease;
+    will-change: transform;
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
 }
-.wrapper.active {
-    height: 71%;
-    min-height: 560px;
-}
-.wrapper .form-box {
-    width: 100%;
-    padding: 2.05vw;
-    position: absolute;
-    inset: 0;
-}
-.wrapper .form-box.login {
-    transition: transform 0.18s ease;
-    transform: translateX(0);
-    z-index: 2;
-    pointer-events: auto;
-}
-.wrapper.active .form-box.login {
-    transition: none;
-    transform: translateX(-400px);
-    z-index: 1;
-    pointer-events: none;
-}
-.wrapper .form-box.register {
-    position: absolute;
-    transition: none;
-    transform: translateX(400px);
-    z-index: 1;
-    pointer-events: none;
-}
-.wrapper.active .form-box.register {
-    transition: transform 0.18s ease;
-    transform: translateX(0);
-    z-index: 2;
-    pointer-events: auto;
+.wrapper.active { 
+    height: 72%; 
+    min-height: 560px; 
 }
 
+.wrapper .form-box {
+    width: 100%; 
+    padding: 2.05vw; 
+    position: absolute; 
+    inset: 0; 
+}
+.wrapper .form-box.login { 
+    transition: transform 0.18s ease; 
+    transform: translateX(0) translateZ(0); 
+    z-index: 2; 
+    pointer-events: auto; 
+}
+.wrapper.active .form-box.login { 
+    transition: none; 
+    transform: translateX(-400px); 
+    z-index: 1; 
+    pointer-events: none; 
+}
+.wrapper .form-box.register { 
+    position: absolute; 
+    transition: none; 
+    transform: translateX(400px) translateZ(0); 
+    z-index: 1; 
+    pointer-events: none; 
+}
+.wrapper.active .form-box.register { 
+    transition: transform 0.18s ease; 
+    transform: translateX(0); 
+    z-index: 2; 
+    pointer-events: auto; 
+}
 
 .form-box h2 {
     font-size: 1.7vw;
@@ -79,255 +167,268 @@
     margin-bottom: 0;
     transition: margin-bottom 500ms ease;
 }
-.form-box.has-warning h2 {
-    margin-bottom: 8px;
+.form-box.has-warning h2 { 
+    margin-bottom: 8px; 
 }
 
-
 .input-box {
-    position: relative;
-    width: 100%;
-    height: 2.5vw;
+    position: relative; 
+    width: 100%; 
+    height: 2.5vw; 
     min-height: 38px;
-    border-bottom: 0.15vw solid #fff;
+    border-bottom: 0.15vw solid #fff; 
     margin: 1.5vw 0;
 }
 .input-box label {
-    position: absolute;
-    top: 50%;
-    left: 5px;
+    position: absolute; 
+    top: 50%; 
+    left: 5px; 
     transform: translateY(-50%);
-    font-size: 0.85vw;
-    color: #fff;
-    font-weight: 500;
-    pointer-events: none;
+    font-size: 0.85vw; 
+    color: #fff; 
+    font-weight: 500; 
+    pointer-events: none; 
     transition: 0.3s;
 }
-.input-box input:focus ~ label,
-.input-box input:valid ~ label {
-    top: -5px;
+.input-box input:focus ~ label, 
+.input-box input:valid ~ label { 
+    top: -5px; 
 }
 .input-box input {
-    width: 100%;
-    height: 100%;
-    background: transparent;
-    border: none;
+    width: 100%; 
+    height: 100%; 
+    background: transparent; 
+    border: none; 
     outline: none;
-    font-size: 0.85vw;
-    color: #fff;
-    font-weight: 600;
+    font-size: 0.85vw; 
+    color: #fff; 
+    font-weight: 600; 
     padding: 0 35px 0 5px;
 }
-.input-box .icon {
-    position: absolute;
-    right: 8px;
-    font-size: 1vw;
-    color: #fff;
-    line-height: 3vw;
+.input-box .icon { 
+    position: absolute; 
+    right: 10px; 
+    font-size: 1.1vw; 
+    line-height: 3vw;    
+    color: #fff; 
 }
-
 
 .remember-forgot {
-    font-size: 0.75vw;
-    color: #fff;
-    font-weight: 500;
+    font-size: 0.75vw; 
+    color: #fff; 
+    font-weight: 500; 
     margin: -15px 0 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
     gap: 8px;
 }
-.remember-forgot label {
+.remember-forgot label { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 8px; 
+}
+.remember-forgot label input { 
+    accent-color: #fff; 
+    margin-right: 3px; 
+    cursor: pointer; 
     display: inline-flex;
-    align-items: center;
+    align-items: center;   /* vertical centering */
     gap: 8px;
+    line-height: 1; 
+    margin: 0 !important;    /* prevent old margin-right: 3px from shifting */
+    accent-color: initial;
 }
-.remember-forgot label input {
-    accent-color: #fff;
-    margin-right: 3px;
-    cursor: pointer;
+.remember-forgot a { 
+    color: #fff; 
+    text-decoration: none; 
+    cursor: pointer; 
 }
-.remember-forgot a {
-    color: #fff;
-    text-decoration: none;
-    cursor: pointer;
+.remember-forgot a:hover { 
+    text-decoration: underline; 
 }
-.remember-forgot a:hover {
-    text-decoration: underline;
-}
-
 
 .button {
-    width: 100%;
-    height: 2.4vw;
-    min-height: 36px;
+    width: 100%; 
+    height: 2.4vw; 
+    min-height: 36px; 
     line-height: 1.2;
-    background: transparent;
-    border: 0.15vw solid #fff;
+    background: transparent; 
+    border: 0.15vw solid #fff; 
     backdrop-filter: blur(10px);
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
-    outline: none;
-    border-radius: 6px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    outline: none; 
+    border-radius: 6px; 
     cursor: pointer;
-    font-size: 0.85vw;
-    color: #fff;
+    font-size: 0.85vw; 
+    color: #fff; 
     font-weight: 600;
     transition: transform 0.2s ease, font-size 0.2s ease;
 }
-.button:hover {
-    font-size: 0.9vw;
-    transform: scale(1.015);
+.button:hover { 
+    font-size: 0.9vw; 
+    transform: scale(1.015); 
 }
-.button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-
-.login-register {
-    font-size: 0.75vw;
-    color: #fff;
-    text-align: center;
-    font-weight: 500;
-    margin: 25px 0 10px;
-}
-.login-register p a {
-    color: #fff;
-    text-decoration: none;
-    font-weight: 600;
-    cursor: pointer;
-}
-.login-register p a:hover {
-    text-decoration: underline;
-}
-.login-register a {
-    cursor: pointer;
+.button:disabled { 
+    opacity: 0.6; 
+    cursor: not-allowed; 
 }
 
+.login-register { 
+    font-size: 0.75vw; 
+    color: #fff; 
+    text-align: center; 
+    font-weight: 500; 
+    margin-top: 25px; 
+}
+.login-register p a { 
+    color: #fff; 
+    text-decoration: none; 
+    font-weight: 600; 
+    cursor: pointer; 
+}
+.login-register p a:hover { 
+    text-decoration: underline; 
+}
+.login-register a { 
+    cursor: pointer; 
+}
 
 .agree-to-terms {
-    font-size: 0.75vw;
-    color: #fff;
+    font-size: 0.75vw; 
+    color: #fff; 
     font-weight: 500;
     margin: -15px 0 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
     gap: 8px;
 }
-.agree-to-terms label {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+.agree-to-terms label { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 8px; 
+    line-height: 1; 
 }
-.agree-to-terms label input {
-    accent-color: #fff;
-    margin-right: 3px;
-    cursor: pointer;
+.agree-to-terms label input { 
+    accent-color: #fff; 
+    cursor: pointer; 
+    margin: 0 !important;    /* prevent old margin-right: 3px from shifting */
+    accent-color: initial;
 }
-.agree-to-terms a {
-    color: #fff;
-    text-decoration: none;
-    cursor: pointer;
+.agree-to-terms a { 
+    color: #fff; 
+    text-decoration: none; 
+    cursor: pointer; 
 }
-.agree-to-terms a:hover {
-    text-decoration: underline;
+.agree-to-terms a:hover { 
+    text-decoration: underline; 
 }
-
 
 .warning-banner {
-    overflow: hidden;
-    max-height: 0;
+    overflow: hidden; 
+    max-height: 0; 
     opacity: 0;
     transition: max-height 500ms ease, opacity 550ms ease;
-    text-align: center;
-    font-size: 0.7vw;
+    text-align: center; 
+    font-size: 0.7vw; 
     font-weight: 500;
 }
 .warning-banner.show { 
-    max-height: 40px; opacity: 1; 
+    max-height: 40px;
+    opacity: 1; 
 }
-.warning-banner.error   { 
+.warning-banner.error { 
     color: #ff6b6b; 
 }
 .warning-banner.success { 
     color: #6bff81; 
 }
 
-
-.input-box input:focus-visible {
-    outline: none;
+.input-box input:focus-visible { 
+    outline: none; 
 }
 .input-box .toggle-btn {
-    position: absolute;
-    right: 6px;
-    top: 50%;
+    position: absolute; 
+    right: 6px; 
+    top: 50%; 
     transform: translateY(-50%) scale(1);
-    background: transparent;
-    border: 0;
-    padding: 4px;
-    color: #fff;
-    font-size: 1.1vw;
+    background: transparent; 
+    border: 0; 
+    padding: 4px; 
+    color: #fff; 
+    font-size: 1.1vw; 
     line-height: 1;
-    cursor: pointer;
-    transition: transform 0.2s ease-in-out;
+    cursor: pointer; 
+    transition: transform 0.2s ease-in-out; 
     z-index: 2;
 }
+@media (max-width: 1024px) { 
+    .input-box .toggle-btn { 
+        font-size: 18px; 
+    } 
+}
+.input-box .toggle-btn:focus-visible { 
+    outline: 2px solid rgba(255,255,255,0.5); 
+    border-radius: 6px; 
+}
+.input-box .toggle-btn:hover { 
+    transform: translateY(-50%) scale(1.08); 
+}
+
+.form-box.register .w2w-checkbox {
+  transform: translateY(-1px);
+}
+
+.w2w-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  width: 18px;
+  height: 18px;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  background: transparent;
+
+  /* size of inner white square: adjust padding (0–2px looks great) */
+  padding: 2px;
+  background-clip: content-box;
+
+  transition: background-color 0.15s ease-in-out;
+  display: inline-block;
+  vertical-align: middle;
+  box-sizing: border-box;
+  cursor: pointer;
+  line-height: 0;
+  position: relative; top: 0;  /* belt & suspenders against any nudge */
+}
+
+.w2w-checkbox:checked { background-color: #fff; }
+
+.w2w-checkbox:focus-visible {
+  outline: 2px solid rgba(255,255,255,0.5);
+  outline-offset: 2px;
+}
+
 @media (max-width: 1024px) {
-    .input-box .toggle-btn { font-size: 18px; }
-}
-.input-box .toggle-btn:focus-visible {
-    outline: 2px solid rgba(255,255,255,0.5);
-    border-radius: 6px;
-}
-.input-box .toggle-btn:hover {
-    transform: translateY(-50%) scale(1.08);
-}
-
-
-input[type="checkbox"] {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    width: 18px;
-    height: 18px;
-    border: 2px solid #fff;
-    border-radius: 4px;
-    background: transparent;
-    cursor: pointer;
-    outline: none;
-    position: relative;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    vertical-align: middle;
-    box-sizing: border-box;
-}
-input[type="checkbox"]::after {
-    content: '';
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    background: #fff;
-    border-radius: 2px;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0);
-    transition: transform 0.15s ease-in-out;
-}
-input[type="checkbox"]:checked::after {
-    transform: translate(-50%, -50%) scale(1);
-}
-
-/* Responsiveness for smaller screens */
-@media (max-width: 1024px) {
-    .form-box h2 { font-size: 22px; }
-    .input-box { margin: 16px 0; }
-    .input-box label,
-    .input-box input { font-size: 14px; }
-    .button { font-size: 14px; }
-    .warning,
-    .remember-forgot,
-    .login-register,
-    .agree-to-terms { font-size: 12px; }
+    .form-box h2 { 
+        font-size: 22px; 
+    }
+    .input-box { 
+        margin: 16px 0; 
+    }
+    .input-box label, 
+    .input-box input { 
+        font-size: 14px; 
+    }
+    .button { 
+        font-size: 14px; 
+    }
+    .warning, 
+    .remember-forgot, 
+    .login-register, 
+    .agree-to-terms { 
+        font-size: 12px; 
+    }
 }
