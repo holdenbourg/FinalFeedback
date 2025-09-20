@@ -39,11 +39,7 @@ export class HomeComponent implements OnInit {
     
     /// provides the users feed/memory lane (if they view all feed posts) \\\
     this.populateUsersFeed();
-
     this.populateMemoryLane();
-
-    /// automatically closes side bar if screen width gets to low \\\
-    this.applySidebarByWidth(window.innerWidth);
 
     this.localStorageService.cleanTemporaryLocalStorages();
   }

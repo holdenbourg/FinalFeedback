@@ -1,7 +1,7 @@
 .film-details-card {
   display: flex;
   border: 0.15vw solid #fff;
-  border-radius: 5px;
+  border-radius: 8.5px;
   padding: 10px 10px;
   background: transparent;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);

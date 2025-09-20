@@ -77,7 +77,7 @@ export class LoginRegisterComponent {
     this.localStorageService.cleanTemporaryLocalStorages();
 
     /// resets the mock databases in local storage \\\
-    this.localStorageService.clearInformation('current-user'); 
+    //this.localStorageService.clearInformation('current-user'); 
     this.resetMockDatabses();
   }
 

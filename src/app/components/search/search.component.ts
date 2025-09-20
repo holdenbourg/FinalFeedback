@@ -47,6 +47,8 @@ export class SearchComponent implements OnInit {
 
 
   ngOnInit() {
+    this.addRandomStartPointForRows();
+    
     ///  react to both :type and ?q= changes  \\\
     this.route.paramMap.subscribe(pm => {
       this.type = (pm.get('type') as SearchType) ?? 'movies';
@@ -65,9 +67,6 @@ export class SearchComponent implements OnInit {
 
       if (!q) this.clearResults();
     });
-
-    /// automatically closes side bar if screen width gets to low \\\
-    this.applySidebarByWidth(window.innerWidth);
 
     this.localStorageService.cleanTemporaryLocalStorages();
   }
@@ -109,6 +108,17 @@ export class SearchComponent implements OnInit {
   }
   toggleUsersActive() {
     this.router.navigate(['/search', 'users'], { queryParams: { q: this.searchInput || null } });
+  }
+
+
+  /// ---------------------------------------- Helper Methods ---------------------------------------- \\\
+  addRandomStartPointForRows() {
+    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
+      const durStr = getComputedStyle(el).animationDuration;
+      const dur = parseFloat(durStr.split(',')[0]) || 140;
+
+      el.style.animationDelay = `${-(Math.random() * dur)}s`;
+    });
   }
 
 

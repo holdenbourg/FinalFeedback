@@ -84,7 +84,7 @@ export class FilmsComponent implements OnInit, AfterViewInit {
   });
 
   private useFallback = false;
-  readonly fallbackPoster = 'assets/images/no-poster.jpg';
+  readonly fallbackPoster = 'assets/images/no-poster.png';
 
   ///  User's rated movies  \\\
   private allRatedMovies = signal<RatedMovieModel[]>([]);
@@ -116,6 +116,8 @@ export class FilmsComponent implements OnInit, AfterViewInit {
 
 
   ngOnInit(): void {
+    this.addRandomStartPointForRows();
+    
     this.allRatedMovies.set(this.localStorageService.getInformation('rated-movies') ?? []);
     this.allRatedSeries.set(this.localStorageService.getInformation('rated-series') ?? []);
 
@@ -239,6 +241,15 @@ export class FilmsComponent implements OnInit, AfterViewInit {
 
 
   /// ---------------------------------------- Helpers ----------------------------------------  \\\
+  addRandomStartPointForRows() {
+    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
+      const durStr = getComputedStyle(el).animationDuration;
+      const dur = parseFloat(durStr.split(',')[0]) || 140;
+
+      el.style.animationDelay = `${-(Math.random() * dur)}s`;
+    });
+  }
+
   ///  Returns true if film is specified type, false if not \\\
   get isMovie(): boolean { 
     return (this.activeFilm?.kind ?? '').toLowerCase() === 'movie'; 

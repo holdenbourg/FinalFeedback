@@ -8,47 +8,50 @@
 }
 
 :host {
-  position: fixed;
-  inset: 0;
-  display: block;
-  background: #000;
-  overflow: hidden;
+    position: fixed;
+    inset: 0;
+    display: block;
+    background: #000;
+    overflow: hidden;
 }
-
 :host::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: rgba(0,0,0, var(--bg-dim, 0.8));
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: rgba(0,0,0, var(--bg-dim, 0.8));
 }
 
 .poster-rows {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  display: grid;
-  grid-template-rows: repeat(10, 1fr);
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    display: grid;
+    grid-template-rows: repeat(10, 1fr);
 }
-.poster-rows .row { position: relative; overflow: hidden; }
+.poster-rows .row { 
+    position: relative; 
+    overflow: hidden; 
+}
 .poster-rows .row .inner {
-  position: absolute; top: 0; left: 0;
-  width: 200%; height: 100%;
-  background-size: 50% 100%;
-  background-repeat: repeat-x;
-  will-change: transform;
-  animation-fill-mode: both;
+    position: absolute; 
+    top: 0; 
+    left: 0;
+    width: 200%; 
+    height: 100%;
+    background-size: 50% 100%;
+    background-repeat: repeat-x;
+    will-change: transform;
+    animation-fill-mode: both;
 }
 
-/* marquee */
 @keyframes marquee-right {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
 }
 
-/* one image per row (reuse your existing assets & speeds) */
 .poster-rows .r1  .inner { background-image: url('/assets/images/background-rows/row1.png'),  url('/assets/images/background-rows/row1.png');  animation: marquee-right 194s linear infinite; }
 .poster-rows .r2  .inner { background-image: url('/assets/images/background-rows/row2.png'),  url('/assets/images/background-rows/row2.png');  animation: marquee-right 134s linear infinite; }
 .poster-rows .r3  .inner { background-image: url('/assets/images/background-rows/row3.png'),  url('/assets/images/background-rows/row3.png');  animation: marquee-right 189s linear infinite; }
@@ -61,8 +64,9 @@
 .poster-rows .r10 .inner { background-image: url('/assets/images/background-rows/row10.png'), url('/assets/images/background-rows/row10.png'); animation: marquee-right 137s linear infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .poster-rows .row .inner { animation: none !important; }
+    .poster-rows .row .inner { animation: none !important; }
 }
+
 
 /* ---------- Sidebar ---------- */ 
 .sidebar {

@@ -15,7 +15,7 @@ export class SearchedFilmComponent {
   @Input({ required: true }) filmDetails!: SearchedFilmModel;
 
   private useFallback = false;
-  readonly fallbackPoster = 'assets/images/no-poster.jpg';
+  readonly fallbackPoster = 'assets/images/no-poster.png';
 
   get posterSrc(): string {
     const poster = this.filmDetails?.Poster;

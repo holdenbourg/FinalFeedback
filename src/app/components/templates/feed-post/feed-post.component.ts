@@ -57,6 +57,9 @@ export class FeedPostComponent implements OnInit {
 
   revisedTaggedUsernames: string[] = [];
 
+  private useFallback = false;
+  readonly fallbackPoster = 'assets/images/no-poster.png';
+
   @ViewChild('commentInputReference') commentInputReference!: ElementRef<HTMLInputElement>;
   @ViewChild('scrollBox') scrollBoxReference!: ElementRef<HTMLDivElement>;
 
@@ -310,9 +313,18 @@ export class FeedPostComponent implements OnInit {
     if (this.showTags()) this.showTags.set(false);
   }
 
-  ///  provides NoPoster image if the given image link fails  \\\
-  onPosterError(ev: Event) {
-    (ev.target as HTMLImageElement).src = 'assets/images/no-poster.jpg';
+  ///  Get poster if not use fallback "No Poster" image  \\\
+  get posterSrc(): string {
+    const poster = this.feedPost?.poster;
+    const hasPoster = !!poster && poster !== 'N/A';
+
+    return (hasPoster && !this.useFallback) ? poster! : this.fallbackPoster;
+  }
+  ///  If poster fails to load, use fallback "No Poster" image  \\\
+  setFallback(ev?: Event) {
+    this.useFallback = true;
+
+    if (ev) (ev.target as HTMLImageElement).src = this.fallbackPoster;
   }
 
   onCommentFocus() { 

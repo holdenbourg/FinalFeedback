@@ -23,7 +23,7 @@ export class RatedFilmComponent {
   @Input() active = false;
 
   private useFallback = false;
-  readonly fallbackPoster = 'assets/images/no-poster.jpg';
+  readonly fallbackPoster = 'assets/images/no-poster.png';
 
 
   ///  Get poster if not use fallback "No Poster" image  \\\

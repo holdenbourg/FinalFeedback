@@ -33,6 +33,9 @@ export class RateFilmComponent implements OnInit {
   imdbId = '';
   film: CombinedFilmApiResponseModel | null = null;
 
+  private useFallback = false;
+  readonly fallbackPoster = 'assets/images/no-poster.png';
+
   ///  Rating Criteria  \\\
   private seriesCriteria: RatingCriterion[] = [
     { key: 'acting',  label: 'Acting',  explanation: 'How would you rate the level of acting throughout this series?' },
@@ -53,6 +56,8 @@ export class RateFilmComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.imdbId = this.activatedRoute.snapshot.params['imdbId'];
+
+    this.addRandomStartPointForRows();
 
     ///  1) Try navigation state (no storage hop)  \\\
     const fromState = (this.router.getCurrentNavigation()?.extras?.state as any)?.film ?? (history.state?.film ?? null);
@@ -92,7 +97,7 @@ export class RateFilmComponent implements OnInit {
         title,
         releaseDate: this.alterReleaseForDatabase(released),
         rated,
-        runTime: this.runtimeMinutes, // total minutes
+        runTime: this.runtimeMinutes,
         genres,
 
         acting:  result.criteria['acting'],
@@ -142,6 +147,29 @@ export class RateFilmComponent implements OnInit {
 
 
   /// ---------------------------------------- Helpers ----------------------------------------  \\\
+  addRandomStartPointForRows() {
+    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
+      const durStr = getComputedStyle(el).animationDuration;
+      const dur = parseFloat(durStr.split(',')[0]) || 140;
+
+      el.style.animationDelay = `${-(Math.random() * dur)}s`;
+    });
+  }
+
+  ///  Get poster if not use fallback "No Poster" image  \\\
+  get posterSrc(): string {
+    const poster = this.film?.poster;
+    const hasPoster = !!poster && poster !== 'N/A';
+
+    return (hasPoster && !this.useFallback) ? poster! : this.fallbackPoster;
+  }
+  ///  If poster fails to load, use fallback "No Poster" image  \\\
+  setFallback(ev?: Event) {
+    this.useFallback = true;
+
+    if (ev) (ev.target as HTMLImageElement).src = this.fallbackPoster;
+  }
+
   ///  Returns true if film is specified type, false if not \\\
   get isMovie(): boolean { 
     return (this.film?.type ?? '').toLowerCase() === 'movie'; 

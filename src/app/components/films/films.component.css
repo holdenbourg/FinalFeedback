@@ -1,22 +1,76 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
 
-* { 
-  margin: 0; 
-  padding: 0; 
-  box-sizing: border-box; 
-  font-family: "Poppins", sans-serif; 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
 }
 
 :host {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  background: url('/assets/images/shaded-background.jpg');
+  display: block;
+  background: #000;
+  overflow: hidden;
 }
+:host::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: rgba(0,0,0, var(--bg-dim, 0.8));
+}
+
+.poster-rows {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  display: grid;
+  grid-template-rows: repeat(10, 1fr);
+}
+.poster-rows .row { 
+  position: relative; 
+  overflow: hidden; 
+}
+.poster-rows .row .inner {
+  position: absolute; 
+  top: 0; 
+  left: 0;
+  width: 200%; 
+  height: 100%;
+  background-size: 50% 100%;
+  background-repeat: repeat-x;
+  will-change: transform;
+  animation-fill-mode: both;
+}
+
+@keyframes marquee-right {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.poster-rows .r1  .inner { background-image: url('/assets/images/background-rows/row1.png'),  url('/assets/images/background-rows/row1.png');  animation: marquee-right 194s linear infinite; }
+.poster-rows .r2  .inner { background-image: url('/assets/images/background-rows/row2.png'),  url('/assets/images/background-rows/row2.png');  animation: marquee-right 134s linear infinite; }
+.poster-rows .r3  .inner { background-image: url('/assets/images/background-rows/row3.png'),  url('/assets/images/background-rows/row3.png');  animation: marquee-right 189s linear infinite; }
+.poster-rows .r4  .inner { background-image: url('/assets/images/background-rows/row4.png'),  url('/assets/images/background-rows/row4.png');  animation: marquee-right 128s linear infinite; }
+.poster-rows .r5  .inner { background-image: url('/assets/images/background-rows/row5.png'),  url('/assets/images/background-rows/row5.png');  animation: marquee-right 143s linear infinite; }
+.poster-rows .r6  .inner { background-image: url('/assets/images/background-rows/row6.png'),  url('/assets/images/background-rows/row6.png');  animation: marquee-right 165s linear infinite; }
+.poster-rows .r7  .inner { background-image: url('/assets/images/background-rows/row7.png'),  url('/assets/images/background-rows/row7.png');  animation: marquee-right 181s linear infinite; }
+.poster-rows .r8  .inner { background-image: url('/assets/images/background-rows/row8.png'),  url('/assets/images/background-rows/row8.png');  animation: marquee-right 189s linear infinite; }
+.poster-rows .r9  .inner { background-image: url('/assets/images/background-rows/row9.png'),  url('/assets/images/background-rows/row9.png');  animation: marquee-right 125s linear infinite; }
+.poster-rows .r10 .inner { background-image: url('/assets/images/background-rows/row10.png'), url('/assets/images/background-rows/row10.png'); animation: marquee-right 137s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .poster-rows .row .inner { animation: none !important; }
+}
+
 
 /* ---------- Sidebar ---------- */ 
 .sidebar {
+  z-index: 2;
   position: fixed;
   top: 0;
   left: 0;
@@ -121,6 +175,7 @@
 
 /* ---------- Main Container ---------- */ 
 .container {
+  z-index: 2;
   position: absolute; 
   left: 300px; 
   right: 40px; 
@@ -141,7 +196,7 @@
   height: 100%; 
   justify-content: space-between;
   border: .2vw solid #fff; 
-  border-radius: 5px; 
+  border-radius: 10px; 
   backdrop-filter: blur(3px); 
   transition: .5s; 
   position: relative;
@@ -437,8 +492,8 @@
 .rated-films-container {
   display: flex; 
   flex-direction: column; 
-  border: 2px solid #fff; 
-  border-radius: 5px; 
+  border: .2vw solid #fff; 
+  border-radius: 10px; 
   height: 100%; 
   width: 48.75%;
   backdrop-filter: blur(3px); 

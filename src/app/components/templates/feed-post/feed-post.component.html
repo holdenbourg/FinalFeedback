@@ -17,12 +17,14 @@
 
             <div class="poster-frame">
                 <img
-                class="film-url"
-                [id]="'poster-' + feedPost.postId"
-                [src]="feedPost.poster"
-                [attr.alt]="feedPost.poster"
-                (error)="onPosterError($event)"
-                (dblclick)="onPosterDoubleClick()"
+                    class="film-poster"
+                    [id]="'poster-' + feedPost.postId"
+                    [src]="posterSrc"
+                    [attr.alt]="feedPost.poster"
+                    (error)="setFallback($event)"
+                    (dblclick)="onPosterDoubleClick()"
+                    loading="lazy"
+                    decoding="async"
                 />
 
                 <div class="thumb-animation" *ngIf="showThumbAnimation()">

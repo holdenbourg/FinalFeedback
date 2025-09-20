@@ -30,7 +30,7 @@ export class FilmInformationComponent implements OnInit {
   public streamingServices: { name: string; logo: string; url: string | null }[] = [];
 
   private useFallback = false;
-  readonly fallbackPoster = 'assets/images/no-poster.jpg';
+  readonly fallbackPoster = 'assets/images/no-poster.png';
 
   combinedApiResult: CombinedFilmApiResponseModel = {
     title: '',
@@ -116,6 +116,8 @@ export class FilmInformationComponent implements OnInit {
       if (!this.imdbId) return;
       await this.loadTitle(this.imdbId);
     });
+
+    this.addRandomStartPointForRows();
   }
 
 
@@ -201,6 +203,15 @@ export class FilmInformationComponent implements OnInit {
 
 
   /// ---------------------------------------- Helpers ----------------------------------------  \\\
+  addRandomStartPointForRows() {
+    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
+      const durStr = getComputedStyle(el).animationDuration;
+      const dur = parseFloat(durStr.split(',')[0]) || 140;
+
+      el.style.animationDelay = `${-(Math.random() * dur)}s`;
+    });
+  }
+
   ///  Opens trailer in a new tab (if available)  \\\
   goToTrailer(trailerUrl: string) {
     if (!trailerUrl) return;
