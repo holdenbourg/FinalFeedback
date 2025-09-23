@@ -24,36 +24,35 @@
                 <span class="link-name" style="--i:1;">Home</span>
             </a>
         </li>
+        
         <li class="list-item">
             <a (click)="routingService.navigateToSearchMovies()">
                 <i class="bx bx-search"></i>
                 <span class="link-name" style="--i:2;">Search</span>
             </a>
         </li>
+
         <li class="list-item">
-            <a (click)="routingService.navigateToMovies()">
+            <a (click)="routingService.navigateToMoviesLibrary()">
                 <i class="bx bx-camera-movie"></i>
                 <span class="link-name" style="--i:3;">Movies</span>
             </a>
         </li>
+
         <li class="list-item">
-            <a (click)="routingService.navigateToShows()">
+            <a (click)="routingService.navigateToShowsLibrary()">
                 <i class="bx bx-collection"></i>
                 <span class="link-name" style="--i:4;">Shows</span>
             </a>
         </li>
-        <li class="list-item">
-            <a (click)="routingService.navigateToSummary()">
-                <i class="bx bx-bar-chart-alt-2"></i>
-                <span class="link-name" style="--i:5;">Summary</span>
-            </a>
-        </li>
+
         <li class="list-item">
             <a (click)="routingService.navigateToAccountsPosts(currentUser.username)">
                 <i class="bx bx-user"></i>
                 <span class="link-name" style="--i:6;">Account</span>
             </a>
         </li>
+
         <li class="list-item">
             <a (click)="routingService.navigateToSettings()">
                 <i class="bx bx-cog"></i>

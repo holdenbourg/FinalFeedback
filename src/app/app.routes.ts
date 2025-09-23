@@ -4,8 +4,9 @@ import { HomeComponent } from './components/home/home.component';
 import { SearchComponent } from './components/search/search.component';
 import { FilmInformationComponent } from './components/film-information/film-information.component';
 import { RateFilmComponent } from './components/rate-film/rate-film.component';
-import { FilmsComponent } from './components/films/films.component';
 import { EditFilmRatingComponent } from './components/edit-film-rating/edit-film-rating.component';
+import { FilmsLibraryComponent } from './components/films-library/films-library.component';
+import { FilmsSummaryComponent } from './components/films-summary/films-summary.component';
 
 
 export const routes: Routes = [
@@ -19,8 +20,11 @@ export const routes: Routes = [
     { path: 'series/:imdbId', component: FilmInformationComponent },
     { path: 'rate/:type/:imdbId', component: RateFilmComponent },   ///  movies | series  \\\
 
-    { path: 'movies', component: FilmsComponent, data: { kind: 'movie' } },
-    { path: 'shows', component: FilmsComponent, data: { kind: 'series' } },
+    { path: 'movies/library', component: FilmsLibraryComponent, data: { kind: 'movie' } },
+    { path: 'movies/summary', component: FilmsSummaryComponent, data: { kind: 'movie' } },
+
+    { path: 'shows/library', component: FilmsLibraryComponent, data: { kind: 'series' } },
+    { path: 'shows/summary', component: FilmsSummaryComponent, data: { kind: 'series' } },
 
     { path: 'edit/:type/:postId', component: EditFilmRatingComponent },
 

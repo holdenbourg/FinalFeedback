@@ -33,25 +33,48 @@
     </li>
 
     <li class="list-item" [class.active]="filmKind()==='movie'">
-      <a (click)="routingService.navigateToMovies()">
+      <a (click)="routingService.navigateToMoviesLibrary()">
         <i class="bx bx-camera-movie"></i>
         <span class="link-name" [style.--i]="navDelay(2)">Movies</span>
       </a>
     </li>
+    
+    <ng-container *ngIf="filmKind()==='movie'">
+      <li class="films-item active">
+        <a class="library-icon" (click)="routingService.navigateToMoviesLibrary()">
+          <i class='bx  bx-list-ul'></i>
+          <span class="link-name" [style.--i]="navDelay(2)">Library</span>
+        </a>
+      </li>
+      <li class="films-item">
+        <a class="summary-icon" (click)="routingService.navigateToMoviesSummary()">
+          <i class='bx bx-bar-chart-alt-2'></i>
+          <span class="link-name" [style.--i]="navDelay(2)">Summary</span>
+        </a>
+      </li>
+    </ng-container>
 
     <li class="list-item" [class.active]="filmKind()==='series'">
-      <a (click)="routingService.navigateToShows()">
+      <a (click)="routingService.navigateToShowsLibrary()">
         <i class="bx bx-collection"></i>
         <span class="link-name" [style.--i]="navDelay(3)">Shows</span>
       </a>
     </li>
 
-    <li class="list-item">
-      <a (click)="routingService.navigateToSummary()">
-        <i class="bx bx-bar-chart-alt-2"></i>
-        <span class="link-name" [style.--i]="navDelay(4)">Summary</span>
-      </a>
-    </li>
+    <ng-container *ngIf="filmKind()==='series'">
+      <li class="films-item active">
+        <a class="library-icon" (click)="routingService.navigateToShowsLibrary()">
+          <i class='bx  bx-list-ul'></i>
+          <span class="link-name" [style.--i]="navDelay(3)">Library</span>
+        </a>
+      </li>
+      <li class="films-item">
+        <a class="summary-icon" (click)="routingService.navigateToShowsSummary()">
+          <i class='bx bx-bar-chart-alt-2'></i>
+          <span class="link-name" [style.--i]="navDelay(3)">Summary</span>
+        </a>
+      </li>
+    </ng-container>
 
     <li class="list-item">
       <a (click)="routingService.navigateToAccountsPosts(currentUser.username)">

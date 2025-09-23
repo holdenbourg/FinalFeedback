@@ -26,14 +26,15 @@ type FilmUIState = {
 };
 
 @Component({
-  selector: 'app-films',
+  selector: 'app-films-library',
   standalone: true,
   imports: [CommonModule, FormsModule, RatedFilmComponent],
-  templateUrl: './films.component.html',
-  styleUrls: ['./films.component.css'],
+  templateUrl: './films-library.component.html',
+  styleUrls: ['./films-library.component.css'],
 })
 
-export class FilmsComponent implements OnInit, AfterViewInit {
+
+export class FilmsLibraryComponent implements OnInit, AfterViewInit {
   private elementRef = inject(ElementRef)
   readonly ngZone = inject(NgZone);
   readonly routingService = inject(RoutingService);

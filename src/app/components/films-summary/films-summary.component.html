@@ -1,0 +1,325 @@
+<div class="poster-rows" aria-hidden="true">
+  <div class="row r1"><div class="inner"></div></div>
+  <div class="row r2"><div class="inner"></div></div>
+  <div class="row r3"><div class="inner"></div></div>
+  <div class="row r4"><div class="inner"></div></div>
+  <div class="row r5"><div class="inner"></div></div>
+  <div class="row r6"><div class="inner"></div></div>
+  <div class="row r7"><div class="inner"></div></div>
+  <div class="row r8"><div class="inner"></div></div>
+  <div class="row r9"><div class="inner"></div></div>
+  <div class="row r10"><div class="inner"></div></div>
+</div>
+
+<nav class="sidebar" [class.active]="sidebarActive()">
+  <div class="logo-menu">
+    <h2 class="logo">What2Watch</h2>
+    <i class="bx bx-menu toggle-button" (click)="toggleSidebar()"></i>
+  </div>
+
+  <ul class="list">
+    <li class="list-item">
+      <a (click)="routingService.navigateToHome()">
+        <i class="bx bx-home-alt"></i>
+        <span class="link-name" [style.--i]="navDelay(0)">Home</span>
+      </a>
+    </li>
+
+    <li class="list-item">
+      <a (click)="routingService.navigateToSearchMovies()">
+        <i class="bx bx-search"></i>
+        <span class="link-name" [style.--i]="navDelay(1)">Search</span>
+      </a>
+    </li>
+
+    <li class="list-item" [class.active]="filmKind()==='movie'">
+      <a (click)="routingService.navigateToMoviesLibrary()">
+        <i class="bx bx-camera-movie"></i>
+        <span class="link-name" [style.--i]="navDelay(2)">Movies</span>
+      </a>
+    </li>
+
+    <ng-container *ngIf="filmKind()==='movie'">
+      <li class="films-item">
+        <a class="library-icon" (click)="routingService.navigateToMoviesLibrary()">
+          <i class='bx  bx-list-ul'></i>
+          <span class="link-name" [style.--i]="navDelay(2)">Library</span>
+        </a>
+      </li>
+      <li class="films-item active">
+        <a class="summary-icon" (click)="routingService.navigateToMoviesSummary()">
+          <i class='bx bx-bar-chart-alt-2'></i>
+          <span class="link-name" [style.--i]="navDelay(2)">Summary</span>
+        </a>
+      </li>
+    </ng-container>
+
+    <li class="list-item" [class.active]="filmKind()==='series'">
+      <a (click)="routingService.navigateToShowsLibrary()">
+        <i class="bx bx-collection"></i>
+        <span class="link-name" [style.--i]="navDelay(3)">Shows</span>
+      </a>
+    </li>
+
+    <ng-container *ngIf="filmKind()==='series'">
+      <li class="films-item">
+        <a class="library-icon" (click)="routingService.navigateToShowsLibrary()">
+          <i class='bx  bx-list-ul'></i>
+          <span class="link-name" [style.--i]="navDelay(3)">Library</span>
+        </a>
+      </li>
+      <li class="films-item active">
+        <a class="summary-icon" (click)="routingService.navigateToShowsSummary()">
+          <i class='bx bx-bar-chart-alt-2'></i>
+          <span class="link-name" [style.--i]="navDelay(3)">Summary</span>
+        </a>
+      </li>
+    </ng-container>
+
+    <li class="list-item">
+      <a (click)="routingService.navigateToAccountsPosts(currentUser.username)">
+        <i class="bx bx-user"></i>
+        <span class="link-name" [style.--i]="navDelay(5)">Account</span>
+      </a>
+    </li>
+
+    <li class="list-item">
+      <a (click)="routingService.navigateToSettings()">
+        <i class="bx bx-cog"></i>
+        <span class="link-name" [style.--i]="navDelay(6)">Settings</span>
+      </a>
+    </li>
+
+    <li class="username">
+      <p class="link-name" [style.--i]="navDelay(7)">Signed in as:</p>
+      <p class="link-name" [style.--i]="navDelay(7)">{{ currentUser.username }}</p>
+    </li>
+  </ul>
+</nav>
+
+<main class="dashboard">
+  <!-- Cell 1: Favorites -->
+  <section class="cell">
+    <header>
+      <h3>Favorites</h3>
+      <button class="next" (click)="nextFav()" [disabled]="favoritesSequence().length <= 1" aria-label="Next favorite">&rsaquo;</button>
+    </header>
+
+    <ng-container *ngIf="favoritesSequence().length; else noData">
+      <div class="fav">
+        <ng-container *ngIf="favoritesSequence()[favIndex() % favoritesSequence().length] as f">
+          <div class="fav-left">
+            <img class="poster" [src]="posterOrFallback(f.poster)" [alt]="f.movieTitle" />
+          </div>
+          <div class="fav-right">
+            <div class="fav-label">{{ f.label }}</div>
+            <div class="fav-title">{{ f.movieTitle }}</div>
+            <div class="fav-meta">
+              <span *ngIf="f.rating !== undefined" class="chip">Rating: {{ f.rating }}</span>
+              <span *ngIf="f.rated" class="chip">{{ f.rated }}</span>
+              <span class="chip">{{ round(f.runtimeMin / 60) }}h {{ f.runtimeMin % 60 }}m</span>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </ng-container>
+
+    <ng-template #noData>
+      <p class="empty">No data yet — rate some {{ filmKind()==='movie' ? 'movies' : 'shows' }}!</p>
+    </ng-template>
+  </section>
+
+  <!-- Cell 2: Totals -->
+  <section class="cell">
+    <header>
+      <h3>Totals</h3>
+      <button class="next" (click)="nextCount()" aria-label="Next totals view">&rsaquo;</button>
+    </header>
+
+    <div class="totals">
+      <div *ngIf="countIndex()===0" class="big-number">
+        <div class="num">{{ totalMovies() }}</div>
+        <div class="label">You’ve watched a total of {{ filmKind()==='movie' ? 'movies' : 'series' }}</div>
+      </div>
+
+      <div *ngIf="countIndex()===1" class="big-number">
+        <div class="num">{{ formatDuration(totalMinutes()) }}</div>
+        <div class="label">Total time watched</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cell 3: Genres – bar charts -->
+  <section class="cell">
+    <header>
+      <h3>Genres</h3>
+      <button class="next" (click)="nextGenreBar()" aria-label="Next genre chart">&rsaquo;</button>
+    </header>
+
+    <ng-container [ngSwitch]="genreBarIndex()">
+      <!-- Avg rating -->
+      <div class="bars" *ngSwitchCase="0">
+        <h4>Average Rating per Genre (Top 10)</h4>
+        <ng-container *ngIf="genreAvgRating() as data">
+          <div *ngIf="data.length; else noGenre" class="bar-list">
+            <div class="bar-row" *ngFor="let d of data">
+              <span class="bar-label">{{ d.label }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" [style.width]="barPct(d.value, maxValue(data))"></div>
+              </div>
+              <span class="bar-value">{{ d.value | number:'1.1-1' }}</span>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Count -->
+      <div class="bars" *ngSwitchCase="1">
+        <h4># Watched per Genre (Top 10)</h4>
+        <ng-container *ngIf="genreCount() as data">
+          <div *ngIf="data.length; else noGenre" class="bar-list">
+            <div class="bar-row" *ngFor="let d of data">
+              <span class="bar-label">{{ d.label }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" [style.width]="barPct(d.value, maxValue(data))"></div>
+              </div>
+              <span class="bar-value">{{ d.value }}</span>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Hours -->
+      <div class="bars" *ngSwitchDefault>
+        <h4>Hours Watched per Genre (Top 10)</h4>
+        <ng-container *ngIf="genreHours() as data">
+          <div *ngIf="data.length; else noGenre" class="bar-list">
+            <div class="bar-row" *ngFor="let d of data">
+              <span class="bar-label">{{ d.label }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" [style.width]="barPct(d.value, maxValue(data))"></div>
+              </div>
+              <span class="bar-value">{{ d.value | number:'1.0-0' }}</span>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </ng-container>
+
+    <ng-template #noGenre>
+      <p class="empty">No genre data yet.</p>
+    </ng-template>
+  </section>
+
+  <!-- Cell 4: Ratings – bar charts -->
+  <section class="cell">
+    <header>
+      <h3>Ratings</h3>
+      <button class="next" (click)="nextRatedBar()" aria-label="Next ratings chart">&rsaquo;</button>
+    </header>
+
+    <ng-container [ngSwitch]="ratedBarIndex()">
+      <!-- Avg rating -->
+      <div class="bars" *ngSwitchCase="0">
+        <h4>Average Rating per MPAA/TV (Top 10)</h4>
+        <ng-container *ngIf="ratedAvgRating() as data">
+          <div *ngIf="data.length; else noRated" class="bar-list">
+            <div class="bar-row" *ngFor="let d of data">
+              <span class="bar-label">{{ d.label }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" [style.width]="barPct(d.value, maxValue(data))"></div>
+              </div>
+              <span class="bar-value">{{ d.value | number:'1.1-1' }}</span>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Count -->
+      <div class="bars" *ngSwitchCase="1">
+        <h4># Watched per MPAA/TV (Top 10)</h4>
+        <ng-container *ngIf="ratedCount() as data">
+          <div *ngIf="data.length; else noRated" class="bar-list">
+            <div class="bar-row" *ngFor="let d of data">
+              <span class="bar-label">{{ d.label }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" [style.width]="barPct(d.value, maxValue(data))"></div>
+              </div>
+              <span class="bar-value">{{ d.value }}</span>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Hours -->
+      <div class="bars" *ngSwitchDefault>
+        <h4>Hours Watched per MPAA/TV (Top 10)</h4>
+        <ng-container *ngIf="ratedHours() as data">
+          <div *ngIf="data.length; else noRated" class="bar-list">
+            <div class="bar-row" *ngFor="let d of data">
+              <span class="bar-label">{{ d.label }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" [style.width]="barPct(d.value, maxValue(data))"></div>
+              </div>
+              <span class="bar-value">{{ d.value | number:'1.0-0' }}</span>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </ng-container>
+
+    <ng-template #noRated>
+      <p class="empty">No ratings data yet.</p>
+    </ng-template>
+  </section>
+
+  <!-- Cell 5: Ratings – pie charts -->
+  <section class="cell">
+    <header>
+      <h3>Ratings Share</h3>
+      <button class="next" (click)="nextRatedPie()" aria-label="Next ratings share">&rsaquo;</button>
+    </header>
+
+    <div class="pies" *ngIf="(ratedPieIndex()===0 ? ratedCountShare() : ratedTimeShare()) as data">
+      <div *ngIf="data.length; else noRatedPie" class="pie-wrap">
+        <div class="pie" [style.background]="pieGradient(data)"></div>
+        <ul class="legend">
+          <li *ngFor="let d of data; index as i">
+            <span class="swatch" [style.background]="segmentColor(i)"></span>{{ d.label }}
+            <small class="muted" *ngIf="ratedPieIndex()===1">({{ (d.value / 60) | number:'1.0-0' }} h)</small>
+            <small class="muted" *ngIf="ratedPieIndex()===0">({{ d.value }})</small>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <ng-template #noRatedPie>
+      <p class="empty">No ratings share data yet.</p>
+    </ng-template>
+  </section>
+
+  <!-- Cell 6: Genres – pie charts -->
+  <section class="cell">
+    <header>
+      <h3>Genres Share</h3>
+      <button class="next" (click)="nextGenrePie()" aria-label="Next genre share">&rsaquo;</button>
+    </header>
+
+    <div class="pies" *ngIf="(genrePieIndex()===0 ? genreCountShare() : genreTimeShare()) as data">
+      <div *ngIf="data.length; else noGenrePie" class="pie-wrap">
+        <div class="pie" [style.background]="pieGradient(data)"></div>
+        <ul class="legend">
+          <li *ngFor="let d of data; index as i">
+            <span class="swatch" [style.background]="segmentColor(i)"></span>{{ d.label }}
+            <small class="muted" *ngIf="genrePieIndex()===1">({{ (d.value / 60) | number:'1.0-0' }} h)</small>
+            <small class="muted" *ngIf="genrePieIndex()===0">({{ d.value }})</small>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <ng-template #noGenrePie>
+      <p class="empty">No genre share data yet.</p>
+    </ng-template>
+  </section>
+</main>
