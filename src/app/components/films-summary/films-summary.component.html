@@ -11,7 +11,7 @@
   <div class="row r10"><div class="inner"></div></div>
 </div>
 
-<nav class="sidebar" [class.active]="sidebarService.sidebarActive()">
+<nav class="sidebar" [class.active]="sidebarService.sidebarActive()" [class.no-anim]="sidebarService.suppressAnim()">
   <div class="logo-menu">
     <h2 class="logo">What2Watch</h2>
     <i class="bx bx-menu toggle-button" (click)="sidebarService.toggle()"></i>
@@ -40,13 +40,13 @@
     </li>
     
     <ng-container *ngIf="filmKind()==='movie'">
-      <li class="films-item active">
+      <li class="films-item">
         <a class="library-icon" (click)="routingService.navigateToMoviesLibrary()">
           <i class='bx  bx-list-ul'></i>
           <span class="link-name" [style.--i]="sidebarService.navDelay(2, filmKind())">Library</span>
         </a>
       </li>
-      <li class="films-item" >
+      <li class="films-item active">
         <a class="summary-icon" (click)="routingService.navigateToMoviesSummary()">
           <i class='bx bx-bar-chart-alt-2'></i>
           <span class="link-name" [style.--i]="sidebarService.navDelay(2, filmKind())">Summary</span>
@@ -97,7 +97,7 @@
   </ul>
 </nav>
 
-<main class="dashboard">
+<main class="dashboard" [class.no-anim]="sidebarService.suppressAnim()">
   <!-- Cell 1: Favorites -->
   <section class="cell">
     <header class="cell-header">

@@ -39,7 +39,6 @@ export class FilmsSummaryComponent implements OnInit {
   private router = inject(Router);
   readonly sidebarService = inject(SidebarService);
 
-  readonly sidebarActive = signal(true);
   readonly filmKind = signal<FilmKind>('movie');
 
   readonly favIndex      = signal(0);

@@ -228,6 +228,9 @@
   color: #fff;
 }
 
+.no-anim,
+.no-anim * { transition: none !important; animation: none !important; }
+
 
 /* ---------- Main Container ---------- */ 
 .container {

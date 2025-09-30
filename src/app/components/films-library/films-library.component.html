@@ -11,7 +11,7 @@
   <div class="row r10"><div class="inner"></div></div>
 </div>
 
-<nav class="sidebar" [class.active]="sidebarService.sidebarActive()">
+<nav class="sidebar" [class.active]="sidebarService.sidebarActive()" [class.no-anim]="sidebarService.suppressAnim()">
   <div class="logo-menu">
     <h2 class="logo">What2Watch</h2>
     <i class="bx bx-menu toggle-button" (click)="sidebarService.toggle()"></i>
@@ -97,7 +97,7 @@
   </ul>
 </nav>
 
-<div class="container" [class.active]="sidebarService.sidebarActive() === false">
+<div class="container" [class.active]="sidebarService.sidebarActive() === false" [class.no-anim]="sidebarService.suppressAnim()">
   <div class="left-side" *ngIf="activeFilm as af; else noSelection">
     <div class="top-information" *ngIf="af.dateRated">
       <img
