@@ -61,6 +61,8 @@ export class EditFilmRatingComponent implements OnInit {
 
 
   ngOnInit(): void {
+    this.addRandomStartPointForRows();
+    
     const typeParam = (this.route.snapshot.paramMap.get('type') || 'movie') as FilmKind;
     const postIdParam = this.route.snapshot.paramMap.get('postId') || '';
 
@@ -135,6 +137,15 @@ export class EditFilmRatingComponent implements OnInit {
 
 
   /// ---------------------------------------- Helpers ----------------------------------------  \\\
+  addRandomStartPointForRows() {
+    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
+      const durStr = getComputedStyle(el).animationDuration;
+      const dur = parseFloat(durStr.split(',')[0]) || 140;
+
+      el.style.animationDelay = `${-(Math.random() * dur)}s`;
+    });
+  }
+  
   private buildChangeList(oldC: Criteria, curC: Criteria): Delta[] {
     const pretty = (k: keyof Criteria): string => {
       if (k === 'mid') return curC.midKey === 'climax' ? 'Climax' : 'Length';

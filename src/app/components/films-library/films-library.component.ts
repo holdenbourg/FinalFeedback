@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, OnInit, inject, signal, computed, HostListener, ElementRef, ViewChild, NgZone, AfterViewInit } from "@angular/core";
+import { Component, OnInit, inject, signal, computed, effect, HostListener, ElementRef, ViewChild, NgZone, AfterViewInit } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { AccountInformationModel } from "../../models/database-models/account-information-model";
 import { CommentModel } from "../../models/database-models/comment-model";
@@ -14,6 +14,7 @@ import { RatedSeriesModel } from "../../models/database-models/rated-series-mode
 import { NavigationEnd, Router } from "@angular/router";
 import { filter } from "rxjs/operators";
 import { FilmCacheService } from "../../services/film-cache.service";
+import { SidebarService } from "../../services/sidebar.service";
 
 type SortKey = 'rating' | 'runtime' | 'dateRated' | 'title';
 
@@ -41,6 +42,7 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
   public readonly localStorageService = inject(LocalStorageService);
   readonly filmCache = inject(FilmCacheService);
   private router = inject(Router);
+  readonly sidebarService = inject(SidebarService);
 
   private readonly SLOW_SCROLL_MS = 500;
   private readonly UI_STATE_KEY = 'films-ui-state';
@@ -48,7 +50,6 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
 
   public currentUser: AccountInformationModel = this.localStorageService.getInformation('current-user');
 
-  readonly sidebarActive = signal(true);
   readonly searchInput = signal('');
 
   readonly filmKind = signal<FilmKind>('movie');
@@ -140,6 +141,8 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
     ///  Clear any in-progress edit  \\\
     this.localStorageService.clearInformation('current-edit-movie');
     this.localStorageService.cleanTemporaryLocalStorages();
+
+    console.log(this.filteredRatedFilms());
   }
 
   ngAfterViewInit() {
@@ -249,6 +252,10 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
 
       el.style.animationDelay = `${-(Math.random() * dur)}s`;
     });
+  }
+
+  get isMovieCountOverTen(): boolean {
+    return this.filteredRatedFilms.length >= 10;
   }
 
   ///  Returns true if film is specified type, false if not \\\
@@ -765,22 +772,7 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
   @HostListener('window:resize', ['$event'])
   onWindowResize(evt: UIEvent) {
     const width = (evt.target as Window).innerWidth;
-    this.applySidebarByWidth(width);
-  }
-
-  private applySidebarByWidth(width: number) {
-    if (width <= 1275 && this.sidebarActive()) this.sidebarActive.set(false);
-    if (width >= 1275 && !this.sidebarActive()) this.sidebarActive.set(true);
-  }
-  
-  toggleSidebar() {
-    this.sidebarActive.update(v => !v);
-  }
-
-  navDelay(i: number): number {
-    const active = this.filmKind() === 'series' ? 3 : 2;
-
-    return 1 + Math.abs(i - active);
+    this.sidebarService.applySidebarByWidth(width);
   }
 
 

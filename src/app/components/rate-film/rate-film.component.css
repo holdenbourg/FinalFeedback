@@ -222,8 +222,7 @@
   width: 100%;
 }
 
-.rate-button,
-.reset-button {
+.button {
   width: 100%;
   padding: 12px 0;  
   background: transparent;
@@ -238,15 +237,14 @@
   font-weight: 700;
   transition: background .2s ease, transform .1s ease, border-color .2s ease;
 }
-.rate-button:hover { 
+.button:hover { 
   transform: scale(1.0125); 
-  background: rgba(107, 255, 129, 0.25); 
+  background: rgba(255,255,255,0.12); 
 }
-.reset-button:hover { 
-  transform: scale(1.0125); 
-  background: rgba(255, 107, 107, 0.25); 
-}
-.rate-button:active,
-.reset-button:active { 
+.button:active { 
   transform: translateY(1px); 
+}
+.button:focus-visible { 
+  outline: 2px solid rgba(255,255,255,0.7); 
+  outline-offset: 2px; 
 }

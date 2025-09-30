@@ -11,31 +11,31 @@
   <div class="row r10"><div class="inner"></div></div>
 </div>
 
-<nav class="sidebar" [class.active]="sidebarActive()">
+<nav class="sidebar" [class.active]="sidebarService.sidebarActive()">
   <div class="logo-menu">
     <h2 class="logo">What2Watch</h2>
-    <i class="bx bx-menu toggle-button" (click)="toggleSidebar()"></i>
+    <i class="bx bx-menu toggle-button" (click)="sidebarService.toggle()"></i>
   </div>
 
   <ul class="list">
     <li class="list-item">
       <a (click)="routingService.navigateToHome()">
         <i class="bx bx-home-alt"></i>
-        <span class="link-name" [style.--i]="navDelay(0)">Home</span>
+        <span class="link-name" [style.--i]="sidebarService.navDelay(0, filmKind())">Home</span>
       </a>
     </li>
 
     <li class="list-item">
       <a (click)="routingService.navigateToSearchMovies()">
         <i class="bx bx-search"></i>
-        <span class="link-name" [style.--i]="navDelay(1)">Search</span>
+        <span class="link-name" [style.--i]="sidebarService.navDelay(1, filmKind())">Search</span>
       </a>
     </li>
 
     <li class="list-item" [class.active]="filmKind()==='movie'">
       <a (click)="routingService.navigateToMoviesLibrary()">
         <i class="bx bx-camera-movie"></i>
-        <span class="link-name" [style.--i]="navDelay(2)">Movies</span>
+        <span class="link-name" [style.--i]="sidebarService.navDelay(2, filmKind())">Movies</span>
       </a>
     </li>
     
@@ -43,13 +43,13 @@
       <li class="films-item active">
         <a class="library-icon" (click)="routingService.navigateToMoviesLibrary()">
           <i class='bx  bx-list-ul'></i>
-          <span class="link-name" [style.--i]="navDelay(2)">Library</span>
+          <span class="link-name" [style.--i]="sidebarService.navDelay(2, filmKind())">Library</span>
         </a>
       </li>
-      <li class="films-item">
+      <li class="films-item" >
         <a class="summary-icon" (click)="routingService.navigateToMoviesSummary()">
           <i class='bx bx-bar-chart-alt-2'></i>
-          <span class="link-name" [style.--i]="navDelay(2)">Summary</span>
+          <span class="link-name" [style.--i]="sidebarService.navDelay(2, filmKind())">Summary</span>
         </a>
       </li>
     </ng-container>
@@ -57,7 +57,7 @@
     <li class="list-item" [class.active]="filmKind()==='series'">
       <a (click)="routingService.navigateToShowsLibrary()">
         <i class="bx bx-collection"></i>
-        <span class="link-name" [style.--i]="navDelay(3)">Shows</span>
+        <span class="link-name" [style.--i]="sidebarService.navDelay(3, filmKind())">Shows</span>
       </a>
     </li>
 
@@ -65,13 +65,13 @@
       <li class="films-item active">
         <a class="library-icon" (click)="routingService.navigateToShowsLibrary()">
           <i class='bx  bx-list-ul'></i>
-          <span class="link-name" [style.--i]="navDelay(3)">Library</span>
+          <span class="link-name" [style.--i]="sidebarService.navDelay(3, filmKind())">Library</span>
         </a>
       </li>
-      <li class="films-item">
+      <li class="films-item" *ngIf="this.filteredRatedFilms().length >= 10">
         <a class="summary-icon" (click)="routingService.navigateToShowsSummary()">
           <i class='bx bx-bar-chart-alt-2'></i>
-          <span class="link-name" [style.--i]="navDelay(3)">Summary</span>
+          <span class="link-name" [style.--i]="sidebarService.navDelay(3, filmKind())">Summary</span>
         </a>
       </li>
     </ng-container>
@@ -79,25 +79,25 @@
     <li class="list-item">
       <a (click)="routingService.navigateToAccountsPosts(currentUser.username)">
         <i class="bx bx-user"></i>
-        <span class="link-name" [style.--i]="navDelay(5)">Account</span>
+        <span class="link-name" [style.--i]="sidebarService.navDelay(4, filmKind())">Account</span>
       </a>
     </li>
 
     <li class="list-item">
       <a (click)="routingService.navigateToSettings()">
         <i class="bx bx-cog"></i>
-        <span class="link-name" [style.--i]="navDelay(6)">Settings</span>
+        <span class="link-name" [style.--i]="sidebarService.navDelay(5, filmKind())">Settings</span>
       </a>
     </li>
 
     <li class="username">
-      <p class="link-name" [style.--i]="navDelay(7)">Signed in as:</p>
-      <p class="link-name" [style.--i]="navDelay(7)">{{ currentUser.username }}</p>
+      <p class="link-name" [style.--i]="sidebarService.navDelay(6, filmKind())">Signed in as:</p>
+      <p class="link-name" [style.--i]="sidebarService.navDelay(6, filmKind())">{{ currentUser.username }}</p>
     </li>
   </ul>
 </nav>
 
-<div class="container" [class.active]="sidebarActive() === false">
+<div class="container" [class.active]="sidebarService.sidebarActive() === false">
   <div class="left-side" *ngIf="activeFilm as af; else noSelection">
     <div class="top-information" *ngIf="af.dateRated">
       <img

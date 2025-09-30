@@ -8,10 +8,21 @@ import { LocalStorageService } from '../../services/local-storage.service';
 import { AccountInformationModel } from '../../models/database-models/account-information-model';
 import { RatedMovieModel } from '../../models/database-models/rated-movie-model';
 import { RatedSeriesModel } from '../../models/database-models/rated-series-model';
+import { SidebarService } from '../../services/sidebar.service';
 
 type FilmKind = 'movie' | 'series';
-type ChartDatum = { label: string; value: number };
-type FavoriteEntry = { label: string; movieTitle: string; rated?: string; poster?: string; rating?: number; runtimeMin: number };
+type ChartDatum = { 
+  label: string; 
+  value: number 
+};
+type FavoriteEntry = { 
+  label: string; 
+  movieTitle: string; 
+  rated?: string; 
+  poster?: string; 
+  rating?: number; 
+  runtimeMin: number 
+};
 
 @Component({
   selector: 'app-films-summary',
@@ -20,59 +31,53 @@ type FavoriteEntry = { label: string; movieTitle: string; rated?: string; poster
   templateUrl: './films-summary.component.html',
   styleUrls: ['./films-summary.component.css'],
 })
+
+
 export class FilmsSummaryComponent implements OnInit {
-  // Services
   readonly routingService = inject(RoutingService);
   readonly localStorageService = inject(LocalStorageService);
   private router = inject(Router);
-  Math = Math;
+  readonly sidebarService = inject(SidebarService);
 
-  // UI state
   readonly sidebarActive = signal(true);
   readonly filmKind = signal<FilmKind>('movie');
 
-  // Carousels (one index per cell)
-  readonly favIndex       = signal(0); // Cell 1 views
-  readonly countIndex     = signal(0); // Cell 2 views
-  readonly genreBarIndex  = signal(0); // Cell 3 views: avg rating / count / hours
-  readonly ratedBarIndex  = signal(0); // Cell 4 views: avg rating / count / hours
-  readonly ratedPieIndex  = signal(0); // Cell 5 views: count share / time share
-  readonly genrePieIndex  = signal(0); // Cell 6 views: count share / time share
+  readonly favIndex      = signal(0);
+  readonly countIndex    = signal(0);
+  readonly genreBarIndex = signal(0);
+  readonly ratedBarIndex = signal(0);
+  readonly ratedPieIndex = signal(0);
+  readonly genrePieIndex = signal(0);
 
-  // Current user & data
+  readonly fallbackPoster = 'assets/images/no-poster.png';
+
   public currentUser: AccountInformationModel = this.localStorageService.getInformation('current-user');
 
-  // ---------- Lifecycle ----------
   ngOnInit() {
+    this.addRandomStartPointForRows();
+
     const setKindFromUrl = () => {
       const url = (this.router.url || '').toLowerCase();
       this.filmKind.set(/\b(shows)\b/.test(url) ? 'series' : 'movie');
     };
 
     setKindFromUrl();
-    this.applySidebarByWidth(window.innerWidth);
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(setKindFromUrl);
   }
 
-  // ---------- Sidebar responsive ----------
-  @HostListener('window:resize', ['$event'])
-  onWindowResize(evt: UIEvent) {
-    const width = (evt.target as Window).innerWidth;
-    this.applySidebarByWidth(width);
-  }
-  private applySidebarByWidth(width: number) {
-    if (width <= 1275 && this.sidebarActive()) this.sidebarActive.set(false);
-    if (width >= 1275 && !this.sidebarActive()) this.sidebarActive.set(true);
-  }
-  toggleSidebar() {
-    this.sidebarActive.update(v => !v);
-  }
-  navDelay(i: number): number {
-    const active = this.filmKind() === 'series' ? 3 : 2;
-    return 1 + Math.abs(i - active);
+  // ---------- Helpers ----------
+  addRandomStartPointForRows() {
+    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
+      const durStr = getComputedStyle(el).animationDuration;
+      const dur = parseFloat(durStr.split(',')[0]) || 140;
+      el.style.animationDelay = `${-(Math.random() * dur)}s`;
+    });
   }
 
-  // ---------- Helpers & parsing ----------
+  round(n: number): number { 
+    return Math.round(n); 
+  }
+
   private parseRuntimeToMinutes(input: unknown): number {
     if (typeof input === 'number' && Number.isFinite(input)) return Math.max(0, input);
 
@@ -92,38 +97,58 @@ export class FilmsSummaryComponent implements OnInit {
     }
 
     const firstNum = s.match(/\d+/)?.[0];
+
     return Math.max(0, firstNum ? parseInt(firstNum, 10) : 0);
   }
 
   private movieRuntimeMinutes(m: Partial<RatedMovieModel>): number {
     const direct = (m as any)?.runTime ?? (m as any)?.runtimeMinutes ?? (m as any)?.runtime_min ?? null;
     if (Number.isFinite(direct)) return Math.max(0, Number(direct));
+
     const rt = (m as any)?.runtime ?? (m as any)?.Runtime ?? '';
+
     return this.parseRuntimeToMinutes(rt);
+  }
+
+  private seriesEpisodes(s: Partial<RatedSeriesModel>): number {
+    const raw =
+      (s as any)?.episodes ??
+      (s as any)?.episodeCount ??
+      (s as any)?.totalEpisodes ??
+      (s as any)?.episodes_watched ??
+      0;
+
+    const n = Number(raw);
+
+    return Number.isFinite(n) && n > 0 ? n : 0;
   }
 
   private genresOf(m: Partial<RatedMovieModel | RatedSeriesModel>): string[] {
     const g = (m as any)?.genres ?? [];
+
     if (Array.isArray(g)) return g.map(x => String(x).trim()).filter(Boolean);
+
     if (typeof g === 'string') return g.split(/[|,/•]+/).map(s => s.trim()).filter(Boolean);
+
     return [];
   }
 
-  private canonicalRated(m: Partial<RatedMovieModel>): string[] {
+  private canonicalRated(m: Partial<RatedMovieModel | RatedSeriesModel>): string[] {
     const r = String((m as any)?.rated ?? '').trim();
     if (!r) return [];
-    // Some titles may have multi-valued ratings (rare). Support splitting on slashes/pipes/commas if present.
+    
     return r.split(/[|,/•]+/).map(s => s.trim()).filter(Boolean);
   }
 
-  round(n: number): number {
-    return Math.round(n);
-  }
-
-  // ---------- Data sources ----------
+  // ---------- Data ----------
   private allRatedMovies = computed<RatedMovieModel[]>(() => {
     const list = this.localStorageService.getInformation('rated-movies') ?? [];
     return list as RatedMovieModel[];
+  });
+
+  private allRatedSeries = computed<RatedSeriesModel[]>(() => {
+    const list = this.localStorageService.getInformation('rated-series') ?? [];
+    return list as RatedSeriesModel[];
   });
 
   private usersRatedMovies = computed<RatedMovieModel[]>(() => {
@@ -131,162 +156,266 @@ export class FilmsSummaryComponent implements OnInit {
     return (this.allRatedMovies() ?? []).filter(m => m.username === u);
   });
 
-  // ---------- Cell 1: Favorites ----------
+  private usersRatedSeries = computed<RatedSeriesModel[]>(() => {
+    const u = this.currentUser?.username;
+    return (this.allRatedSeries() ?? []).filter(s => (s as any).username === u);
+  });
+
+  ///  Current list based on filmKind  \\\
+  private items = computed<(RatedMovieModel | RatedSeriesModel)[]>(() =>
+    this.filmKind() === 'movie' ? this.usersRatedMovies() : this.usersRatedSeries()
+  );
+
+
+  /// ---------------------------------------- Cells ----------------------------------------  \\\
+  /// ---------- Cell 1: Favorites ---------- \\\
   private bestOverall = computed<FavoriteEntry | null>(() => {
-    const items = this.usersRatedMovies();
+    const items = this.items();
     if (!items.length) return null;
-    const best = [...items].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))[0];
+
+    const best = [...items].sort((a: any, b: any) => (b.rating ?? 0) - (a.rating ?? 0))[0] as any;
+    const label = this.filmKind() === 'movie' ? 'Overall Favorite' : 'Top Rated Show';
+
     return {
-      label: 'Overall Favorite',
+      label,
       movieTitle: best.title ?? 'Unknown',
-      rated: (best as any)?.rated,
-      poster: (best as any)?.poster,
-      rating: best.rating ?? undefined,
-      runtimeMin: this.movieRuntimeMinutes(best),
+      rated: best?.rated,
+      poster: best?.poster,
+      rating: best?.rating ?? undefined,
+      runtimeMin: this.filmKind() === 'movie' ? this.movieRuntimeMinutes(best) : 0,
     };
   });
 
   private favoritesByGenreCombined = computed<FavoriteEntry[]>(() => {
-    const items = this.usersRatedMovies();
-    const byGenreTop = new Map<string, RatedMovieModel>();
+    const items = this.items();
+    const byGenreTop = new Map<string, any>();
 
-    // Find top per single genre
     for (const m of items) {
       const genres = this.genresOf(m);
       for (const g of genres) {
         const cur = byGenreTop.get(g);
-        if (!cur || (m.rating ?? 0) > (cur.rating ?? 0)) {
-          byGenreTop.set(g, m);
-        }
+        if (!cur || ((m as any).rating ?? 0) > ((cur as any).rating ?? 0)) byGenreTop.set(g, m);
       }
     }
 
-    // Group genres that share the same top movie (combine labels)
-    const movieKey = (m: RatedMovieModel) => `${m.title ?? ''}::${(m as any)?.poster ?? ''}`;
-    const groups = new Map<string, { movie: RatedMovieModel; genres: string[] }>();
+    const key = (m: any) => `${m.title ?? ''}::${m.poster ?? ''}`;
+    const groups = new Map<string, { movie: any; genres: string[] }>();
 
     for (const [g, m] of byGenreTop.entries()) {
-      const key = movieKey(m);
-      if (!groups.has(key)) groups.set(key, { movie: m, genres: [] });
-      groups.get(key)!.genres.push(g);
+      const k = key(m);
+      if (!groups.has(k)) groups.set(k, { movie: m, genres: [] });
+      groups.get(k)!.genres.push(g);
     }
 
-    // Build entries (skip the "overall" label here)
     const entries: FavoriteEntry[] = [];
+
     for (const { movie, genres } of groups.values()) {
       entries.push({
-        label: genres.sort((a, b) => a.localeCompare(b)).join(' / '),
+        label: `Favorite ${genres.sort((a, b) => a.localeCompare(b)).join('/')}`,
         movieTitle: movie.title ?? 'Unknown',
-        rated: (movie as any)?.rated,
-        poster: (movie as any)?.poster,
-        rating: movie.rating ?? undefined,
-        runtimeMin: this.movieRuntimeMinutes(movie),
+        rated: movie?.rated,
+        poster: movie?.poster,
+        rating: movie?.rating ?? undefined,
+        runtimeMin: this.filmKind() === 'movie' ? this.movieRuntimeMinutes(movie) : 0,
       });
     }
 
-    // Sort by the top movie's rating desc, then label asc for stability
     entries.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || a.label.localeCompare(b.label));
+
     return entries;
   });
 
   readonly favoritesSequence = computed<FavoriteEntry[]>(() => {
     const seq: FavoriteEntry[] = [];
+
     const overall = this.bestOverall();
     if (overall) seq.push(overall);
+
     seq.push(...this.favoritesByGenreCombined());
+
     return seq;
   });
 
-  nextFav() {
-    if (!this.favoritesSequence().length) return;
-    this.favIndex.update(i => (i + 1) % this.favoritesSequence().length);
+  favTitle(): string {
+    const seq = this.favoritesSequence();
+    if (!seq.length) return 'Favorites';
+
+    const idx = this.favIndex();
+
+    return seq[idx]?.label || 'Favorites';
   }
 
-  // ---------- Cell 2: Counts + Time ----------
-  readonly totalMovies = computed(() => this.usersRatedMovies().length);
+  nextFav() { 
+    const last = this.favoritesSequence().length - 1; 
+    this.favIndex.update(i => Math.min(last, i + 1)); 
+  }
+  prevFav() { 
+    this.favIndex.update(i => Math.max(0, i - 1)); 
+  }
 
-  readonly totalMinutes = computed(() =>
-    this.usersRatedMovies().reduce((acc, m) => acc + this.movieRuntimeMinutes(m), 0)
-  );
+  /// ---------- Cell 2: Totals ---------- \\\
+  readonly totalItems = computed(() => this.items().length);
+
+  /** Movies: sum minutes. Series: sum episodes. */
+  readonly totalProgressUnit = computed(() => {
+    if (this.filmKind() === 'movie') {
+      return this.items().reduce((acc, m) => acc + this.movieRuntimeMinutes(m as any), 0);
+    }
+
+    return this.items().reduce((acc, s) => acc + this.seriesEpisodes(s as any), 0);
+  });
+
+  // Movies: Longest / Shortest (ignore 0-minute runtimes)
+  readonly longestMovieTitle = computed(() => {
+    if (this.filmKind() !== 'movie') return '';
+
+    const items = (this.items() as RatedMovieModel[]).filter(m => this.movieRuntimeMinutes(m) > 0);
+    if (!items.length) return '';
+
+    const best = [...items].sort((a, b) => this.movieRuntimeMinutes(b) - this.movieRuntimeMinutes(a))[0];
+
+    return best?.title ?? '';
+  });
+  readonly longestMovieMinutes = computed(() => {
+    if (this.filmKind() !== 'movie') return 0;
+
+    const nums = (this.items() as RatedMovieModel[]).map(m => this.movieRuntimeMinutes(m)).filter(n => n > 0);
+
+    return nums.length ? Math.max(...nums) : 0;
+  });
+
+  readonly shortestMovieTitle = computed(() => {
+    if (this.filmKind() !== 'movie') return '';
+
+    const items = (this.items() as RatedMovieModel[]).filter(m => this.movieRuntimeMinutes(m) > 0);
+    if (!items.length) return '';
+
+    const best = [...items].sort((a, b) => this.movieRuntimeMinutes(a) - this.movieRuntimeMinutes(b))[0];
+
+    return best?.title ?? '';
+  });
+  readonly shortestMovieMinutes = computed(() => {
+    if (this.filmKind() !== 'movie') return 0;
+
+    const nums = (this.items() as RatedMovieModel[]).map(m => this.movieRuntimeMinutes(m)).filter(n => n > 0);
+
+    return nums.length ? Math.min(...nums) : 0;
+  });
+
+  // Series: Most / Fewest episodes
+  readonly mostEpisodesTitle = computed(() => {
+    if (this.filmKind() !== 'series') return '';
+
+    const items = this.items() as RatedSeriesModel[];
+    if (!items.length) return '';
+
+    const best = [...items].sort((a, b) => this.seriesEpisodes(b) - this.seriesEpisodes(a))[0];
+
+    return best?.title ?? '';
+  });
+  readonly mostEpisodesCount = computed(() => {
+    if (this.filmKind() !== 'series') return 0;
+
+    const nums = (this.items() as RatedSeriesModel[]).map(s => this.seriesEpisodes(s));
+
+    return nums.length ? Math.max(...nums) : 0;
+  });
+
+  readonly fewestEpisodesTitle = computed(() => {
+    if (this.filmKind() !== 'series') return '';
+
+    const items = (this.items() as RatedSeriesModel[]).filter(s => this.seriesEpisodes(s) > 0);
+    if (!items.length) return '';
+
+    const best = [...items].sort((a, b) => this.seriesEpisodes(a) - this.seriesEpisodes(b))[0];
+
+    return best?.title ?? '';
+  });
+  readonly fewestEpisodesCount = computed(() => {
+    if (this.filmKind() !== 'series') return 0;
+
+    const nums = (this.items() as RatedSeriesModel[]).map(s => this.seriesEpisodes(s)).filter(n => n > 0);
+
+    return nums.length ? Math.min(...nums) : 0;
+  });
+
+  // Creative: counts you’ve explored
+  readonly genresExplored = computed(() => {
+    const set = new Set<string>();
+
+    this.items().forEach(m => this.genresOf(m).forEach(g => set.add(g)));
+
+    return set.size;
+  });
+  readonly ratingsExplored = computed(() => {
+    const set = new Set<string>();
+
+    this.items().forEach(m => this.canonicalRated(m).forEach(r => set.add(r)));
+
+    return set.size;
+  });
+
+  private plural(n: number, one: string, many: string) { 
+    return `${n} ${n === 1 ? one : many}`; 
+  }
 
   formatDuration(totalMin: number) {
     const d = Math.floor(totalMin / (60 * 24));
     const h = Math.floor((totalMin % (60 * 24)) / 60);
     const m = totalMin % 60;
+    const parts: string[] = [];
 
-    if (d > 0) {
-      return `${d} ${d === 1 ? 'Day' : 'Days'}, ${h} ${h === 1 ? 'Hour' : 'Hours'}, ${m} ${m === 1 ? 'Minute' : 'Minutes'}`;
-    } else if (h > 0) {
-      return `${h} ${h === 1 ? 'Hour' : 'Hours'}, ${m} ${m === 1 ? 'Minute' : 'Minutes'}`;
-    } else {
-      return `${m} ${m === 1 ? 'Minute' : 'Minutes'}`;
-    }
+    if (d) parts.push(this.plural(d, 'Day', 'Days'));
+    if (h) parts.push(this.plural(h, 'Hour', 'Hours'));
+    if (m) parts.push(this.plural(m, 'Minute', 'Minutes'));
+
+    if (!parts.length) return '0 Minutes';
+    if (parts.length === 1) return parts[0];
+    if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
+
+    return `${parts[0]}, ${parts[1]} and ${parts[2]}`;
   }
 
-  nextCount() {
-    // 0 = total count; 1 = total time
-    this.countIndex.update(i => (i + 1) % 2);
+  totalsTitle(): string {
+    if (this.filmKind() === 'movie') return this.countIndex() === 0 ? 'Total Movies Watched' : 'Total Time Watched';
+
+    return this.countIndex() === 0 ? 'Total Series Watched' : 'Total Episodes Watched';
   }
 
-  // ---------- Aggregation helpers ----------
-  private sumBy<T>(arr: T[], f: (x: T) => number) {
-    return arr.reduce((acc, x) => acc + (f(x) || 0), 0);
+  nextCount() { 
+    this.countIndex.update(i => Math.min(1, i + 1)); 
+  }
+  prevCount() { 
+    this.countIndex.update(i => Math.max(0, i - 1)); 
   }
 
-  private topN(data: ChartDatum[], n = 10): ChartDatum[] {
-    if (data.length <= n) return data;
-    // drop the smallest to keep the list concise
-    return [...data].sort((a, b) => b.value - a.value).slice(0, n);
+  // ---------- Aggregation ----------
+  private sumBy<T>(arr: T[], f: (x: T) => number) { 
+    return arr.reduce((acc, x) => acc + (f(x) || 0), 0); 
+  }
+  private sortDesc(data: ChartDatum[]): ChartDatum[] { 
+    return [...data].sort((a, b) => b.value - a.value); 
   }
 
-  // ---------- Cell 3: Genre bar charts ----------
+  // ---------- Buckets built from current items ----------
   private genreBuckets = computed(() => {
-    const buckets = new Map<string, RatedMovieModel[]>();
-    for (const m of this.usersRatedMovies()) {
+    const buckets = new Map<string, (RatedMovieModel | RatedSeriesModel)[]>();
+
+    for (const m of this.items()) {
       const genres = this.genresOf(m);
       for (const g of genres) {
         if (!buckets.has(g)) buckets.set(g, []);
         buckets.get(g)!.push(m);
       }
     }
+
     return buckets;
   });
 
-  readonly genreAvgRating = computed<ChartDatum[]>(() => {
-    const out: ChartDatum[] = [];
-    for (const [g, list] of this.genreBuckets().entries()) {
-      const avg = list.length ? this.sumBy(list, x => x.rating ?? 0) / list.length : 0;
-      out.push({ label: g, value: avg });
-    }
-    return this.topN(out);
-  });
-
-  readonly genreCount = computed<ChartDatum[]>(() => {
-    const out: ChartDatum[] = [];
-    for (const [g, list] of this.genreBuckets().entries()) {
-      out.push({ label: g, value: list.length });
-    }
-    return this.topN(out);
-  });
-
-  readonly genreHours = computed<ChartDatum[]>(() => {
-    const out: ChartDatum[] = [];
-    for (const [g, list] of this.genreBuckets().entries()) {
-      const minutes = this.sumBy(list, m => this.movieRuntimeMinutes(m));
-      out.push({ label: g, value: minutes / 60 });
-    }
-    return this.topN(out);
-  });
-
-  nextGenreBar() {
-    // 0 = avg rating, 1 = count, 2 = hours
-    this.genreBarIndex.update(i => (i + 1) % 3);
-  }
-
-  // ---------- Cell 4: Rated (MPAA/TV) bar charts ----------
   private ratedBuckets = computed(() => {
-    const buckets = new Map<string, RatedMovieModel[]>();
-    for (const m of this.usersRatedMovies()) {
+    const buckets = new Map<string, (RatedMovieModel | RatedSeriesModel)[]>();
+
+    for (const m of this.items()) {
       const rs = this.canonicalRated(m);
       const keyList = rs.length ? rs : ['N/A'];
       for (const r of keyList) {
@@ -294,131 +423,253 @@ export class FilmsSummaryComponent implements OnInit {
         buckets.get(r)!.push(m);
       }
     }
+
     return buckets;
   });
 
+  /// ---------- Cell 3: Genre bars ---------- \\\
+  readonly genreAvgRating = computed<ChartDatum[]>(() => {
+    const out: ChartDatum[] = [];
+
+    for (const [g, list] of this.genreBuckets().entries()) {
+      const avg = list.length ? this.sumBy(list, x => (x as any).rating ?? 0) / list.length : 0;
+      out.push({ label: g, value: avg });
+    }
+
+    return this.sortDesc(out);
+  });
+  readonly genreCount = computed<ChartDatum[]>(() => {
+    const out: ChartDatum[] = [];
+
+    for (const [g, list] of this.genreBuckets().entries()) out.push({ label: g, value: list.length });
+
+    return this.sortDesc(out);
+  });
+  readonly genreProgress = computed<ChartDatum[]>(() => {
+    const out: ChartDatum[] = [];
+
+    for (const [g, list] of this.genreBuckets().entries()) {
+      if (this.filmKind() === 'movie') {
+        const minutes = this.sumBy(list, m => this.movieRuntimeMinutes(m as any));
+        out.push({ label: g, value: minutes / 60 });
+      } else {
+        const episodes = this.sumBy(list, s => this.seriesEpisodes(s as any));
+        out.push({ label: g, value: episodes });
+      }
+    }
+
+    return this.sortDesc(out);
+  });
+
+  genreBarTitle(): string {
+    switch (this.genreBarIndex()) {
+      case 0: return 'Average Rating per Genre';
+      case 1: return 'Number Watched per Genre';
+      default: return this.filmKind() === 'movie' ? 'Hours Watched per Genre' : 'Episodes Watched per Genre';
+    }
+  }
+
+  nextGenreBar() { 
+    this.genreBarIndex.update(i => Math.min(2, i + 1)); 
+  }
+  prevGenreBar() { 
+    this.genreBarIndex.update(i => Math.max(0, i - 1)); 
+  }
+
+  /// ---------- Cell 4: Rated bars ---------- \\\
   readonly ratedAvgRating = computed<ChartDatum[]>(() => {
     const out: ChartDatum[] = [];
+
     for (const [r, list] of this.ratedBuckets().entries()) {
-      const avg = list.length ? this.sumBy(list, x => x.rating ?? 0) / list.length : 0;
+      const avg = list.length ? this.sumBy(list, x => (x as any).rating ?? 0) / list.length : 0;
       out.push({ label: r, value: avg });
     }
-    return this.topN(out);
-  });
 
+    return this.sortDesc(out);
+  });
   readonly ratedCount = computed<ChartDatum[]>(() => {
     const out: ChartDatum[] = [];
-    for (const [r, list] of this.ratedBuckets().entries()) {
-      out.push({ label: r, value: list.length });
-    }
-    return this.topN(out);
-  });
 
-  readonly ratedHours = computed<ChartDatum[]>(() => {
+    for (const [r, list] of this.ratedBuckets().entries()) out.push({ label: r, value: list.length });
+    
+    return this.sortDesc(out);
+  });
+  readonly ratedProgress = computed<ChartDatum[]>(() => {
     const out: ChartDatum[] = [];
+
     for (const [r, list] of this.ratedBuckets().entries()) {
-      const minutes = this.sumBy(list, m => this.movieRuntimeMinutes(m));
-      out.push({ label: r, value: minutes / 60 });
+      if (this.filmKind() === 'movie') {
+        const minutes = this.sumBy(list, m => this.movieRuntimeMinutes(m as any));
+        out.push({ label: r, value: minutes / 60 });
+      } else {
+        const episodes = this.sumBy(list, s => this.seriesEpisodes(s as any));
+        out.push({ label: r, value: episodes });
+      }
     }
-    return this.topN(out);
+
+    return this.sortDesc(out);
   });
 
-  nextRatedBar() {
-    // 0 = avg rating, 1 = count, 2 = hours
-    this.ratedBarIndex.update(i => (i + 1) % 3);
+  ratedBarTitle(): string {
+    switch (this.ratedBarIndex()) {
+      case 0: return 'Average Rating per Film Rating';
+      case 1: return 'Number Watched per Film Rating';
+      default: return this.filmKind() === 'movie' ? 'Hours Watched per Film Rating' : 'Episodes Watched per Film Rating';
+    }
   }
 
-  // ---------- Cell 5: Rated (MPAA/TV) pie charts ----------
+  nextRatedBar() { 
+    this.ratedBarIndex.update(i => Math.min(2, i + 1)); 
+  }
+  prevRatedBar() { 
+    this.ratedBarIndex.update(i => Math.max(0, i - 1)); 
+  }
+
+  /// ---------- Cell 5: Rated pies ---------- \\\
   readonly ratedCountShare = computed<ChartDatum[]>(() => {
     const out: ChartDatum[] = [];
-    const total = this.totalMovies();
-    if (total <= 0) return out;
 
-    // If movie has multiple ratings, it counts toward each
-    for (const [r, list] of this.ratedBuckets().entries()) {
-      out.push({ label: r, value: list.length });
-    }
+    for (const [r, list] of this.ratedBuckets().entries()) out.push({ label: r, value: list.length });
+    
     return out;
   });
-
-  readonly ratedTimeShare = computed<ChartDatum[]>(() => {
+  readonly ratedProgressShare = computed<ChartDatum[]>(() => {
     const out: ChartDatum[] = [];
+
     for (const [r, list] of this.ratedBuckets().entries()) {
-      const minutes = this.sumBy(list, m => this.movieRuntimeMinutes(m));
-      out.push({ label: r, value: minutes }); // keep minutes for share calc
+      if (this.filmKind() === 'movie') {
+        const minutes = this.sumBy(list, m => this.movieRuntimeMinutes(m as any));
+        out.push({ label: r, value: minutes });
+      } else {
+        const episodes = this.sumBy(list, s => this.seriesEpisodes(s as any));
+        out.push({ label: r, value: episodes });
+      }
     }
+    
     return out;
   });
 
-  nextRatedPie() {
-    // 0 = count share, 1 = time share
-    this.ratedPieIndex.update(i => (i + 1) % 2);
+  ratedPieTitle(): string { 
+    return this.ratedPieIndex() === 0 ? (this.filmKind() === 'movie' ? 'Film Ratings Distribution per Movie' : 'Film Ratings Distribution per Show') : (this.filmKind() === 'movie' ? 'Film Ratings Distribution per Hour' : 'Film Ratings Distribution per Episode'); 
   }
 
-  // ---------- Cell 6: Genre pie charts ----------
+  nextRatedPie() { 
+    this.ratedPieIndex.update(i => Math.min(1, i + 1)); 
+  }
+  prevRatedPie() { 
+    this.ratedPieIndex.update(i => Math.max(0, i - 1)); 
+  }
+
+  ratedPieCenterTop(): string {
+    if (this.ratedPieIndex() === 0) return String(this.ratedCountShare().reduce((a, b) => a + b.value, 0));
+
+    const total = this.ratedProgressShare().reduce((a, b) => a + b.value, 0);
+
+    return this.filmKind() === 'movie' ? String(Math.round(total / 60)) : String(total);
+  }
+  ratedPieCenterBottom(): string { 
+    return this.ratedPieIndex() === 0 ? 'Total' : (this.filmKind() === 'movie' ? 'Hours' : 'Episodes'); 
+  }
+
+  /// ---------- Cell 6: Genre pies ---------- \\\
   readonly genreCountShare = computed<ChartDatum[]>(() => {
     const out: ChartDatum[] = [];
-    for (const [g, list] of this.genreBuckets().entries()) {
-      out.push({ label: g, value: list.length });
-    }
+
+    for (const [g, list] of this.genreBuckets().entries()) out.push({ label: g, value: list.length });
+    
     return out;
   });
-
-  readonly genreTimeShare = computed<ChartDatum[]>(() => {
+  readonly genreProgressShare = computed<ChartDatum[]>(() => {
     const out: ChartDatum[] = [];
+
     for (const [g, list] of this.genreBuckets().entries()) {
-      const minutes = this.sumBy(list, m => this.movieRuntimeMinutes(m));
-      out.push({ label: g, value: minutes });
+      if (this.filmKind() === 'movie') {
+        const minutes = this.sumBy(list, m => this.movieRuntimeMinutes(m as any));
+        out.push({ label: g, value: minutes });
+      } else {
+        const episodes = this.sumBy(list, s => this.seriesEpisodes(s as any));
+        out.push({ label: g, value: episodes });
+      }
     }
+
     return out;
   });
 
-  nextGenrePie() {
-    // 0 = count share, 1 = time share
-    this.genrePieIndex.update(i => (i + 1) % 2);
+  genrePieTitle(): string { 
+    return this.genrePieIndex() === 0 ? (this.filmKind() === 'movie' ? 'Genre Distribution per Movie' : 'Genre Distribution per Show') : (this.filmKind() === 'movie' ? 'Genre Distribution per Hour' : 'Genre Distribution per Episode'); 
   }
 
-  // ---------- Rendering helpers ----------
-  isActive(prefix: string): boolean {
-    return (this.router.url || '').toLowerCase().startsWith(prefix);
+  nextGenrePie() { 
+    this.genrePieIndex.update(i => Math.min(1, i + 1)); 
+  }
+  prevGenrePie() { 
+    this.genrePieIndex.update(i => Math.max(0, i - 1)); 
+  }
+
+  genrePieCenterTop(): string {
+    if (this.genrePieIndex() === 0) return String(this.genreCountShare().reduce((a, b) => a + b.value, 0));
+
+    const total = this.genreProgressShare().reduce((a, b) => a + b.value, 0);
+
+    return this.filmKind() === 'movie' ? String(Math.round(total / 60)) : String(total);
+  }
+  genrePieCenterBottom(): string { 
+    return this.genrePieIndex() === 0 ? 'Total' : (this.filmKind() === 'movie' ? 'Hours' : 'Episodes'); 
+  }
+
+
+  /// ---------------------------------------- Responsive Sidebar ----------------------------------------  \\\
+  @HostListener('window:resize', ['$event'])
+  onWindowResize(evt: UIEvent) {
+    const width = (evt.target as Window).innerWidth;
+    this.sidebarService.applySidebarByWidth(width);
+  }
+  
+  /// ---------------------------------------- Helpers ----------------------------------------  \\\
+  isActive(prefix: string): boolean { 
+    return (this.router.url || '').toLowerCase().startsWith(prefix); 
   }
 
   posterOrFallback(url?: string): string {
-    if (!url || url === 'N/A') return 'assets/images/no-poster.png';
-    return url;
+    return (!url || /^(n\/?a|na|null|undefined|unknown)$/i.test(url.trim())) ? this.fallbackPoster : url;
+  }
+  onPosterError(evt: Event) {
+    const img = evt.target as HTMLImageElement | null;
+    if (!img) return;
+
+    try {
+      const current = new URL(img.src, window.location.href).pathname;
+      if (current.endsWith('/assets/images/no-poster.png')) return;
+    } catch {}
+
+    img.src = this.fallbackPoster;
   }
 
-  // Bars
-  maxValue(data: ChartDatum[]): number {
-    return data.reduce((acc, d) => Math.max(acc, d.value), 0) || 1;
-  }
-  barPct(value: number, max: number): string {
-    const pct = Math.max(0, Math.min(100, (value / (max || 1)) * 100));
-    return pct.toFixed(2) + '%';
+  maxValue(data: ChartDatum[]): number { 
+    return data.reduce((acc, d) => Math.max(acc, d.value), 0) || 1; 
   }
 
-  // Pies
+  barPct(value: number, max: number): string { 
+    const pct = Math.max(0, Math.min(100, (value / (max || 1)) * 100)); return pct.toFixed(2) + '%'; 
+  }
+
   pieGradient(data: ChartDatum[]): string {
     const total = data.reduce((acc, d) => acc + d.value, 0) || 1;
-    let acc = 0;
-    const parts: string[] = [];
+    let acc = 0; const parts: string[] = [];
+
     data.forEach((d, i) => {
       const start = (acc / total) * 360;
       const end = ((acc + d.value) / total) * 360;
       const color = this.segmentColor(i);
+
       parts.push(`${color} ${start}deg ${end}deg`);
       acc += d.value;
     });
+
     return `conic-gradient(${parts.join(',')})`;
   }
-  segmentColor(i: number): string {
-    // Soft, evenly spaced hues
-    return `hsl(${(i * 47) % 360} 70% 50%)`;
-  }
 
-  // Labels
-  formatHours(h: number): string {
-    const n = Math.round(h);
-    return `${n} ${n === 1 ? 'Hour' : 'Hours'}`;
+  segmentColor(i: number): string { 
+    return `hsl(${(i * 47) % 360} 70% 50%)`; 
   }
 }
