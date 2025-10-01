@@ -172,6 +172,11 @@
     color: #fff;
 }
 
+.no-anim,
+.no-anim * { 
+  transition: none !important; 
+  animation: none !important; 
+}
 
 /* ---------- Container ---------- */
 .container {

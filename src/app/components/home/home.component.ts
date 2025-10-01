@@ -10,6 +10,7 @@ import { PostsDatabase } from '../../databases/posts-database';
 import { PostsService } from '../../services/posts.service';
 import { FeedPostComponent } from '../templates/feed-post/feed-post.component';
 import { RouterLink, RouterModule } from '@angular/router';
+import { SidebarService } from '../../services/sidebar.service';
 
 @Component({
   selector: 'app-home',
@@ -22,11 +23,10 @@ import { RouterLink, RouterModule } from '@angular/router';
 export class HomeComponent implements OnInit {
   readonly routingService = inject(RoutingService);
   private localStorageService = inject(LocalStorageService);
-
+  readonly sidebarService = inject(SidebarService);
   private postsDatabase: PostsDatabase = inject(PostsDatabase);
   private postsService: PostsService = inject(PostsService);
 
-  readonly sidebarActive = signal(true);
   readonly currentUser: AccountInformationModel = this.localStorageService.getInformation('current-user')!;
 
   usersFeedPosts: UserPostModel[] = [];
@@ -45,20 +45,11 @@ export class HomeComponent implements OnInit {
   }
   
 
-  /// ---------------------------------------- Responsive Sidebar ---------------------------------------- \\\
+  /// ---------------------------------------- Responsive Sidebar ----------------------------------------  \\\
   @HostListener('window:resize', ['$event'])
   onWindowResize(evt: UIEvent) {
     const width = (evt.target as Window).innerWidth;
-    this.applySidebarByWidth(width);
-  }
-
-  private applySidebarByWidth(width: number) {
-    if (width <= 1275 && this.sidebarActive()) this.sidebarActive.set(false);
-    if (width >= 1275 && !this.sidebarActive()) this.sidebarActive.set(true);
-  }
-  
-  toggleSidebar() {
-    this.sidebarActive.update(v => !v);
+    this.sidebarService.applySidebarByWidth(width);
   }
 
 

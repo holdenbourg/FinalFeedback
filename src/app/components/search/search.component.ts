@@ -13,6 +13,7 @@ import { SearchType } from '../../models/search-models/search.types';  ///  'mov
 
 import { SearchedFilmComponent } from '../templates/searched-film/searched-film.component';
 import { SearchedUserComponent } from '../templates/searched-user/searched-user.component';
+import { SidebarService } from '../../services/sidebar.service';
 
 
 @Component({
@@ -35,8 +36,8 @@ export class SearchComponent implements OnInit {
   private router = inject(Router);
   private searchService = inject(SearchService);
   public localStorageService = inject(LocalStorageService);
+  readonly sidebarService = inject(SidebarService);
 
-  readonly sidebarActive = signal(true);
   public currentUser: AccountInformationModel = this.localStorageService.getInformation('current-user');
 
   public type: SearchType = 'movies';
@@ -54,17 +55,13 @@ export class SearchComponent implements OnInit {
       this.type = (pm.get('type') as SearchType) ?? 'movies';
 
       const q = (this.route.snapshot.queryParamMap.get('q') ?? '').trim();
-
       if (q) this.runSearch(q); else this.clearResults();
     });
 
     this.route.queryParamMap.subscribe(qm => {
       const q = (qm.get('q') ?? '').trim();
-
       if (q !== this.searchInput) this.searchInput = q;
-
       if (q && q.length >= 2) this.runSearch(q);
-
       if (!q) this.clearResults();
     });
 
@@ -122,19 +119,10 @@ export class SearchComponent implements OnInit {
   }
 
 
-  /// ---------------------------------------- Responsive Sidebar ---------------------------------------- \\\
+  /// ---------------------------------------- Responsive Sidebar ----------------------------------------  \\\
   @HostListener('window:resize', ['$event'])
   onWindowResize(evt: UIEvent) {
     const width = (evt.target as Window).innerWidth;
-    this.applySidebarByWidth(width);
-  }
-
-  private applySidebarByWidth(width: number) {
-    if (width <= 1275 && this.sidebarActive()) this.sidebarActive.set(false);
-    if (width >= 1275 && !this.sidebarActive()) this.sidebarActive.set(true);
-  }
-  
-  toggleSidebar() {
-    this.sidebarActive.update(v => !v);
+    this.sidebarService.applySidebarByWidth(width);
   }
 }
