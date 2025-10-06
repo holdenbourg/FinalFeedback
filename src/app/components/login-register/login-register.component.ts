@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { RoutingService } from '../../services/routing.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { UsersService } from '../../services/users.service';
@@ -14,6 +14,10 @@ import { PostsDatabase } from '../../databases/posts-database';
 import { RatedMoviesDatabase } from '../../databases/rated-movies-database';
 import { RatedSeriesDatabase } from '../../databases/rated-series-database';
 import { RepliesDatabase } from '../../databases/replies-database';
+import { AuthService } from '../../core/auth.service';
+import { Router } from '@angular/router';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-login-register',
@@ -22,32 +26,22 @@ import { RepliesDatabase } from '../../databases/replies-database';
   templateUrl: './login-register.component.html',
   styleUrls: ['./login-register.component.css']
 })
-export class LoginRegisterComponent {
-  private routingService = inject(RoutingService);
-  private localStorageService = inject(LocalStorageService);
-
-  /// Databases/Services \\\
-  private usersService = inject(UsersService);
-  private usersDatabase = inject(UsersDatabase);
-  private ratedMoviesDatabase = inject(RatedMoviesDatabase);
-  private ratedSeriesDatabase = inject(RatedSeriesDatabase);
-  private postsDatabase = inject(PostsDatabase);
-  private commentsDatabase = inject(CommentsDatabase);
-  private repliesDatabase = inject(RepliesDatabase);
+export class LoginRegisterComponent implements OnInit, OnDestroy {
+  private router = inject(Router);
+  private authService = inject(AuthService);
 
   public activePanel: 'login' | 'register' = 'login';
 
+  public showLoginPassword: boolean = false;
+  public showRegisterPassword: boolean = false;
+
   public termsChecked: boolean = false;
   public rememberMeChecked: boolean = false;
+  private unloadHandler: ((e: BeforeUnloadEvent) => void) | null = null;  ///  when rememberMeChecked = false  \\\
 
-  public showLoginPassword = false;
-  public showRegisterPassword = false;
-
-  public showWarning = false;
+  public showWarning: boolean = false;
   public warning: string = '';
   public warningType: 'error' | 'success' | '' = '';
-
-  public currentUser: AccountInformationModel | undefined = this.localStorageService.getInformation('current-user');
 
   registerObject: RegisterModel = {
     firstName: '',
@@ -56,6 +50,7 @@ export class LoginRegisterComponent {
     username: '',
     password: ''
   };
+
   loginObject: LoginModel = {
     username: '',
     password: ''
@@ -63,118 +58,70 @@ export class LoginRegisterComponent {
 
 
   ngOnInit() {
-    this.rememberMeChecked = this.localStorageService.getInformation('remember-me') === true;
-
     this.addRandomStartPointForRows();
+    this.bindUnloadHandlerIfNeeded();
+  }
 
-    if(this.currentUser !== undefined && this.rememberMeChecked) {
-      this.loginObject = {
-        username: this.currentUser.username,
-        password: this.currentUser.password
-      }
+  ngOnDestroy() {
+    if (this.unloadHandler) {
+      window.removeEventListener('beforeunload', this.unloadHandler);
+      this.unloadHandler = null;
     }
-
-    this.localStorageService.cleanTemporaryLocalStorages();
-
-    /// resets the mock databases in local storage \\\
-    //this.localStorageService.clearInformation('current-user'); 
-    this.resetMockDatabses();
   }
 
 
   /// ---------------------------------------- Login/Register Logic ---------------------------------------- \\\
-  onRegister() {
-    console.log('register entered');
-    
+  async onRegister() {
     const warningMessage = this.validateRegister();
 
     if (warningMessage) {
       this.transitionWarning(warningMessage, 'error');
-      
       return;
     }
 
-    const newAccount: RawAccountInformationModel = {
-      profilePicture: '',
-      username: this.registerObject.username.trim(),
-      password: this.registerObject.password,
-      email: this.registerObject.email.trim().toLowerCase(),
-      firstName: this.registerObject.firstName.trim(),
-      lastName: this.registerObject.lastName.trim(),
-      bio: '',
-      followers: [],
-      following: [],
-      requests: [],
-      blocked: [],
-      isBlockedBy: [],
-      postIds: [],
-      taggedPostIds: [],
-      archivedPostIds: [],
-      dateJoined: new Date().toISOString(),
-      private: false
+    if (await this.authService.emailExists(this.registerObject.email)) {
+      this.transitionWarning('Email is already registered', 'error'); 
+      return;
     }
 
-    this.usersDatabase.addUserToDatabase(newAccount);
+    if (await this.authService.usernameExists(this.registerObject.username)) {
+      this.transitionWarning('Username is already taken', 'error'); 
+      return;
+    }
 
-    this.localStorageService.setInformation('current-user', this.usersService.convertRawUserToUser(newAccount));
-    
-    this.toggleLoginRegister();
-    this.transitionWarning(`Your account was created ${this.registerObject.firstName.trim()}, you may log in now`, 'success');
+    const { firstName, lastName, email, username, password } = this.registerObject;
+
+    try {
+      await this.authService.signUp({ email, password, username, firstName, lastName });
+
+      this.transitionWarning(`Your account was created ${firstName.trim()}, you may log in now`, 'success');
+      this.activePanel = 'login';
+
+    } catch (e: any) {
+      this.transitionWarning(e?.message ?? 'Registration failed.', 'error');
+    }
   }
 
-  onLogin() {
-    console.log('login entered');
-
+  async onLogin() {
     const warningMessage = this.validateLogin();
 
     if (warningMessage) {
       this.transitionWarning(warningMessage, 'error');
-      
       return;
     }
 
-    const rawUsers = this.usersDatabase.getAllUsersFromDatabase();
-    const userWasFound = rawUsers.find((user) => user.username === this.loginObject.username && user.password === this.loginObject.password);
+    try {
+      await this.authService.signInWithUsernameOrEmail(
+        this.loginObject.username,
+        this.loginObject.password
+      );
 
-    if(userWasFound) {
-      this.localStorageService.setInformation('current-user', this.usersService.convertRawUserToUser(userWasFound));
-      this.localStorageService.setInformation('remember-me', this.rememberMeChecked);
+      this.transitionWarning('Welcome back!', 'success');
+      this.router.navigateByUrl('/home');
 
-      console.log('entered 123');
-
-      this.routingService.navigateToHome();
-    } else {
-      this.transitionWarning('That username or password does not exist', 'error');
+    } catch (e: any) {
+      this.transitionWarning(e?.message ?? 'That username or password does not exist', 'error');
     }
-  }
-
-  /// ---------------------------------------- Login/Register Helper Methods ---------------------------------------- \\\
-  toggleRememberMe() {
-    this.rememberMeChecked = !this.rememberMeChecked;
-
-    this.localStorageService.setInformation('remember-me', this.rememberMeChecked);
-  }
-
-  toggleLoginRegister() {
-    this.activePanel = this.activePanel === 'login' ? 'register' : 'login';
-
-    if (this.warningType === 'error') {
-      this.showWarning = false;
-
-      setTimeout(() => { this.warning = ''; this.warningType = ''; }, 500);
-    }
-  }
-
-  private transitionWarning(warningMessage: string, warningType: 'error' | 'success') {
-    this.warning = warningMessage;
-    this.warningType = warningType;
-    this.showWarning = true;
-
-    setTimeout(() => {
-      this.showWarning = false;
-
-      setTimeout(() => { this.warning = ''; this.warningType = ''; }, 500);
-    }, 3000);
   }
 
   
@@ -197,12 +144,10 @@ export class LoginRegisterComponent {
     if (!this.inputWithinRange(email, 6, 60)) return 'Email must be 6–60 characters';
     if (this.containsWhiteSpace(email)) return `Email cannot contain spaces`;
     if (!this.isEmailValid(email)) return `Email must look like "name@host.tld"`;
-    if (this.usersService.emailExists(email.toLowerCase())) return 'Email already exists';
 
     if (!this.inputWithinRange(username, 6, 14)) return 'Username must be 6–14 characters';
     if (this.containsWhiteSpace(username)) return `Username cannot contain spaces`;
     if (!this.isUsernameValid(username)) return 'Username can only use letters and numbers';
-    if (this.usersService.usernameExists(username.toLowerCase())) return 'Username already exists';
 
     if (!this.inputWithinRange(password, 8, 24)) return 'Password must be 8–24 characters';
     if (this.containsWhiteSpace(password)) return `Password cannot contain spaces`;
@@ -260,6 +205,7 @@ export class LoginRegisterComponent {
 
     return allowedCharacters.test(username);
   }
+
   private isEmailValid(email: string): boolean {
     const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -268,6 +214,48 @@ export class LoginRegisterComponent {
 
 
   /// ---------------------------------------- Helper Methods ---------------------------------------- \\\
+  toggleLoginRegister() {
+    this.activePanel = this.activePanel === 'login' ? 'register' : 'login';
+    this.clearWarning();
+  }
+
+  toggleRememberMe() {
+    this.rememberMeChecked = !this.rememberMeChecked;
+    this.bindUnloadHandlerIfNeeded();
+  }
+
+  private bindUnloadHandlerIfNeeded() {
+    if (this.unloadHandler) {
+      window.removeEventListener('beforeunload', this.unloadHandler);
+      this.unloadHandler = null;
+    }
+
+    if (!this.rememberMeChecked) {
+      this.unloadHandler = () => {
+        this.authService.signOut().catch(() => {});
+      };
+
+      window.addEventListener('beforeunload', this.unloadHandler);
+    }
+  }
+
+  private clearWarning() {
+    this.showWarning = false;
+    this.warning = '';
+    this.warningType = '';
+  }
+
+  private transitionWarning(warningMessage: string, warningType: 'error' | 'success') {
+    this.warning = warningMessage;
+    this.warningType = warningType;
+    this.showWarning = true;
+
+    setTimeout(() => {
+      this.showWarning = false;
+      setTimeout(() => { this.warning = ''; this.warningType = ''; }, 500);
+    }, 3000);
+  }
+
   addRandomStartPointForRows() {
     document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
       const durStr = getComputedStyle(el).animationDuration;
@@ -275,14 +263,5 @@ export class LoginRegisterComponent {
 
       el.style.animationDelay = `${-(Math.random() * dur)}s`;
     });
-  }
-
-  resetMockDatabses() {
-    this.usersDatabase.resetUsersDatabase();
-    this.ratedMoviesDatabase.resetRatedMoviesDatabase();
-    this.ratedSeriesDatabase.resetRatedSeriesDatabase();
-    this.postsDatabase.resetPostsDatabase();
-    this.commentsDatabase.resetCommentsDatabase();
-    this.repliesDatabase.resetRepliesDatabase();
   }
 }
