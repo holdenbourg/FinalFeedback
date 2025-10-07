@@ -4,7 +4,7 @@ import { LoginModel } from '../../models/login-register-models/login-model';
 import { RegisterModel } from '../../models/login-register-models/register-model';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/auth.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-login-register',
@@ -16,6 +16,7 @@ import { Router } from '@angular/router';
 export class LoginRegisterComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private authService = inject(AuthService);
+  private activatedRoute = inject(ActivatedRoute);
 
   public activePanel: 'login' | 'register' = 'login';
 
@@ -29,8 +30,6 @@ export class LoginRegisterComponent implements OnInit, OnDestroy {
   public showWarning: boolean = false;
   public warning: string = '';
   public warningType: 'error' | 'success' | '' = '';
-
-  private redirectTo = `${window.location.origin}/auth/callback`;
 
   registerObject: RegisterModel = {
     firstName: '',
@@ -203,9 +202,15 @@ export class LoginRegisterComponent implements OnInit, OnDestroy {
 
 
   /// ---------------------------------------- OAuth Helpers ---------------------------------------- \\\
+  private buildRedirectUrl(): string {
+    const redirect = this.activatedRoute.snapshot.queryParamMap.get('redirect');
+    const targetPath = redirect && redirect !== '/' ? redirect : '/home';
+    return `${window.location.origin}${targetPath}`;
+  }
+
   async signInWithGoogle() {
     try {
-      await this.authService.signInWithGoogle();
+      await this.authService.signInWithGoogle(this.buildRedirectUrl());
     } catch (error: any) {
       this.handleAuthError(error);
     }
@@ -213,7 +218,7 @@ export class LoginRegisterComponent implements OnInit, OnDestroy {
 
   async signInWithGitHub() {
     try {
-      await this.authService.signInWithGitHub();
+      await this.authService.signInWithGitHub(this.buildRedirectUrl());
     } catch (error: any) {
       this.handleAuthError(error);
     }
@@ -221,7 +226,7 @@ export class LoginRegisterComponent implements OnInit, OnDestroy {
 
   async signInWithFacebook() {
     try {
-      await this.authService.signInWithFacebook();
+      await this.authService.signInWithFacebook(this.buildRedirectUrl());
     } catch (error: any) {
       this.handleAuthError(error);
     }

@@ -75,27 +75,25 @@ export class AuthService {
 
   /// ---------------------------------------- OAuth Helpers ---------------------------------------- \\\
   async signInWithGoogle(redirectTo?: string) {
-    const { error } = await this.supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: redirectTo ?? `${window.location.origin}/auth/callback` }
+      options: { redirectTo: redirectTo ?? `${window.location.origin}/home` }
     });
     if (error) throw error;
   }
 
   async signInWithGitHub(redirectTo?: string) {
-    const { error } = await this.supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
-      options: { redirectTo: redirectTo ?? `${window.location.origin}/auth/callback` }
+      options: { redirectTo: redirectTo ?? `${window.location.origin}/home` }
     });
     if (error) throw error;
   }
 
   async signInWithFacebook(redirectTo?: string) {
-    const { error } = await this.supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',
-      options: { 
-        redirectTo: redirectTo ?? `${window.location.origin}/auth/callback`,
-      }
+      options: { redirectTo: redirectTo ?? `${window.location.origin}/home` }
     });
     if (error) throw error;
   }
@@ -127,5 +125,9 @@ export class AuthService {
   async getCurrentUser() {
     const { data } = await this.supabase.auth.getUser();
     return data.user;
+  }
+
+  async getSession() {
+    return supabase.auth.getSession();
   }
 }
