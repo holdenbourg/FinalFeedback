@@ -278,27 +278,6 @@
     margin-top: 14px; 
 }
 
-.oauth-divider {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-  font-size: 0.75vw;
-  min-font-size: 12px;
-}
-.oauth-divider::before,
-.oauth-divider::after {
-  content: "";
-  height: 1px;
-}
-.oauth-divider span { 
-    font-size: 0.75vw; 
-    color: #fff; 
-    text-align: center; 
-    font-weight: 500;
-}
-
 .oauth-buttons {
   display: flex;
   gap: 20px;
