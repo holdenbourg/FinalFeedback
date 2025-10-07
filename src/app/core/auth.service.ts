@@ -5,46 +5,46 @@ import { supabase } from './supabase.client';
 export class AuthService {
   private supabase = supabase;
 
-    ///  Sign up user  \\\
-    async signUp(opts: {
-        email: string; 
-        password: string; 
-        username: string;
-        firstName?: string; 
-        lastName?: string;
-    }) {
-        const { data, error } = await this.supabase.auth.signUp({
-            email: opts.email,
-            password: opts.password,
-            options: {
-                data: {
-                    username: opts.username,
-                    first_name: opts.firstName ?? '',
-                    last_name: opts.lastName ?? ''
-                }
-            }
-        });
-        if (error) throw error;
 
-        ///  Fallback: ensure a profile row exists  \\\
-        const user = data.user;
-        if (user) {
-            await this.supabase.from('users').upsert({
-                id: user.id,
-                username: opts.username,
-                email: opts.email,
-                first_name: opts.firstName ?? '',
-                last_name: opts.lastName ?? '',
-            }, 
-            { 
-                onConflict: 'id' 
-            });
+  /// ---------------------------------------- Sign Up/Sign In Functionality ---------------------------------------- \\\
+  async signUp(opts: {
+    email: string; 
+    password: string; 
+    username: string;
+    firstName?: string; 
+    lastName?: string;
+  }) {
+    const { data, error } = await this.supabase.auth.signUp({
+      email: opts.email,
+      password: opts.password,
+      options: {
+        data: {
+          username: opts.username,
+          first_name: opts.firstName ?? '',
+          last_name: opts.lastName ?? ''
         }
+      }
+    });
+    if (error) throw error;
 
-        return data.user;
+    ///  Fallback: ensure a profile row exists  \\\
+    const user = data.user;
+    if (user) {
+      await this.supabase.from('users').upsert({
+        id: user.id,
+        username: opts.username,
+        email: opts.email,
+        first_name: opts.firstName ?? '',
+        last_name: opts.lastName ?? '',
+      }, 
+      { 
+        onConflict: 'id' 
+      });
     }
 
-  ///  Sign in user  \\\
+    return data.user;
+  }
+
   async signInWithUsernameOrEmail(identifier: string, password: string) {
     ///  Try email first  \\\
     let { data, error } = await this.supabase.auth.signInWithPassword({
@@ -72,7 +72,36 @@ export class AuthService {
     return data;
   }
 
-  ///  Check if email exists  \\\
+
+  /// ---------------------------------------- OAuth Helpers ---------------------------------------- \\\
+  async signInWithGoogle(redirectTo?: string) {
+    const { error } = await this.supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: redirectTo ?? `${window.location.origin}/auth/callback` }
+    });
+    if (error) throw error;
+  }
+
+  async signInWithGitHub(redirectTo?: string) {
+    const { error } = await this.supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: { redirectTo: redirectTo ?? `${window.location.origin}/auth/callback` }
+    });
+    if (error) throw error;
+  }
+
+  async signInWithFacebook(redirectTo?: string) {
+    const { error } = await this.supabase.auth.signInWithOAuth({
+      provider: 'facebook',
+      options: { 
+        redirectTo: redirectTo ?? `${window.location.origin}/auth/callback`,
+      }
+    });
+    if (error) throw error;
+  }
+
+
+  /// ---------------------------------------- Helpers Methods ---------------------------------------- \\\
   async emailExists(email: string): Promise<boolean> {
     const { data, error } = await this.supabase
       .from('users')
@@ -82,7 +111,6 @@ export class AuthService {
     return !!data && !error;
   }
 
-  ///  Check if username exists  \\\
   async usernameExists(username: string): Promise<boolean> {
     const { data, error } = await this.supabase
       .from('users')
@@ -92,12 +120,10 @@ export class AuthService {
     return !!data && !error;
   }
 
-  ///  Sign out user  \\\
   async signOut() {
     await this.supabase.auth.signOut();
   }
 
-  ///  Get currently logged-in user  \\\
   async getCurrentUser() {
     const { data } = await this.supabase.auth.getUser();
     return data.user;

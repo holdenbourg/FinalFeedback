@@ -103,7 +103,7 @@
     z-index: 2;
     width: 20.8%;
     min-width: 320px;
-    height: 48%;
+    height: 50%;
     min-height: 420px;
     background: rgba(0,0,0,0.12);
     border: 0.15vw solid rgba(255,255,255,0.5);
@@ -217,7 +217,7 @@
     font-size: 0.75vw; 
     color: #fff; 
     font-weight: 500; 
-    margin: -15px 0 15px;
+    margin: -15px 0 25px;
     display: flex; 
     justify-content: space-between; 
     align-items: center; 
@@ -233,10 +233,10 @@
     margin-right: 3px; 
     cursor: pointer; 
     display: inline-flex;
-    align-items: center;   /* vertical centering */
+    align-items: center;
     gap: 8px;
     line-height: 1; 
-    margin: 0 !important;    /* prevent old margin-right: 3px from shifting */
+    margin: 0 !important;
     accent-color: initial;
 }
 .remember-forgot a { 
@@ -274,12 +274,78 @@
     cursor: not-allowed; 
 }
 
-.login-register { 
+.oauth-section { 
+    margin-top: 14px; 
+}
+
+.oauth-divider {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 0.75vw;
+  min-font-size: 12px;
+}
+.oauth-divider::before,
+.oauth-divider::after {
+  content: "";
+  height: 1px;
+}
+.oauth-divider span { 
     font-size: 0.75vw; 
     color: #fff; 
     text-align: center; 
+    font-weight: 500;
+}
+
+.oauth-buttons {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+.oauth-btn {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  height: 20px;
+  line-height: 0;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+ 
+}
+
+.oauth-btn img {
+  display: block;
+  height: 100%;
+  width: auto;
+  transform: translateZ(0);
+  transition: transform 140ms ease-in-out;
+}
+
+.oauth-btn.google {
+    height: 25px;
+}
+
+.oauth-btn:hover img,
+.oauth-btn:focus-visible img {
+  transform: scale(1.08);
+}
+
+.oauth-btn:focus-visible {
+  outline: 2px solid rgba(255,255,255,0.55);
+  border-radius: 6px;
+}
+
+.login-register { 
+    font-size: 0.85vw; 
+    color: #fff; 
+    text-align: center; 
     font-weight: 500; 
-    margin-top: 25px; 
+    margin-top: 25px;
 }
 .login-register p a { 
     color: #fff; 

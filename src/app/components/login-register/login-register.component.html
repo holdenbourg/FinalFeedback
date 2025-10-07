@@ -46,7 +46,25 @@
             <button type="submit" class="button">Login</button>
 
             <div class="login-register">
-                <p>Don't have an account? <a (click)="toggleLoginRegister()" class="register-link">Register</a></p>
+                <p><a (click)="toggleLoginRegister()" class="register-link">Register</a> or Sign in with</p>
+            </div>
+
+            
+            <div class="oauth-section" aria-label="Other sign-in options">
+
+                <div class="oauth-buttons">
+                    <button type="button" class="oauth-btn google" (click)="signInWithGoogle()" aria-label="Continue with Google">
+                        <img src="assets/oauth/google.png" alt="" />
+                    </button>
+
+                    <button type="button" class="oauth-btn facebook" (click)="signInWithFacebook()" aria-label="Continue with Facebook">
+                        <img src="assets/oauth/facebook.png" alt="" />
+                    </button>
+
+                    <button type="button" class="oauth-btn github" (click)="signInWithGitHub()" aria-label="Continue with GitHub">
+                        <img src="assets/oauth/github.png" alt="" />
+                    </button>
+                </div>
             </div>
         </form>
     </div>

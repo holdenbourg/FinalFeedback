@@ -1,23 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
-import { RoutingService } from '../../services/routing.service';
-import { LocalStorageService } from '../../services/local-storage.service';
-import { UsersService } from '../../services/users.service';
-import { AccountInformationModel } from '../../models/database-models/account-information-model';
 import { LoginModel } from '../../models/login-register-models/login-model';
 import { RegisterModel } from '../../models/login-register-models/register-model';
-import { RawAccountInformationModel } from '../../models/database-models/raw-account-information-model';
-import { UsersDatabase } from '../../databases/users-database';
 import { FormsModule } from '@angular/forms';
-import { CommentsDatabase } from '../../databases/comments-database';
-import { PostsDatabase } from '../../databases/posts-database';
-import { RatedMoviesDatabase } from '../../databases/rated-movies-database';
-import { RatedSeriesDatabase } from '../../databases/rated-series-database';
-import { RepliesDatabase } from '../../databases/replies-database';
 import { AuthService } from '../../core/auth.service';
 import { Router } from '@angular/router';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-login-register',
@@ -42,6 +29,8 @@ export class LoginRegisterComponent implements OnInit, OnDestroy {
   public showWarning: boolean = false;
   public warning: string = '';
   public warningType: 'error' | 'success' | '' = '';
+
+  private redirectTo = `${window.location.origin}/auth/callback`;
 
   registerObject: RegisterModel = {
     firstName: '',
@@ -210,6 +199,38 @@ export class LoginRegisterComponent implements OnInit, OnDestroy {
     const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     return emailFormat.test(email);
+  }
+
+
+  /// ---------------------------------------- OAuth Helpers ---------------------------------------- \\\
+  async signInWithGoogle() {
+    try {
+      await this.authService.signInWithGoogle();
+    } catch (error: any) {
+      this.handleAuthError(error);
+    }
+  }
+
+  async signInWithGitHub() {
+    try {
+      await this.authService.signInWithGitHub();
+    } catch (error: any) {
+      this.handleAuthError(error);
+    }
+  }
+
+  async signInWithFacebook() {
+    try {
+      await this.authService.signInWithFacebook();
+    } catch (error: any) {
+      this.handleAuthError(error);
+    }
+  }
+
+  private handleAuthError(error: any) {
+    this.warning = error?.message ?? 'Sign-in failed. Please try again.';
+    this.warningType = 'error';
+    this.showWarning = true;
   }
 
 
