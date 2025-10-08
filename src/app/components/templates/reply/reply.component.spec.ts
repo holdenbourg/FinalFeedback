@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { FeedCommentReplyComponent } from './feed-comment-reply.component';
+import { ReplyComponent } from './reply.component';
 
-describe('FeedCommentReplyComponent', () => {
-  let component: FeedCommentReplyComponent;
-  let fixture: ComponentFixture<FeedCommentReplyComponent>;
+describe('ReplyComponent', () => {
+  let component: ReplyComponent;
+  let fixture: ComponentFixture<ReplyComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [FeedCommentReplyComponent]
+      imports: [ReplyComponent]
     })
     .compileComponents();
     
-    fixture = TestBed.createComponent(FeedCommentReplyComponent);
+    fixture = TestBed.createComponent(ReplyComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

@@ -3,7 +3,7 @@ import { Component, OnInit, inject, signal, computed, effect, HostListener, Elem
 import { FormsModule } from "@angular/forms";
 import { AccountInformationModel } from "../../models/database-models/account-information-model";
 import { CommentModel } from "../../models/database-models/comment-model";
-import { RatedMovieModel } from "../../models/database-models/rated-movie-model";
+import { RatedMovieModel } from "../../models/database-models/rating-model";
 import { RawAccountInformationModel } from "../../models/database-models/raw-account-information-model";
 import { ReplyModel } from "../../models/database-models/reply-model";
 import { LocalStorageService } from "../../services/local-storage.service";

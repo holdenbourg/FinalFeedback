@@ -1,7 +1,7 @@
 import { Injectable, Optional } from '@angular/core';
 import { CombinedFilmApiResponseModel } from '../models/api-models/combined-film-api-response';
 import { LocalStorageService } from './local-storage.service';
-import { RatedMovieModel } from '../models/database-models/rated-movie-model';
+import { RatedMovieModel } from '../models/database-models/rating-model';
 import { RatedSeriesModel } from '../models/database-models/rated-series-model';
 
 type FilmLike = CombinedFilmApiResponseModel;

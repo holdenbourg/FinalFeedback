@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CombinedFilmApiResponseModel } from '../../models/api-models/combined-film-api-response';
 import { AccountInformationModel } from '../../models/database-models/account-information-model';
 import { RatedSeriesModel } from '../../models/database-models/rated-series-model';
-import { RatedMovieModel } from '../../models/database-models/rated-movie-model'; // <-- make sure this path matches your project
+import { RatedMovieModel } from '../../models/database-models/rating-model'; // <-- make sure this path matches your project
 import { ApiService } from '../../services/api.service';
 import { FilmCacheService } from '../../services/film-cache.service';
 import { LocalStorageService } from '../../services/local-storage.service';

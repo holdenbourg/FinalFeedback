@@ -1,162 +1,176 @@
-<div class="container" (mouseenter)="postsService.addUsernameToSeenBy(currentUser.username, feedPost.postId)">
-    <div class="current-user-info">
-        <div class="profile-picture-username">
-            <img class="user-profile-picture" [src]="feedPost.profilePicture" [attr.alt]="feedPost.username" />
-            <a class="user-username" [href]="'/account/' + feedPost.username + '/posts'">{{ feedPost.username }}</a>
-        </div>
-
-        <p class="post-date">{{ fixCommentDate(feedPost.postDate) }}</p>
+<div class="container" (mouseenter)="onHoverSeen()">
+  <div class="current-user-info">
+    <div class="profile-picture-username">
+      <img class="user-profile-picture"
+           [src]="feedPost.author?.profile_picture_url"
+           [attr.alt]="feedPost.author?.username" />
+      <a class="user-username"
+         [href]="'/account/' + (feedPost.author?.username || '') + '/posts'">
+        {{ feedPost.author?.username }}
+      </a>
     </div>
 
-    <div class="bottom">
-        <div class="user-post"
-            (click)="onPosterClick()"
-            (mouseleave)="onPosterMouseleave()"
-            [class.tags-available]="hasVisibleTags"
-            [class.tags-active]="showTags()">
+    <p class="post-date">{{ fixCommentDate(feedPost.created_at) }}</p>
+  </div>
 
-            <div class="poster-frame">
-                <img
-                    class="film-poster"
-                    [id]="'poster-' + feedPost.postId"
-                    [src]="posterSrc"
-                    [attr.alt]="feedPost.poster"
-                    (error)="setFallback($event)"
-                    (dblclick)="onPosterDoubleClick()"
-                    loading="lazy"
-                    decoding="async"
-                />
+  <div class="bottom">
+    <div class="user-post"
+         (click)="onPosterClick()"
+         (mouseleave)="onPosterMouseleave()"
+         [class.tags-available]="hasVisibleTags"
+         [class.tags-active]="showTags()">
 
-                <div class="thumb-animation" *ngIf="showThumbAnimation()">
-                    <i class="bx bxs-like"></i>
-                </div>
+      <div class="poster-frame">
+        <img class="film-poster"
+             [id]="'poster-' + feedPost.id"
+             [src]="posterSrc || feedPost.poster_url"
+             [attr.alt]="feedPost.caption || 'post'"
+             (error)="setFallback($event)"
+             (dblclick)="onPosterDoubleClick()"
+             loading="lazy"
+             decoding="async" />
 
-                <div class="dim-layer" [class.visible]="showTags()"></div>
+        <div class="thumb-animation" *ngIf="liked">
+          <i class="bx bxs-like"></i>
+        </div>
 
-                <button *ngIf="hasVisibleTags"
+        <div class="dim-layer" [class.visible]="showTags()"></div>
+
+        <button *ngIf="hasVisibleTags"
+                type="button"
+                class="tag-icon"
+                aria-label="Show tagged people"
+                [attr.aria-pressed]="showTags() ? 'true' : 'false'"
+                (click)="$event.stopPropagation(); onPosterClick()">
+          <i class="bx bxs-user"></i>
+        </button>
+
+        <div class="post-info" *ngIf="hasVisibleTags" [class.visible]="showTags()">
+          <p class="watched-with">Watched With:</p>
+          <a *ngFor="let name of revisedTaggedUsernames" class="tagged-name" [href]="'/account/' + name + '/posts'">
+            {{ name }}
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-side">
+      <div class="comment-scroll-box" #scrollBox>
+        <ul class="post-comments">
+          <li *ngIf="(feedPost.caption || '').length !== 0" class="caption-row">
+            <div class="caption">
+              <a class="profile-username"
+                 [href]="'/account/' + (feedPost.author?.username || '') + '/posts'">
+                {{ feedPost.author?.username }}
+              </a>
+              <p class="actual-caption">
+                <ng-container *ngFor="let t of tokensOf(feedPost.caption || '')">
+                  <ng-container *ngIf="t.handle; else plain">
+                    <a class="atted" [href]="'/account/' + t.handle + '/posts'">
+                      &#64;{{ t.handle }}
+                    </a>
+                  </ng-container>
+                  <ng-template #plain>{{ t.text }}</ng-template>
+                </ng-container>
+              </p>
+            </div>
+          </li>
+
+          <li *ngFor="let c of reversedComments">
+            <div class="comment-row" [attr.id]="'c-' + c.commentId">
+              <app-comment
+                [comment]="c"
+                (replyRequested)="startReplyTo($event.commentId, $event.replyingToUsername)">
+              </app-comment>
+            </div>
+
+            <ng-container *ngIf="repliesByComment.get(c.commentId) as allReplies">
+
+              <div *ngIf="replyLimit(c.commentId) > 3" class="replies-top-controls">
+                <button type="button" (click)="onHideReplies(c.commentId)">
+                  - Hide Replies -
+                </button>
+              </div>
+
+              <ul class="post-replies" *ngIf="getVisibleReplies(c.commentId) as visible">
+                <li *ngFor="let r of visible">
+                  <div class="reply-row" [attr.id]="'r-' + r.replyId">
+                    <app-reply
+                      [reply]="r"
+                      [parentCommentId]="c.commentId">
+                    </app-reply>
+                  </div>
+                </li>
+              </ul>
+
+              <div class="replies-bottom-controls">
+                <button *ngIf="getRemainingReplies(c.commentId) > 0"
                         type="button"
-                        class="tag-icon"
-                        aria-label="Show tagged people"
-                        [attr.aria-pressed]="showTags() ? 'true' : 'false'"
-                        (click)="$event.stopPropagation(); onPosterClick()">
-                    <i class="bx bxs-user"></i>
+                        (click)="onViewMoreReplies(c.commentId, 10)">
+                  - View {{ getRemainingReplies(c.commentId) }} Replies -
                 </button>
 
-                <div class="post-info" *ngIf="hasVisibleTags" [class.visible]="showTags()">
-                    <p class="watched-with">Watched With:</p>
+                <button *ngIf="getRemainingReplies(c.commentId) === 0 && replyLimit(c.commentId) > 3"
+                        type="button"
+                        (click)="onHideReplies(c.commentId)">
+                  - Hide Replies -
+                </button>
+              </div>
+            </ng-container>
+          </li>
+        </ul>
+      </div>
 
-                    <a *ngFor="let name of revisedTaggedUsernames"
-                        class="tagged-name"
-                        [href]="'/account/' + name + '/posts'">
-                        {{ name }}
-                    </a>
-                </div>
+      <div class="commenting-area">
+        <div class="left-buttons">
+          <div class="share">
+            <a (click)="onShare()"><i class="bx bx-mail-send"></i></a>
+          </div>
+
+          <div class="like-likes">
+            <div class="like">
+              <button type="button" class="icon-btn" (click)="togglePostLike()">
+                <i class="{{ liked ? 'bx bxs-like' : 'bx bx-like' }}"></i>
+              </button>
             </div>
+            <p class="likes">{{ trimNumber(feedPost.like_count || 0) }}</p>
+          </div>
         </div>
 
-        <div class="right-side">
-            <div class="comment-scroll-box" #scrollBox>
-                <div *ngIf="isMovie; else seriesBlock" class="movie-rating-info">
-                    <p class="rating-information">{{ currentRatedMovie?.title }}</p>
+        <div class="input-box">
+          <label [class.active]="isPromptActive || commentInput.length > 0">
+            {{ pendingReplyToUsername ? ('Replying to @' + pendingReplyToUsername) : 'Comment' }}
+          </label>
 
-                    <div class="movie-criteria">
-                        <p class="criteria">Acting: {{ currentRatedMovie?.acting }}</p>
-                        <p class="criteria">Visuals: {{ currentRatedMovie?.visuals }}</p>
-                        <p class="criteria">Story: {{ currentRatedMovie?.story }}</p>
-                        <p class="criteria">Climax: {{ currentRatedMovie?.climax }}</p>
-                        <p class="criteria">Pacing: {{ currentRatedMovie?.pacing }}</p>
-                        <p class="criteria">Ending: {{ currentRatedMovie?.ending }}</p>
-                    </div>
+          <input
+            #commentInputReference
+            class="input-enter"
+            type="text"
+            [(ngModel)]="commentInput"
+            [class.error]="errorState"
+            [readOnly]="errorState"
+            [attr.aria-invalid]="errorState ? 'true' : 'false'"
+            name="commentInput"
+            (focus)="isPromptActive = true"
+            (blur)="isPromptActive = false"
+            (keydown.escape)="clearReplyContext()"
+            (keyup.enter)="onPostComment()"
+            [placeholder]="pendingReplyToUsername ? ('Replying to @' + pendingReplyToUsername) : 'Add a comment…'"
+            required
+          />
 
-                    <p class="overall-rating">Overall Rating: {{ currentRatedMovie?.rating }}</p>
-                </div>
-
-                <ng-template #seriesBlock>
-                    <div class="series-rating-info">
-                        <p class="rating-information">{{ currentRatedSeries?.title }}</p>
-
-                        <div class="series-criteria">
-                            <p class="criteria">Acting: {{ currentRatedSeries?.acting }}</p>
-                            <p class="criteria">Visuals: {{ currentRatedSeries?.visuals }}</p>
-                            <p class="criteria">Story: {{ currentRatedSeries?.story }}</p>
-                            <p class="criteria">Length: {{ currentRatedSeries?.length }}</p>
-                            <p class="criteria">Pacing: {{ currentRatedSeries?.pacing }}</p>
-                            <p class="criteria">Ending: {{ currentRatedSeries?.ending }}</p>
-                        </div>
-
-                        <p class="overall-rating">Overall Rating: {{ currentRatedSeries?.rating }}</p>
-                    </div>
-                </ng-template>
-
-                <ul class="post-comments">
-                    <li *ngIf="feedPost.caption.length !== 0" class="caption-row">
-                        <div class="caption">
-                            <a class="profile-username" [href]="'/account/' + feedPost.username + '/posts'">{{ feedPost.username }}</a>
-                            
-                            <p class="actual-caption">
-                                <ng-container *ngFor="let t of tokensOf(feedPost.caption)">
-                                    <ng-container *ngIf="t.handle; else plain">
-                                        <a class="atted"
-                                            [class.adjacent]="t.adjacentPrev"
-                                            [href]="'/account/' + commentModerationService.canonicalizeHandle(t.handle!) + '/posts'">
-                                            &#64;{{ commentModerationService.canonicalizeHandle(t.handle!) }}
-                                        </a>
-                                    </ng-container>
-
-                                    <ng-template #plain>{{ t.text }}</ng-template>
-                                </ng-container>
-                            </p>
-                        </div>
-                    </li>
-
-                    <li *ngFor="let comment of reversedComments; let i = index" [attr.id]="'c-' + comment.commentId" [class]="'feed-post-comment-' + feedPost.postId + '-' + i">
-                        <app-feed-comment [comment]="comment" (replyRequested)="onCommentFocus()"></app-feed-comment>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="commenting-area">
-                <div class="left-buttons">
-                    <div class="share">
-                        <a (click)="onShare()"><i class="bx bx-mail-send"></i></a>
-                    </div>
-
-                    <div class="like-likes">
-                        <div class="like">
-                            <button type="button" class="icon-btn" (click)="togglePostLike()">
-                                <i class="{{ feedPost.likes.includes(currentUser.username) ? 'bx bxs-like' : 'bx bx-like' }}"></i>
-                            </button>
-                        </div>
-
-                        <p class="likes">{{ trimNumber(feedPost.likes.length) }}</p>
-                    </div>
-                </div>
-
-                <div class="input-box">
-                    <label [class.active]="isPromptActive || commentInput.length > 0">Comment</label>
-
-                    <input
-                        #commentInputReference
-                        class="input-enter"
-                        type="text"
-                        [(ngModel)]="commentInput"
-                        [class.error]="errorState"
-                        [readOnly]="errorState"
-                        [attr.aria-invalid]="errorState ? 'true' : 'false'"
-                        [attr.aria-live]="'polite'"
-                        [attr.aria-disabled]="errorState ? 'true' : null"
-                        name="commentInput"
-                        (focus)="onCommentFocus()"
-                        (blur)="onCommentBlur()"
-                        (keyup.enter)="onPostComment()"
-                        required
-                    />
-                </div>
-
-                <div class="post-comment">
-                    <a (mousedown)="$event.preventDefault()" (click)="onPostComment()"><i class="bx bx-send"></i></a>
-                </div>
-            </div>
+          <button *ngIf="pendingReplyToUsername" type="button" class="cancel-reply" (click)="clearReplyContext()">
+            Cancel
+          </button>
         </div>
+
+        <div class="post-comment">
+          <a (mousedown)="$event.preventDefault()" (click)="onPostComment()">
+            <i class="bx bx-send"></i>
+          </a>
+        </div>
+      </div>
+
     </div>
+  </div>
 </div>

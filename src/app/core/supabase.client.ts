@@ -7,6 +7,10 @@ declare global {
 
 const { url, anonKey } = environment.supabase;
 
+const noOpLock = async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => {
+  return await fn();
+};
+
 export const supabase =
   (typeof window !== 'undefined' && window.__supabase)
     ? window.__supabase!
@@ -17,6 +21,7 @@ export const supabase =
               storage: localStorage,
               autoRefreshToken: true,
               detectSessionInUrl: true,
+              lock: noOpLock,
             },
           }))
         : createClient(url, anonKey, {
@@ -25,5 +30,6 @@ export const supabase =
               storage: localStorage,
               autoRefreshToken: true,
               detectSessionInUrl: true,
+              lock: noOpLock,
             },
           }));

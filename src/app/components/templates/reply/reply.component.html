@@ -1,0 +1,36 @@
+<div class="reply-row" [attr.id]="'r-' + reply.replyId">
+  <img class="profile-picture" [src]="reply.profilePicture" [attr.alt]="reply.username" loading="lazy" decoding="async" />
+
+  <div class="reply-grid">
+    <div class="reply-main">
+      <div class="username-line">
+        <a class="profile-username" [href]="'/account/' + reply.username + '/posts'">{{ reply.username }}</a>
+        <span class="chevron">›</span>
+        <a class="atted-username" [href]="'/account/' + reply.replyingToUsername + '/posts'">{{ reply.replyingToUsername }}</a>
+      </div>
+
+      <p class="reply-text">{{ reply.comment }}</p>
+
+      <div class="options">
+        <span class="likes">
+          {{ reply.likeCount || 0 }}
+          {{ (reply.likeCount || 0) === 1 ? 'like' : 'likes' }}
+        </span>
+        <span class="date">{{ reply.commentDate | date: 'short' }}</span>
+      </div>
+    </div>
+
+    <div class="reply-like">
+      <button
+        type="button"
+        class="icon-btn"
+        (click)="toggleLike()"
+        [disabled]="submittingLike"
+        [attr.aria-pressed]="meLiked"
+        title="Like reply"
+      >
+        <i class="{{ meLiked ? 'bx bxs-like' : 'bx bx-like' }}"></i>
+      </button>
+    </div>
+  </div>
+</div>

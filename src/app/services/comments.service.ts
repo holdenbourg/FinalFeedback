@@ -1,63 +1,89 @@
-import { inject, Injectable } from "@angular/core";
-import { LocalStorageService } from "./local-storage.service";
-import { CommentModel } from "../models/database-models/comment-model";
-import { CommentsDatabase } from "../databases/comments-database";
+import { Injectable } from '@angular/core';
+import { supabase } from '../core/supabase.client';
+import { CommentRow } from '../models/database-models/comment-model';
+
+type ChildrenByParent = Map<string, CommentRow[]>;
 
 @Injectable({ providedIn: 'root' })
 export class CommentsService {
-    private localStorageService: LocalStorageService = inject(LocalStorageService);
-    private commentsDatabase: CommentsDatabase = inject(CommentsDatabase);
+  ///  Load all comments for a post and the replies to those comments  \\\
+  async fetchThread(postId: string): Promise<{ roots: CommentRow[]; childrenByParent: Map<string, CommentRow[]>; }> {
+    const { data, error } = await supabase
+      .from('comments')
+      .select(`
+        id, post_id, author_id, parent_comment_id, text, like_count, created_at,
+        author:users!comments_author_id_fkey ( username, profile_picture_url )
+      `)
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true });
 
-    likeComment(username: string, commentId: string): boolean {
-        const comment = this.commentsDatabase.getCommentById(commentId);
+    if (error) throw error;
 
-        if (!comment) return false;
-        if (comment.likes.includes(username)) return false;
+    const rows = (data ?? []) as unknown as CommentRow[];
 
-        const updated: CommentModel = { ...comment, likes: [...comment.likes, username] };
-        this.commentsDatabase.replaceCommentInDatabase(updated);
-        
-        return true;
-    }
-    unlikeComment(username: string, commentId: string): boolean {
-        const comment = this.commentsDatabase.getCommentById(commentId);
+    const roots: CommentRow[] = [];
+    const childrenByParent: ChildrenByParent = new Map();
 
-        if (!comment) return false;
-        if (!comment.likes.includes(username)) return false;
+    for (const row of rows) {
+      if (!row.parent_comment_id) {
+        roots.push(row);
 
-        const updated: CommentModel = { ...comment, likes: comment.likes.filter(u => u !== username) };
-        this.commentsDatabase.replaceCommentInDatabase(updated);
+      } else {
+        const bucket = childrenByParent.get(row.parent_comment_id) ?? [];
+        bucket.push(row);
 
-        return true;
-    }
-    toggleCommentLike(username: string, comment: CommentModel): CommentModel {
-        if (comment.likes.includes(username)) {
-            this.unlikeComment(username, comment.commentId);
-            return { ...comment, likes: comment.likes.filter(u => u !== username) };
-        } else {
-            this.likeComment(username, comment.commentId);
-            return { ...comment, likes: [...comment.likes, username] };
-        }
+        childrenByParent.set(row.parent_comment_id, bucket);
+      }
     }
 
-    generateUniqueCommentId() {
-        let allComments: CommentModel[] = this.localStorageService.getInformation('comments');
-
-        let commentId: string = 'c' + Math.random().toString(16).slice(2);
-        let isUnique: boolean = false;
-
-        while (!isUnique) {
-            for (let i = 0; i < allComments.length; i++) {
-                if (allComments[i].commentId == commentId) {
-                    commentId = 'c' + Math.random().toString(16).slice(2);
-                    break;
-
-                } else if (i == (allComments.length - 1) && allComments[i].commentId != commentId) {
-                    isUnique = true;
-                }
-            }
-        }
-
-        return commentId;
+    for (const [, list] of childrenByParent) {
+      list.sort((a, b) => a.created_at.localeCompare(b.created_at));
     }
+
+    return { roots, childrenByParent };
+  }
+
+  ///  Add a new comment to a post  \\\
+  async addComment(postId: string, text: string): Promise<CommentRow> {
+    const { data, error } = await supabase
+      .from('comments')
+      .insert({ post_id: postId, text })
+      .select(`
+        id, post_id, author_id, parent_comment_id, text, like_count, created_at,
+        author:users!comments_author_id_fkey ( username, profile_picture_url )
+      `)
+      .single();
+
+    if (error) throw error;
+
+    return data as unknown as CommentRow;
+  }
+
+  ///  Add a reply to a comment/reply  \\\
+  async addReply(parentCommentId: string, text: string): Promise<CommentRow> {
+    const { data: parent, error: pErr } = await supabase
+      .from('comments')
+      .select('post_id')
+      .eq('id', parentCommentId)
+      .single();
+
+    if (pErr) throw pErr;
+
+    const { data, error } = await supabase
+      .from('comments')
+      .insert({
+        post_id: parent.post_id,
+        parent_comment_id: parentCommentId,
+        text
+      })
+      .select(`
+        id, post_id, author_id, parent_comment_id, text, like_count, created_at,
+        author:users!comments_author_id_fkey ( username, profile_picture_url )
+      `)
+      .single();
+
+    if (error) throw error;
+
+    return data as unknown as CommentRow;
+  }
 }

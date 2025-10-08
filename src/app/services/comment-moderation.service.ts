@@ -1,15 +1,22 @@
 import { inject, Injectable } from '@angular/core';
 import { UsersService } from './users.service';
-import { CommentModel } from '../models/database-models/comment-model';
 import { LocalStorageService } from './local-storage.service';
 
-export type CommentContext = {
+export type CommentType = 'comment' | 'reply';
+export interface CommentContext {
   postId: string;
-  type: 'comment' | 'reply';
-  commentId?: string;
-  existingCommentsForPost: CommentModel[];
+  authorUserId?: string;
   authorUsername: string;
-};
+  type: CommentType;
+  parentCommentId?: string;
+  parentAuthorUsername?: string;
+  existing: Array<{
+    id: string;
+    authorUsername: string;
+    text: string;
+  }>;
+  nowIso?: string;
+}
 
 export type CommentCheckResult =
   | { ok: true; text: string; mentions: string[] }
@@ -129,13 +136,15 @@ export class CommentModerationService {
 
         ///  Make sure reply context is valid  \\\
         if (commentContext.type === 'reply') {
-            if (!commentContext.commentId) return { ok: false, error: 'Missing reply target' };
+            const parentId = commentContext.parentCommentId;
+            if (!parentId) {
+                return { ok: false, error: 'Missing reply target' };
+            }
 
-            const parent = commentContext.existingCommentsForPost.find(c => c.commentId === commentContext.commentId);
-
-            if (!parent) return { ok: false, error: 'Reply target no longer exists' };
-
-            if (parent.postId !== commentContext.postId) return { ok: false, error: 'Reply target does not belong to this post' };
+            const parent = commentContext.existing.find(c => c.id === parentId);
+            if (!parent) {
+                return { ok: false, error: 'Reply target no longer exists' };
+            }
         }
 
         ///  If comment/reply passes everything, set the rate-limit timestamp  \\\

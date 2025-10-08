@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { RatedMovieModel } from '../../models/database-models/rated-movie-model';
+import { RatedMovieModel } from '../../models/database-models/rating-model';
 import { RatedSeriesModel } from '../../models/database-models/rated-series-model';
 import { FilmCacheService } from '../../services/film-cache.service';
 import { LocalStorageService } from '../../services/local-storage.service';

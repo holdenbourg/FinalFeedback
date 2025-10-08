@@ -6,7 +6,7 @@ import { filter } from 'rxjs';
 import { RoutingService } from '../../services/routing.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { AccountInformationModel } from '../../models/database-models/account-information-model';
-import { RatedMovieModel } from '../../models/database-models/rated-movie-model';
+import { RatedMovieModel } from '../../models/database-models/rating-model';
 import { RatedSeriesModel } from '../../models/database-models/rated-series-model';
 import { SidebarService } from '../../services/sidebar.service';
 

@@ -1,6 +1,6 @@
 import { inject, Injectable } from "@angular/core";
 import { LocalStorageService } from "../services/local-storage.service";
-import { RatedMovieModel } from "../models/database-models/rated-movie-model";
+import { RatedMovieModel } from "../models/database-models/rating-model";
 
 @Injectable({ providedIn: 'root' })
 export class RatedMoviesDatabase {

@@ -1,0 +1,38 @@
+<div class="comment-row">
+  <div class="left">
+    <img class="profile-picture" [src]="comment.profilePicture" [attr.alt]="comment.username" loading="lazy" decoding="async" />
+  </div>
+
+  <div class="right comment-grid">
+    <div class="comment-main">
+      <div class="line">
+        <a class="username" [href]="'/account/' + comment.username + '/posts'">{{ comment.username }}</a>
+        <span class="content-inline">{{ comment.comment }}</span>
+      </div>
+
+      <div class="options">
+        <span class="likes">
+          {{ comment.likeCount || 0 }}
+          {{ (comment.likeCount || 0) === 1 ? 'like' : 'likes' }}
+        </span>
+
+        <button class="reply-button" type="button" (click)="requestReply()">Reply</button>
+
+        <span class="date">{{ comment.commentDate | date: 'short' }}</span>
+      </div>
+    </div>
+
+    <div class="comment-like">
+      <button
+        class="icon-btn"
+        type="button"
+        (click)="toggleLike()"
+        [disabled]="submittingLike"
+        [attr.aria-pressed]="meLiked"
+        title="Like comment"
+      >
+        <i class="{{ meLiked ? 'bx bxs-like' : 'bx bx-like' }}"></i>
+      </button>
+    </div>
+  </div>
+</div>
