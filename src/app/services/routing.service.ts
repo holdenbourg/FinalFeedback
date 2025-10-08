@@ -32,8 +32,8 @@ export class RoutingService {
   navigateToRateMovie(imdbId: string, film: CombinedFilmApiResponseModel) {
     this.router.navigate(['/rate', 'movie', imdbId], { state: { film } });
   }
-  navigateToPostMovie(postId: string) {
-    this.router.navigate(['/post-movie', postId]);
+  navigateToPostMovie() {
+    this.router.navigate(['/post', 'movie']);
   }
 
   ///  series info path  \\\
@@ -43,8 +43,8 @@ export class RoutingService {
   navigateToRateSeries(imdbId: string, film: CombinedFilmApiResponseModel) {
     this.router.navigate(['/rate', 'series', imdbId], { state: { film } });
   }
-  navigateToPostSeries(postId: string) {
-    this.router.navigate(['/post-series', postId]);
+  navigateToPostSeries() {
+    this.router.navigate(['/post', 'series']);
   }
 
   navigateToMoviesLibrary() {

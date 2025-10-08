@@ -23,6 +23,8 @@ export const routes: Routes = [
 
     { path: 'rate/:type/:imdbId', component: RateFilmComponent, canActivate: [AuthGuard] }, // movies | series
 
+    { path: 'post/:type', component: RateFilmComponent, canActivate: [AuthGuard] }, // movies | series
+    
     { path: 'movies/library', component: FilmsLibraryComponent, data: { kind: 'movie' }, canActivate: [AuthGuard] },
     { path: 'movies/summary', component: FilmsSummaryComponent, data: { kind: 'movie' }, canActivate: [AuthGuard] },
 
@@ -30,6 +32,7 @@ export const routes: Routes = [
     { path: 'shows/summary', component: FilmsSummaryComponent, data: { kind: 'series' }, canActivate: [AuthGuard] },
 
     { path: 'edit/:type/:postId', component: EditFilmRatingComponent, canActivate: [AuthGuard] },
+
 
     // Fallback
     { path: '**', redirectTo: '' },

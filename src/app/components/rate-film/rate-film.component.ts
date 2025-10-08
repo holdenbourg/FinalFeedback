@@ -2,15 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CombinedFilmApiResponseModel } from '../../models/api-models/combined-film-api-response';
-import { AccountInformationModel } from '../../models/database-models/account-information-model';
-import { RatedSeriesModel } from '../../models/database-models/rated-series-model';
-import { RatedMovieModel } from '../../models/database-models/rating-model'; // <-- make sure this path matches your project
 import { ApiService } from '../../services/api.service';
 import { FilmCacheService } from '../../services/film-cache.service';
-import { LocalStorageService } from '../../services/local-storage.service';
 import { RoutingService } from '../../services/routing.service';
 import { RateItemComponent, RatingCriterion, RateResult } from '../templates/rate-item/rate-item.component';
-import { PostsService } from '../../services/posts.service';
+import { RatingModel } from '../../models/database-models/rating-model';
+import { UsersService } from '../../services/users.service';
 
 @Component({
   selector: 'app-rate-film',
@@ -23,13 +20,11 @@ import { PostsService } from '../../services/posts.service';
 export class RateFilmComponent implements OnInit {
   private apiService = inject(ApiService);
   private activatedRoute = inject(ActivatedRoute);
-  private localStorageService = inject(LocalStorageService);
   private routingService = inject(RoutingService);
   private filmCache = inject(FilmCacheService);
-  private postsService = inject(PostsService);
+  private usersService = inject(UsersService);
   private router = inject(Router);
 
-  currentUser: AccountInformationModel = this.localStorageService.getInformation('currentUser');
   imdbId = '';
   film: CombinedFilmApiResponseModel | null = null;
 
@@ -50,7 +45,7 @@ export class RateFilmComponent implements OnInit {
     { key: 'visuals', label: 'Visuals', explanation: 'How captivating were the visuals this movie offered?' },
     { key: 'story',   label: 'Story',   explanation: 'How well written was the story this movie told?' },
     { key: 'pacing',  label: 'Pacing',  explanation: 'How did the pacing feel throughout this movie?' },
-    { key: 'climax',  label: 'Climax',  explanation: 'How well did the climax aid the story?' }, // <-- movie-only
+    { key: 'climax',  label: 'Climax',  explanation: 'How well did the climax aid the story?' },
     { key: 'ending',  label: 'Ending',  explanation: 'How impactful was the ending to this story?' },
   ];
 
@@ -80,69 +75,65 @@ export class RateFilmComponent implements OnInit {
 
 
   //!  CHANGE TO USE CACHE TO PASS THE RATING MOVIE/SERIES (LIKE YOU PASS IT TO THIS COMPONENT)  !\\
-  onRated(result: RateResult) {
+  async onRated(result: { average: number; criteria: Record<string, number>; }) {    
     if (!this.film) return;
 
-    const f = this.film;
-    const title    = f.title || '';
-    const poster   = f.poster || '';
-    const rated    = f.rated  || '';
-    const released = f.released || '';
-    const genres   = (f.genre || '').split(', ').filter(Boolean);
+    const currentFilm = this.film;
 
-    if (this.isMovie) {
-      const ratedMovie: RatedMovieModel = {
-        postId: this.postsService.generateUniquePostId('m')!,
-        poster,
-        title,
-        releaseDate: this.alterReleaseForDatabase(released),
-        rated,
-        runTime: this.runtimeMinutes,
-        genres,
-
-        acting:  result.criteria['acting'],
-        visuals: result.criteria['visuals'],
-        story:   result.criteria['story'],
-        pacing:  result.criteria['pacing'],
-        climax:  result.criteria['climax'],
-        ending:  result.criteria['ending'],
-
-        rating: result.average,
-        username: this.currentUser.username,
-        dateRated: new Date().toISOString(),
-      };
-
-      this.localStorageService.setInformation('currentPostMovie', ratedMovie);
-      this.routingService.navigateToPostMovie(ratedMovie.postId);
-
+    const userId = await this.usersService.getCurrentUserId();
+    if (!userId) {
+      console.error('No user logged in');
       return;
     }
 
-    // Series
-    const ratedSeries: RatedSeriesModel = {
-      postId: this.postsService.generateUniquePostId('s')!,
-      poster,
-      title,
-      releaseDate: this.alterReleaseForDatabase(released),
-      rated,
-      seasons: this.totalSeasons,
-      episodes: this.totalEpisodes,
-      genres,
+    const runtimeMinutes = currentFilm.runTime || 0;
 
-      acting:  result.criteria['acting'],
-      visuals: result.criteria['visuals'],
-      story:   result.criteria['story'],
-      pacing:  result.criteria['pacing'],
-      length:  result.criteria['length'],
-      ending:  result.criteria['ending'],
+    const totalSeasons = currentFilm.seasons?.length || 0;
+    const totalEpisodes = currentFilm.seasons?.reduce((sum: number, season: any) => sum + (season.episode_count || 0), 0) || 0;
 
-      rating: result.average,
-      username: this.currentUser.username,
-      dateRated: new Date().toISOString(),
+    const releaseDate = this.alterReleaseForDatabase(currentFilm.released || '') || null;
+    const todayISO = new Date().toISOString().slice(0, 10);
+
+    const movieCriteria = {
+      acting : result.criteria['acting']  ?? 0,
+      visuals: result.criteria['visuals'] ?? 0,
+      story  : result.criteria['story']   ?? 0,
+      pacing : result.criteria['pacing']  ?? 0,
+      climax : result.criteria['climax']  ?? 0,
+      ending : result.criteria['ending']  ?? 0,
+      length : runtimeMinutes,
     };
 
-    this.localStorageService.setInformation('currentPostSeries', ratedSeries);
-    this.routingService.navigateToPostSeries(ratedSeries.postId);
+    const seriesCriteria = {
+      acting  : result.criteria['acting']  ?? 0,
+      visuals : result.criteria['visuals'] ?? 0,
+      story   : result.criteria['story']   ?? 0,
+      pacing  : result.criteria['pacing']  ?? 0,
+      length  : result.criteria['length']  ?? 0,
+      ending  : result.criteria['ending']  ?? 0,
+      seasons : totalSeasons,
+      episodes: totalEpisodes,
+    };
+
+    const model: RatingModel = {
+      id: (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`) as string,
+      user_id: userId,
+      media_type: this.isMovie ? 'movie' : 'series',
+      media_id: this.imdbId,
+      title: currentFilm.title || '',
+      release_date: releaseDate,
+      rating: result.average,
+      criteria: this.isMovie ? movieCriteria : seriesCriteria,
+      date_rated: todayISO,
+    };
+
+    this.filmCache.setCurrentRatingModel(model);
+
+    if (this.isMovie) {
+      this.routingService.navigateToPostMovie();
+    } else {
+      this.routingService.navigateToPostSeries();
+    }
   }
 
 

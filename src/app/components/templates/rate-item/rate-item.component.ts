@@ -50,6 +50,7 @@ export class RateItemComponent {
       setTimeout(() => (this.warn = false), 3500);
       return;
     }
+    
     this.rated.emit({ criteria: { ...this.ratings }, average: this.average });
   }
 
