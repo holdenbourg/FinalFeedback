@@ -3,10 +3,11 @@ import { ChangeDetectionStrategy, Component, HostListener, OnInit, ViewChild, El
 import { RouterModule } from '@angular/router';
 import { SidebarService } from '../../services/sidebar.service';
 import { RoutingService } from '../../services/routing.service';
-import { AuthService } from '../../core/auth.service';
 import { FeedPostComponent } from '../templates/feed-post/feed-post.component';
 import { PostModelWithAuthor } from '../../models/database-models/post-model';
 import { FeedService } from '../../services/feed.service';
+import { UsersService } from '../../services/users.service';
+import { UserModel } from '../../models/database-models/user-model';
 
 @Component({
   selector: 'app-home',
@@ -19,10 +20,12 @@ import { FeedService } from '../../services/feed.service';
 export class HomeComponent implements OnInit {
   readonly routingService = inject(RoutingService);
   readonly sidebarService = inject(SidebarService);
-  private authService = inject(AuthService);
+  readonly usersService = inject(UsersService);
   private feedService = inject(FeedService);
 
-  currentUser = { id: '', username: '' };
+  public currentUser = signal<UserModel | null>(null);
+  public authUserId = signal<string | null>(null);
+
   usersFeedPosts: PostModelWithAuthor[] = [];
   usersMemoryLanePosts: PostModelWithAuthor[] = [];
 
@@ -48,18 +51,22 @@ export class HomeComponent implements OnInit {
 
 
   async ngOnInit() {
+    this.usersService.getCurrentUserProfile()
+      .then(u => this.currentUser.set(u))
+      .catch(err => {
+        console.error('Failed to load current user', err);
+        this.currentUser.set(null);
+      });
+      
     try {
-      ///  Grab the current user  \\\
-      const user = await this.authService.getCurrentUser();
-      if (!user?.id) { this.error.set('Not signed in'); return; }
+      const uid = await this.usersService.getCurrentUserId();
+      if (!uid) { this.error.set('Not signed in'); return; }
 
-      this.currentUser.id = user.id;
+      this.authUserId.set(uid);
 
-      ///  Load the current users feed  \\\
       await this.fetchFollowersBatch();
       this.revealMoreFromCache();
 
-      ///  Pre-load the user memory lane  \\\
       await this.fetchMemoryBatch();
       this.usersMemoryLanePosts = this.memoryCache.slice(0, this.PAGE);
 
@@ -68,14 +75,17 @@ export class HomeComponent implements OnInit {
     }
   }
 
+  
   /// -======================================-  Feed/Memory Lane Logic  -======================================- \\\
   ///  Fetch the current users feed and store it in the cache  \\\
   private async fetchFollowersBatch() {
-    if (!this.currentUser.id) return;
+    const uid = this.authUserId();
+    if (!uid) return;
+
     this.loadingFeed.set(true);
 
     try {
-      const data = await this.feedService.getFollowersFeed(this.currentUser.id, this.FEED_FETCH_BATCH, this.feedServerOffset);
+      const data = await this.feedService.getFollowersFeed(uid, this.FEED_FETCH_BATCH, this.feedServerOffset);
       this.followersCache.push(...data);
       this.feedServerOffset += this.FEED_FETCH_BATCH;
 
@@ -86,12 +96,16 @@ export class HomeComponent implements OnInit {
 
   ///  Fetch the current users memeory lane and store it in the cache  \\\
   private async fetchMemoryBatch() {
-    if (!this.currentUser.id) return;
+    const uid = this.authUserId();
+    if (!uid) return;
+
     this.loadingMemory.set(true);
+
     try {
-      const data = await this.feedService.getMemoryLane(this.currentUser.id, this.MEMORY_FETCH_BATCH, this.memoryServerOffset);
+      const data = await this.feedService.getMemoryLane(uid, this.MEMORY_FETCH_BATCH, this.memoryServerOffset);
       this.memoryCache.push(...data);
       this.memoryServerOffset += this.MEMORY_FETCH_BATCH;
+
     } finally {
       this.loadingMemory.set(false);
     }

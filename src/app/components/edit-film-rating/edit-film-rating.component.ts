@@ -2,15 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { RatedMovieModel } from '../../models/database-models/rating-model';
-import { RatedSeriesModel } from '../../models/database-models/rated-series-model';
+import { RatingModel, MovieCriteria, SeriesCriteria } from '../../models/database-models/rating-model';
 import { FilmCacheService } from '../../services/film-cache.service';
-import { LocalStorageService } from '../../services/local-storage.service';
+import { RatingsService } from '../../services/ratings.service';
+import { from } from 'rxjs';
 
 type FilmKind = 'movie' | 'series';
-type RatedItem =
-  | (RatedMovieModel & { kind: 'movie' })
-  | (RatedSeriesModel & { kind: 'series' });
 
 type MidKey = 'climax' | 'length';
 type Criteria = {
@@ -38,14 +35,11 @@ export class EditFilmRatingComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private filmCache = inject(FilmCacheService);
-  private localStorageService = inject(LocalStorageService);
+  private ratingsService = inject(RatingsService);
 
   readonly postId = signal<string>('');
   readonly type = signal<FilmKind>('movie');
-  readonly draft = signal<RatedItem | null>(null);
-
-  readonly isMovie = computed(() => this.draft()?.kind === 'movie');
-  readonly isSeries = computed(() => this.draft()?.kind === 'series');
+  readonly draft = signal<RatingModel | null>(null);
 
   private useFallback = false;
   readonly fallbackPoster = 'assets/images/no-poster.jpg';
@@ -62,7 +56,7 @@ export class EditFilmRatingComponent implements OnInit {
 
   ngOnInit(): void {
     this.addRandomStartPointForRows();
-    
+
     const typeParam = (this.route.snapshot.paramMap.get('type') || 'movie') as FilmKind;
     const postIdParam = this.route.snapshot.paramMap.get('postId') || '';
 
@@ -71,72 +65,49 @@ export class EditFilmRatingComponent implements OnInit {
 
     if (!postIdParam) { this.router.navigate(['/movies']); return; }
 
-    ///  1) Try draft cache first (refresh-proof)  \\\
-    let editDraft = this.filmCache.getDraft(postIdParam) as RatedItem | null;
+    from(this.filmCache.getDraft(postIdParam)).subscribe(editDraft => {
+      if (!editDraft) { this.router.navigate(['/movies']); return; }
 
-    ///  2) Fallback: find in rated lists by postId, then seed the draft  \\\
-    if (!editDraft) {
-      if (typeParam === 'movie') {
-        const ratedMovies: RatedMovieModel[] = (this.localStorageService.getInformation('rated-movies') ?? []) as any[];
-        editDraft = ratedMovies.find(x => x.postId === postIdParam) as any;
-        if (editDraft) editDraft.kind = 'movie';
-
-      } else {
-        const ratedSeries: RatedSeriesModel[] = (this.localStorageService.getInformation('rated-series') ?? []) as any[];
-        editDraft = ratedSeries.find(x => x.postId === postIdParam) as any;
-        if (editDraft) editDraft.kind = 'series';
+      if ((editDraft.media_type as FilmKind) !== typeParam) {
+        this.router.navigate(['/edit', editDraft.media_type, postIdParam]);
+        return;
       }
 
-      if (editDraft) this.filmCache.setDraft(postIdParam, editDraft);
-    }
+      this.draft.set(editDraft);
 
-    if (!editDraft) { this.router.navigate(['/movies']); return; }
-
-    if (editDraft.kind !== typeParam) {
-      this.router.navigate(['/edit', editDraft.kind, postIdParam]);
-      return;
-    }
-
-    this.draft.set(editDraft);
-
-    if (editDraft && this.initialCriteria() == null) {
-      this.initialCriteria.set(this.getCriteria(editDraft));
-    }
-    if (editDraft && this.initialRating() == null) {
-      this.initialRating.set(editDraft.rating ?? 0);
-    }
+      if (this.initialCriteria() == null) {
+        this.initialCriteria.set(this.getCriteria(editDraft));
+      }
+      if (this.initialRating() == null) {
+        this.initialRating.set(editDraft.rating ?? 0);
+      }
+    });
   }
 
 
-  /// ---------------------------------------- Save Functionality ----------------------------------------  \\\
-  onSave() {
-    const editDraft = this.draft(); 
+  /// -======================================-  Save Functionality  -======================================- \\\
+  async onSave() {
+    const editDraft = this.draft();
     if (!editDraft) return;
 
-    if (editDraft.kind === 'movie') {
-      const ratedMovies: RatedMovieModel[] = this.localStorageService.getInformation('rated-movies') ?? [];
-      const index = ratedMovies.findIndex(x => x.postId === editDraft.postId);
+    try {
+      await this.ratingsService.updateRatingAndStamp(editDraft.id, {
+        title: editDraft.title,
+        release_date: editDraft.release_date,
+        rating: editDraft.rating,
+        criteria: editDraft.criteria,
+      });
 
-      if (index >= 0) ratedMovies[index] = editDraft; 
-      else ratedMovies.unshift(editDraft);
-
-      this.localStorageService.setInformation('rated-movies', ratedMovies);
-    } else {
-      const ratedSeries: RatedSeriesModel[] = this.localStorageService.getInformation('rated-series') ?? [];
-      const index = ratedSeries.findIndex(x => x.postId === editDraft.postId);
-
-      if (index >= 0) ratedSeries[index] = editDraft; 
-      else ratedSeries.unshift(editDraft);
-
-      this.localStorageService.setInformation('rated-series', ratedSeries);
+      this.filmCache.clearDraft(this.postId());
+      this.navigateBackByKind(editDraft.media_type as FilmKind);
+    } catch (e) {
+      console.error('Failed to update rating', e);
+      // TODO: surface toast/snackbar
     }
-    
-    this.filmCache.clearDraft(editDraft.postId);
-    this.navigateBackByKind(editDraft.kind);
   }
 
 
-  /// ---------------------------------------- Helpers ----------------------------------------  \\\
+  /// -======================================-  Helper Methods  -======================================- \\\
   addRandomStartPointForRows() {
     document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
       const durStr = getComputedStyle(el).animationDuration;
@@ -172,15 +143,19 @@ export class EditFilmRatingComponent implements OnInit {
       .map(([key, from, to]) => ({ label: pretty(key), from, to }));
 }
 
-  private getCriteria(item: RatedItem): Criteria {
-    const midKey: MidKey = item.kind === 'movie' ? 'climax' : 'length';
-    const mid = Number((item as any)[midKey] ?? 0);
+  private getCriteria(item: RatingModel): Criteria {
+    const isMovie = item.media_type === 'movie';
+    const c = item.criteria as MovieCriteria | SeriesCriteria;
+
+    const midKey: MidKey = isMovie ? 'climax' : 'length';
+    const mid = Number(isMovie ? (c as MovieCriteria).climax ?? 0 : (c as SeriesCriteria).length ?? 0);
+
     return {
-      acting: Number(item.acting ?? 0),
-      visuals: Number(item.visuals ?? 0),
-      story: Number(item.story ?? 0),
-      pacing: Number(item.pacing ?? 0),
-      ending: Number(item.ending ?? 0),
+      acting:  Number(c.acting  ?? 0),
+      visuals: Number(c.visuals ?? 0),
+      story:   Number(c.story   ?? 0),
+      pacing:  Number(c.pacing  ?? 0),
+      ending:  Number(c.ending  ?? 0),
       mid,
       midKey,
     };
@@ -206,40 +181,83 @@ export class EditFilmRatingComponent implements OnInit {
 
   private clamp(v: number) { return Math.max(1, Math.min(10, v)); }
 
-  private setField<K extends keyof RatedItem>(key: K, val: any) {
-    const editDraft = this.draft(); 
+  private setField(field: 'acting'|'visuals'|'story'|'pacing'|'climax'|'length'|'ending', val: number) {
+    const editDraft = this.draft();
     if (!editDraft) return;
 
-    const next = { ...editDraft, [key]: val } as RatedItem;
-    (next as any).rating = this.computeAverage(next);
+    const isMovie = editDraft.media_type === 'movie';
+    const prev = editDraft.criteria as MovieCriteria | SeriesCriteria;
+    let nextCriteria: MovieCriteria | SeriesCriteria;
+
+    if (isMovie) {
+      const mc: MovieCriteria = { ...(prev as MovieCriteria) };
+
+      if (field === 'climax') mc.climax = val;
+      else if (field in mc) (mc as any)[field] = val;  ///  acting/visuals/story/pacing/climax/ending  \\\
+
+      nextCriteria = mc;
+
+    } else {
+      const sc: SeriesCriteria = { ...(prev as SeriesCriteria) };
+
+      if (field === 'length') sc.length = val;
+      else if (field in sc) (sc as any)[field] = val;  ///  acting/visuals/story/pacing/length/ending  \\\
+      
+      nextCriteria = sc;
+    }
+
+    const next: RatingModel = {
+      ...editDraft,
+      criteria: nextCriteria,
+      rating: this.computeAverageFromCriteria(nextCriteria, isMovie),
+    };
 
     this.draft.set(next);
     this.filmCache.setDraft(this.postId(), next);
   }
 
   onUp(field: 'acting'|'visuals'|'story'|'pacing'|'climax'|'length'|'ending') {
-    const d = this.draft(); 
+    const d = this.draft();
     if (!d) return;
 
-    const cur = Number((d as any)[field] ?? 0);
+    const isMovie = d.media_type === 'movie';
+    const c = d.criteria as MovieCriteria | SeriesCriteria;
 
-    this.setField(field as any, this.clamp(cur + 1));
+    const cur =
+      field === 'climax' ? (isMovie ? (c as MovieCriteria).climax ?? 0 : 0)
+      : field === 'length' ? (!isMovie ? (c as SeriesCriteria).length ?? 0 : 0)
+      : Number((c as any)[field] ?? 0);
+
+    this.setField(field, this.clamp(Number(cur) + 1));
   }
+
   onDown(field: 'acting'|'visuals'|'story'|'pacing'|'climax'|'length'|'ending') {
-    const d = this.draft(); 
+    const d = this.draft();
     if (!d) return;
 
-    const cur = Number((d as any)[field] ?? 0);
+    const isMovie = d.media_type === 'movie';
+    const c = d.criteria as MovieCriteria | SeriesCriteria;
 
-    this.setField(field as any, this.clamp(cur - 1));
+    const cur =
+      field === 'climax' ? (isMovie ? (c as MovieCriteria).climax ?? 0 : 0)
+      : field === 'length' ? (!isMovie ? (c as SeriesCriteria).length ?? 0 : 0)
+      : Number((c as any)[field] ?? 0);
+
+    this.setField(field, this.clamp(Number(cur) - 1));
   }
 
-  computeAverage(item: RatedItem): number {
-    const mid = item.kind === 'series' ? (item as any).length : (item as any).climax;
-    const vals = [item.acting, item.visuals, item.story, item.pacing, mid, item.ending]
-      .map(n => Number(n || 0));
+  private computeAverageFromCriteria(c: MovieCriteria | SeriesCriteria, isMovie: boolean): number {
+    const vals = isMovie
+      ? [c.acting, c.visuals, c.story, c.pacing, (c as MovieCriteria).climax, c.ending]
+      : [c.acting, c.visuals, c.story, c.pacing, (c as SeriesCriteria).length, c.ending];
 
-    return Number((vals.reduce((a,b)=>a+b,0) / 6).toFixed(1));
+    const avg = vals.map(n => Number(n || 0)).reduce((a,b)=>a+b,0) / 6;
+    return Number(avg.toFixed(1));
+  }
+
+  computeAverage(item: RatingModel): number {
+    const isMovie = item.media_type === 'movie';
+    return this.computeAverageFromCriteria(item.criteria as any, isMovie);
   }
 
   openConfirmEdit() {
@@ -251,7 +269,7 @@ export class EditFilmRatingComponent implements OnInit {
 
     const changed = this.criteriaChanged(init, currentCriteria);
     if (!changed) {
-      this.navigateBackByKind(d.kind);
+      this.navigateBackByKind(d?.media_type);
       return;
     }
 
@@ -397,21 +415,21 @@ export class EditFilmRatingComponent implements OnInit {
 
   ///  Dynmaic counts for Movie/Series (Count 1: Hours/Seasons - Count 2: Minutes/Episodes)  \\\
   get count1Num(): number {
-    return this.isMovie() ? this.runtimeHours : this.totalSeasons;
+    return this.movie() ? this.runtimeHours : this.totalSeasons;
   }
   get count1Label(): string {
-    return this.isMovie() ? this.hoursLabel : this.seasonsLabel;
+    return this.movie() ? this.hoursLabel : this.seasonsLabel;
   }
   get count2Num(): number {
-    return this.isMovie() ? this.runtimeMinutesRemainder : this.totalEpisodes;
+    return this.movie() ? this.runtimeMinutesRemainder : this.totalEpisodes;
   }
   get count2Label(): string {
-    return this.isMovie() ?  this.minutesLabel : this.episodesLabel;
+    return this.movie() ?  this.minutesLabel : this.episodesLabel;
   }
 
   ///  Get poster if not use fallback "No Poster" image  \\\
   get posterSrc(): string {
-    const poster = this.draft()?.poster;
+    const poster = this.draft()?.poster_url;
     const hasPoster = !!poster && poster !== 'N/A';
 
     return (hasPoster && !this.useFallback) ? poster! : this.fallbackPoster;
@@ -423,17 +441,22 @@ export class EditFilmRatingComponent implements OnInit {
     if (ev) (ev.target as HTMLImageElement).src = this.fallbackPoster;
   }
 
-  movie(): (RatedMovieModel & { kind: 'movie' }) | null {
+  movie(): MovieCriteria | null {
     const d = this.draft();
-    return d?.kind === 'movie' ? (d as any) : null;
+    return d?.media_type === 'movie' ? (d.criteria as MovieCriteria) : null;
   }
-  series(): (RatedSeriesModel & { kind: 'series' }) | null {
+  series(): SeriesCriteria | null {
     const d = this.draft();
-    return d?.kind === 'series' ? (d as any) : null;
+    return d?.media_type === 'series' ? (d.criteria as SeriesCriteria) : null;
   }
 
+  acting(): number  { return this.draft()?.criteria.acting  ?? 0; }
+  visuals(): number { return this.draft()?.criteria.visuals ?? 0; }
+  story(): number   { return this.draft()?.criteria.story   ?? 0; }
+  pacing(): number  { return this.draft()?.criteria.pacing  ?? 0; }
+  ending(): number  { return this.draft()?.criteria.ending  ?? 0; }
 
-  /// ---------------------------------------- Formatting ----------------------------------------  \\\
+  /// -======================================-  Formatting  -======================================- \\\
   ///  input: '2009-12-18' -> 'December 18, 2009'  \\\
   formatLongDate(dateLike?: string): string {
     if (!dateLike) return '';

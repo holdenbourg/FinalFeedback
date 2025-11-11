@@ -1,7 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-
 import { CombinedFilmApiResponseModel } from '../../models/api-models/combined-film-api-response';
 import { ApiService } from '../../services/api.service';
 import { LocalStorageService } from '../../services/local-storage.service';
@@ -202,7 +201,7 @@ export class FilmInformationComponent implements OnInit {
   }
 
 
-  /// ---------------------------------------- Helpers ----------------------------------------  \\\
+  /// -======================================-  Helpers  -======================================- \\\
   addRandomStartPointForRows() {
     document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
       const durStr = getComputedStyle(el).animationDuration;
@@ -396,7 +395,7 @@ export class FilmInformationComponent implements OnInit {
   }
 
 
-  /// ---------------------------------------- Formatting ----------------------------------------  \\\
+  /// -======================================-  Formatting  -======================================- \\\
   ///  Change film type (movie → Movie)  \\\
   fixFilmType(filmType: string) {
     if (!filmType) return '';

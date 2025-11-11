@@ -1,107 +1,110 @@
-import { Injectable, inject, signal, effect } from '@angular/core';
-import { LocalStorageService } from './local-storage.service';
+import { Injectable } from '@angular/core';
+import { supabase } from '../core/supabase.client';
 import { RatingModel } from '../models/database-models/rating-model';
 
-/** Basic cache entry structure */
-interface CacheEntry<T> {
-  data: T;
-  cachedAt: number;
-  timeToLiveMs: number;
-}
-
-/** Unified cache structure */
-interface FilmCacheStore {
-  v: number;
-  api: Record<string, CacheEntry<any>>;            // used for search/API caching
-  drafts: Record<string, CacheEntry<RatingModel>>; // used for both new + edit drafts
-}
+type CacheEntry<T> = { data: T; cachedAt: number; timeToLiveMs: number };
 
 @Injectable({ providedIn: 'root' })
 export class FilmCacheService {
-  private localStorageService = inject(LocalStorageService);
+  readonly DEFAULT_TTL_MS = 1000 * 60 * 60 * 24 * 2;        ///  2 days
+  readonly DEFAULT_DRAFT_TTL_MS = 1000 * 60 * 60 * 24 * 7;  ///  7 days
 
-  private readonly STORAGE_KEY = 'film-cache';
-  readonly DEFAULT_TTL_MS = 1000 * 60 * 60 * 24 * 2;  // 2 days
-  readonly DEFAULT_DRAFT_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+  ///  in-memory only (per app session)  \\\
+  private api = new Map<string, CacheEntry<any>>();
+  private drafts = new Map<string, CacheEntry<RatingModel>>();
 
-
-  /// -======================================-  Read/Write from Cache  -======================================- \\\
-  private readStore(): FilmCacheStore {
-    const store = this.localStorageService.getInformation(this.STORAGE_KEY);
-    if (store?.v === 2) return store;
-    return { v: 2, api: {}, drafts: {} };
+  ///  ---------- API response cache ----------
+  setApiCache<T = any>(key: string, data: T, timeToLiveMs = this.DEFAULT_TTL_MS): void {
+    this.api.set(key, { data: this.clone(data), cachedAt: Date.now(), timeToLiveMs });
   }
-
-  private writeStore(store: FilmCacheStore) {
-    this.localStorageService.setInformation(this.STORAGE_KEY, store);
-  }
-
-
-  /// -======================================-  API Response Caching  -======================================- \\\
-  setApiCache(key: string, data: any, timeToLiveMs = this.DEFAULT_TTL_MS) {
-    const store = this.readStore();
-    store.api[key] = { data, cachedAt: Date.now(), timeToLiveMs };
-
-    this.writeStore(store);
-  }
-
   getApiCache<T = any>(key: string): T | null {
-    const store = this.readStore();
-
-    const entry = store.api[key];
+    const entry = this.api.get(key);
     if (!entry) return null;
-
-    const expired = Date.now() - entry.cachedAt > entry.timeToLiveMs;
-    return expired ? null : entry.data;
+    if (this.isExpired(entry)) { this.api.delete(key); return null; }
+    return this.clone(entry.data) as T;
   }
 
+  // Convenience aliases so existing code like set(imdbId, film) works:
+  set<T = any>(key: string, data: T, ttl = this.DEFAULT_TTL_MS) { this.setApiCache(key, data, ttl); }
+  get<T = any>(key: string) { return this.getApiCache<T>(key); }
 
-  /// -======================================-  Cache for Rating/Editing  -======================================- \\\
-  setDraft(postId: string, model: RatingModel, timeToLiveMs = this.DEFAULT_DRAFT_TTL_MS) {
-    const store = this.readStore();
-    store.drafts[postId] = { data: model, cachedAt: Date.now(), timeToLiveMs };
+  // ---------- Drafts (persisted in Supabase) ----------
+  async setDraft(postId: string, model: RatingModel, timeToLiveMs = this.DEFAULT_DRAFT_TTL_MS): Promise<void> {
+    const entry: CacheEntry<RatingModel> = { data: this.clone(model), cachedAt: Date.now(), timeToLiveMs };
+    this.drafts.set(postId, entry);
 
-    this.writeStore(store);
+    const expiresAt = new Date(entry.cachedAt + timeToLiveMs).toISOString();
+    const { error } = await supabase
+      .from('rating_drafts')
+      .upsert({
+        id: postId,
+        user_id: model.user_id,
+        payload: entry.data as any,
+        expires_at: expiresAt
+      }, { onConflict: 'id' });
+
+    if (error) console.error('setDraft upsert error:', error.message);
   }
 
-  getDraft(postId: string): RatingModel | null {
-    const store = this.readStore();
-
-    const entry = store.drafts[postId];
-    if (!entry) return null;
-
-    const expired = Date.now() - entry.cachedAt > entry.timeToLiveMs;
-    if (expired) {
-      delete store.drafts[postId];
-      this.writeStore(store);
-      return null;
+  async getDraft(postId: string): Promise<RatingModel | null> {
+    const mem = this.drafts.get(postId);
+    if (mem) {
+      if (this.isExpired(mem)) { await this.clearDraft(postId); return null; }
+      return this.clone(mem.data);
     }
 
-    return entry.data;
+    // Fallback to Supabase (after refresh)
+    const { data, error } = await supabase
+      .from('rating_drafts')
+      .select('payload, expires_at')
+      .eq('id', postId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('getDraft select error:', error.message);
+      return null;
+    }
+    if (!data) return null;
+
+    // Respect TTL if set
+    const expired = data.expires_at && Date.now() > Date.parse(data.expires_at);
+    if (expired) { await this.clearDraft(postId); return null; }
+
+    const payload = data.payload as RatingModel;
+    // re-hydrate memory with a fresh TTL window (optional)
+    this.drafts.set(postId, {
+      data: this.clone(payload),
+      cachedAt: Date.now(),
+      timeToLiveMs: this.DEFAULT_DRAFT_TTL_MS
+    });
+    return this.clone(payload);
   }
 
-  patchDraft(postId: string, partial: Partial<RatingModel>): RatingModel | null {
-    const existing = this.getDraft(postId);
+  async patchDraft(postId: string, partial: Partial<RatingModel>): Promise<RatingModel | null> {
+    const existing = await this.getDraft(postId);
     if (!existing) return null;
 
     const merged = { ...existing, ...partial } as RatingModel;
-    this.setDraft(postId, merged);
-
+    await this.setDraft(postId, merged); // re-upsert + refresh mem
     return merged;
   }
 
-  clearDraft(postId: string) {
-    const store = this.readStore();
-
-    if (store.drafts[postId]) {
-      delete store.drafts[postId];
-      this.writeStore(store);
-    }
+  async clearDraft(postId: string): Promise<void> {
+    this.drafts.delete(postId);
+    const { error } = await supabase.from('rating_drafts').delete().eq('id', postId);
+    if (error) console.error('clearDraft delete error:', error.message);
   }
 
+  // ---------- Helpers ----------
+  clearAllSession() {
+    this.api.clear();
+    this.drafts.clear();
+  }
 
-  /// -======================================-  Clear the Cache  -======================================- \\\
-  clearAll() {
-    this.localStorageService.clearInformation(this.STORAGE_KEY);
+  private clone<T>(obj: T): T {
+    return ('structuredClone' in globalThis) ? (structuredClone as any)(obj) : JSON.parse(JSON.stringify(obj));
+  }
+  private isExpired(entry: CacheEntry<any>): boolean {
+    return Date.now() - entry.cachedAt > entry.timeToLiveMs;
   }
 }

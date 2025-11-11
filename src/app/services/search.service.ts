@@ -1,14 +1,14 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { catchError, from, map, Observable, of } from 'rxjs';
 import { ApiService } from './api.service';
 import { SearchType } from '../models/search-models/search.types';
-import { UsersDatabase } from '../databases/users-database';
+import { supabase } from '../core/supabase.client';
 
 @Injectable({ providedIn: 'root' })
 export class SearchService {
   private api = inject(ApiService);
-  private usersDatabase = inject(UsersDatabase);
 
+  ///  Search movies or shows using there respective API calls  \\\
   search(type: SearchType, search: string): Observable<any[]> {
     const query = (search || '').trim();
     if (!query) return of([]);
@@ -23,18 +23,92 @@ export class SearchService {
     }
   }
 
+  ///  Search users using a Supabase RPC function with ILIKE fallback  \\\
   private searchUsers(search: string): Observable<any[]> {
-    const rawUsers = this.usersDatabase.getAllUsersFromDatabase();
-    const query = search.toLowerCase();
+    const q = (search || '').trim();
+    if (!q) return of([]);
 
-    const match = (s: string) => s?.toLowerCase().includes(query);
-    const starts = (s: string) => s?.toLowerCase().startsWith(query);
+    const limit = 20;
+    const offset = 0;
 
-    const users = rawUsers
-      .filter(u => match(u.username))
-      .sort((a, b) => Number(starts(b.username)) - Number(starts(a.username)))
-      .slice(0, 20);
+    ///  Call the SQL function: public.search_users(q, lim, off)  \\\
+    return from(
+      supabase.rpc('search_users', { q, lim: limit, off: offset })
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) throw error;
 
-    return of(users);
+        return (data ?? []) as any[];
+      }),
+
+      ///  Fallback to ILIKE-based search if RPC unavailable  \\\
+      catchError(() => from(this.searchUsersFallback(q, limit, offset)))
+    );
+  }
+
+  ///  ILIKE fallback  \\\
+  private async searchUsersFallback(q: string, limit = 20, offset = 0): Promise<any[]> {
+    const results: any[] = [];
+    const seen = new Set<string>();
+
+    ///  If user typed @username, try exact hit first  \\\
+    const at = q.startsWith('@') ? q.slice(1).toLowerCase() : null;
+    const term = (at ?? q).toLowerCase();
+
+    ///  Columns we actually return (whitelist avoids leaking email, etc.)  \\\
+    const cols = `
+      id, username, first_name, last_name, bio,
+      profile_picture_url, private, post_count, follower_count, following_count
+    `;
+
+    if (at && at.length > 0) {
+      const { data: exact, error } = await supabase
+        .from('users')
+        .select(cols)
+        .eq('username', at)
+        .single();
+
+      if (!error && exact) {
+        results.push(exact);
+        seen.add(exact.id);
+      }
+    }
+
+    ///  Prefix pass: username / first_name / last_name  \\\
+    const { data: prefixData } = await supabase
+      .from('users')
+      .select(cols)
+      .or(`username.ilike.${term}%,first_name.ilike.${term}%,last_name.ilike.${term}%`)
+      .order('username', { ascending: true })
+      .range(offset, offset + limit - 1);
+
+    for (const u of prefixData ?? []) {
+      if (!seen.has(u.id)) {
+        results.push(u);
+        seen.add(u.id);
+      }
+    }
+
+    ///  Broad contains on username, first_name, last_name, bio  \\\
+    const ilikeQ = `%${term}%`;
+    const { data: broadData } = await supabase
+      .from('users')
+      .select(cols)
+      .or([
+        `username.ilike.${ilikeQ}`,
+        `first_name.ilike.${ilikeQ}`,
+        `last_name.ilike.${ilikeQ}`,
+        `bio.ilike.${ilikeQ}`,
+      ].join(','))
+      .range(0, 199);
+
+    for (const u of broadData ?? []) {
+      if (!seen.has(u.id)) {
+        results.push(u);
+        seen.add(u.id);
+      }
+    }
+
+    return results.slice(0, limit);
   }
 }

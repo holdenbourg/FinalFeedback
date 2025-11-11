@@ -76,8 +76,8 @@
       </li>
     </ng-container>
 
-    <li class="list-item">
-      <a (click)="routingService.navigateToAccountsPosts(currentUser.username)">
+    <li class="list-item" *ngIf="currentUser() as cu">
+      <a (click)="routingService.navigateToAccountsPosts(cu.username)">
         <i class="bx bx-user"></i>
         <span class="link-name" [style.--i]="sidebarService.navDelay(4, filmKind())">Account</span>
       </a>
@@ -90,16 +90,16 @@
       </a>
     </li>
 
-    <li class="username">
+    <li class="username" *ngIf="currentUser() as cu">
       <p class="link-name" [style.--i]="sidebarService.navDelay(6, filmKind())">Signed in as:</p>
-      <p class="link-name" [style.--i]="sidebarService.navDelay(6, filmKind())">{{ currentUser.username }}</p>
+      <p class="link-name" [style.--i]="sidebarService.navDelay(6, filmKind())">{{ cu.username }}</p>
     </li>
   </ul>
 </nav>
 
 <div class="container" [class.active]="sidebarService.sidebarActive() === false" [class.no-anim]="sidebarService.suppressAnim()">
   <div class="left-side" *ngIf="activeFilm as af; else noSelection">
-    <div class="top-information" *ngIf="af.dateRated">
+    <div class="top-information" *ngIf="af.date_rated">
       <img
         class="film-poster"
         [src]="posterSrc"
@@ -112,24 +112,24 @@
       <div class="film-left">
         <div class="film-scroll">
           <p class="title">{{ activeFilm.title }}</p>
-          <p class="release" *ngIf="activeFilm.releaseDate">{{ formatLongDate(activeFilm.releaseDate) }}</p>
+          <p class="release" *ngIf="activeFilm.release_date">{{ formatLongDate(activeFilm.release_date) }}</p>
 
           <div class="meta">
             <span class="badge" *ngIf="activeFilm.rated">{{ activeFilm.rated }}</span>
 
-            <span class="badge" *ngIf="(activeFilm.genres || '').length">
-              {{ (activeFilm.genres || '').join(' • ') }}
+            <span class="badge" *ngIf="activeFilm.genres.length">
+              {{ activeFilm.genres.join(' • ') }}
             </span>
           </div>
         </div>
 
         <div class="film-counts">
-          <div class="count" *ngIf="runtimeHours !== 0 || totalSeasons !== 0">
+          <div class="count" *ngIf="runtimeHours !== 0 || $any(af.criteria).seasons !== 0">
             <div class="count-num">{{ count1Num }}</div>
             <div class="count-label">{{ count1Label }}</div>
           </div>
 
-          <div class="count" *ngIf="runtimeMinutesRemainder !== 0 || totalEpisodes !== 0">
+          <div class="count" *ngIf="runtimeMinutesRemainder !== 0 || $any(af.criteria).episodes !== 0">
             <div class="count-num">{{ count2Num }}</div>
             <div class="count-label">{{ count2Label }}</div>
           </div>
@@ -137,31 +137,31 @@
       </div>
     </div>
 
-    <div class="bottom-information" *ngIf="af.dateRated">
+    <div class="bottom-information" *ngIf="af.date_rated">
       <div class="film-ratings">
         <div class="rating-titles">
           <p>Acting:</p>
           <p>Visuals:</p>
           <p>Story:</p>
           <p>Pacing:</p>
-          <p>{{ af.kind === 'series' ? 'Length:' : 'Climax:' }}</p>
+          <p>{{ af.media_type === 'series' ? 'Length:' : 'Climax:' }}</p>
           <p>Ending:</p>
           <p class="ovr-rating">Total:</p>
         </div>
 
         <div class="rating-scores">
-          <p>{{ af.acting }}</p>
-          <p>{{ af.visuals }}</p>
-          <p>{{ af.story }}</p>
-          <p>{{ af.pacing }}</p>
-          <p>{{ af.kind === 'series' ? af.length : af.climax }}</p>
-          <p>{{ af.ending }}</p>
+          <p>{{ af.criteria.acting }}</p>
+          <p>{{ af.criteria.visuals }}</p>
+          <p>{{ af.criteria.story }}</p>
+          <p>{{ af.criteria.pacing }}</p>
+          <p>{{ af.media_type === 'series' ? $any(af.criteria).length : $any(af.criteria).climax }}</p>          
+          <p>{{ af.criteria.ending }}</p>
           <p class="ovr-rating">{{ af.rating }}</p>
         </div>
       </div>
 
       <div class="date-rated">
-        <p>Date Rated: {{ formatLongDate(af.dateRated) }}</p>
+        <p>Date Rated: {{ formatLongDate(af.date_rated) }}</p>
         <button type="button" class="button" (click)="onEdit(af)">Edit Rating</button>
         <button type="button" class="button" (click)="openConfirm(af)">Delete Rating</button>
       </div>
@@ -288,11 +288,11 @@
 
     <div class="scroll-box" #scrollBox>
       <div class="rated-films" *ngIf="filteredRatedFilms().length; else noRatedMovies">
-        <div class="rated-film" *ngFor="let film of filteredRatedFilms(); trackBy: trackByPostId" (click)="onRatedFilmClicked(film)" [attr.data-postid]="film.postId">
+        <div class="rated-film" *ngFor="let film of filteredRatedFilms(); trackBy: trackByPostId" (click)="onRatedFilmClicked(film)" [attr.data-postid]="film.id">
           <app-rated-film
             [ratedFilm]="film" 
-            [active]="film.postId === activeFilm?.postId" 
-            [attr.aria-selected]="film.postId === activeFilm?.postId">
+            [active]="film.id === activeFilm?.id" 
+            [attr.aria-selected]="film.id === activeFilm?.id">
           </app-rated-film>
         </div>
       </div>

@@ -257,14 +257,17 @@ export class CommentModerationService {
     }
 
     ///  Return the accurate username if atted incorrectly (@Holdenbourg -> @HoldenBourg)  \\\
-    canonicalizeHandle(rawUsername: string): string {
-        const canonicalUsername = this.usersService.getCanonicalUsername?.(rawUsername);
-        if (canonicalUsername) return canonicalUsername;
+    async canonicalizeHandleAsync(rawUsername: string): Promise<string> {
+        const raw = String(rawUsername ?? '').trim();
+        if (!raw) return raw;
 
-        // Fallback to LocalStorage if service can’t supply (optional fallback)
-        const allUsers = (this.localStorageService?.getInformation?.('users') as Array<{ username:string }> | undefined) ?? [];
-        const foundUser = allUsers.find(user => user.username.toLowerCase() === rawUsername.toLowerCase());
-        return foundUser?.username ?? rawUsername;
+        const canonical = await this.usersService.getCanonicalUsername(raw);
+        if (canonical) return canonical;
+
+        const allUsers = (this.localStorageService?.getInformation?.('users') as Array<{ username: string }> | undefined) ?? [];
+        const foundUser = allUsers.find(u => u.username.toLowerCase() === raw.toLowerCase());
+
+        return foundUser?.username ?? raw;
     }
 
     private userLowerToCanonical(): Map<string, string> {

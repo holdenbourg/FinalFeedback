@@ -122,11 +122,6 @@ export class AuthService {
     await this.supabase.auth.signOut();
   }
 
-  async getCurrentUser() {
-    const { data } = await this.supabase.auth.getUser();
-    return data.user;
-  }
-
   async getSession() {
     return supabase.auth.getSession();
   }

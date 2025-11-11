@@ -46,8 +46,8 @@
             </a>
         </li>
 
-        <li class="list-item">
-            <a (click)="routingService.navigateToAccountsPosts(currentUser.username)">
+        <li class="list-item" *ngIf="currentUser() as cu">
+            <a (click)="routingService.navigateToAccountsPosts(cu.username)">
                 <i class="bx bx-user"></i>
                 <span class="link-name" style="--i:6;">Account</span>
             </a>
@@ -60,9 +60,9 @@
             </a>
         </li>
 
-        <li class="username">
+        <li class="username" *ngIf="currentUser() as cu">
             <p class="link-name" style="--i:8">Signed in as:</p>
-            <p class="link-name" style="--i:8">{{ currentUser.username }}</p>
+            <p class="link-name" style="--i:8">{{ cu.username }}</p>
         </li>
     </ul>
 </nav>

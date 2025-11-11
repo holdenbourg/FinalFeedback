@@ -6,7 +6,7 @@ import { ApiService } from '../../services/api.service';
 import { FilmCacheService } from '../../services/film-cache.service';
 import { RoutingService } from '../../services/routing.service';
 import { RateItemComponent, RatingCriterion, RateResult } from '../templates/rate-item/rate-item.component';
-import { RatingModel } from '../../models/database-models/rating-model';
+import { MovieCriteria, RatingModel, SeriesCriteria } from '../../models/database-models/rating-model';
 import { UsersService } from '../../services/users.service';
 
 @Component({
@@ -58,27 +58,29 @@ export class RateFilmComponent implements OnInit {
     const fromState = (this.router.getCurrentNavigation()?.extras?.state as any)?.film ?? (history.state?.film ?? null);
     if (fromState) {
       this.film = fromState;
-      if (this.film) this.filmCache.set(this.imdbId, this.film);
+      this.filmCache.setApiCache(this.imdbId, this.film);
+      
       return;
     }
 
     ///  2) Try cache (refresh-safe)  \\\
-    const cached = this.filmCache.get(this.imdbId);
+    const cached = this.filmCache.getApiCache<CombinedFilmApiResponseModel>(this.imdbId);
     if (cached) {
       this.film = cached;
+
       return;
     }
 
     ///  3) Fallback to API  \\\
-    this.film = await this.filmCache.getOrFetch(this.imdbId, () => this.apiService.getFilmOmdb(this.imdbId));
+    const fetched = await this.apiService.getFilmOmdb(this.imdbId);
+    this.filmCache.setApiCache(this.imdbId, fetched);
+    this.film = fetched;
   }
 
 
-  //!  CHANGE TO USE CACHE TO PASS THE RATING MOVIE/SERIES (LIKE YOU PASS IT TO THIS COMPONENT)  !\\
-  async onRated(result: { average: number; criteria: Record<string, number>; }) {    
+  /// -======================================-  Rate Functionality  -======================================- \\\
+  async onRated(result: { average: number; criteria: Record<string, number> }) {
     if (!this.film) return;
-
-    const currentFilm = this.film;
 
     const userId = await this.usersService.getCurrentUserId();
     if (!userId) {
@@ -86,34 +88,44 @@ export class RateFilmComponent implements OnInit {
       return;
     }
 
-    const runtimeMinutes = currentFilm.runTime || 0;
+    const currentFilm = this.film;
+    const runtimeMinutes = this.runtimeMinutes;
 
-    const totalSeasons = currentFilm.seasons?.length || 0;
-    const totalEpisodes = currentFilm.seasons?.reduce((sum: number, season: any) => sum + (season.episode_count || 0), 0) || 0;
+    const seasonsArray = Array.isArray(currentFilm.seasons) ? currentFilm.seasons : [];
+    const totalSeasons = seasonsArray.length;
+    const totalEpisodes = seasonsArray.reduce(
+      (sum: number, s: any) => sum + (Number(s?.episode_count) || 0), 0
+    );
 
     const releaseDate = this.alterReleaseForDatabase(currentFilm.released || '') || null;
     const todayISO = new Date().toISOString().slice(0, 10);
 
-    const movieCriteria = {
+    // --- Criteria (typed) ---
+    const movieCriteria: MovieCriteria = {
       acting : result.criteria['acting']  ?? 0,
       visuals: result.criteria['visuals'] ?? 0,
       story  : result.criteria['story']   ?? 0,
       pacing : result.criteria['pacing']  ?? 0,
       climax : result.criteria['climax']  ?? 0,
       ending : result.criteria['ending']  ?? 0,
-      length : runtimeMinutes,
+      runtime: runtimeMinutes ?? 0,   // <-- use 'runtime' to match MovieCriteria
     };
 
-    const seriesCriteria = {
+    const seriesCriteria: SeriesCriteria = {
       acting  : result.criteria['acting']  ?? 0,
       visuals : result.criteria['visuals'] ?? 0,
       story   : result.criteria['story']   ?? 0,
       pacing  : result.criteria['pacing']  ?? 0,
-      length  : result.criteria['length']  ?? 0,
       ending  : result.criteria['ending']  ?? 0,
+      length  : result.criteria['length']  ?? 0,
       seasons : totalSeasons,
       episodes: totalEpisodes,
     };
+
+    // genres is required on RatingModel; derive safely
+    const genres: string[] = Array.isArray((currentFilm as any).genres)
+      ? (currentFilm as any).genres.map((g: any) => (typeof g === 'string' ? g : g?.name)).filter(Boolean)
+      : [];
 
     const model: RatingModel = {
       id: (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`) as string,
@@ -125,19 +137,20 @@ export class RateFilmComponent implements OnInit {
       rating: result.average,
       criteria: this.isMovie ? movieCriteria : seriesCriteria,
       date_rated: todayISO,
+      poster_url: currentFilm.poster || '',
+      genres,  // <-- required by your interface
     };
 
-    this.filmCache.setCurrentRatingModel(model);
+    const postId = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`) as string;
+    this.filmCache.setDraft(postId, model);
 
-    if (this.isMovie) {
-      this.routingService.navigateToPostMovie();
-    } else {
-      this.routingService.navigateToPostSeries();
-    }
+    this.isMovie
+      ? this.routingService.navigateToPostMovie(postId)
+      : this.routingService.navigateToPostSeries(postId);
   }
 
 
-  /// ---------------------------------------- Helpers ----------------------------------------  \\\
+  /// -======================================-  Helper Methods  -======================================- \\\
   addRandomStartPointForRows() {
     document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
       const durStr = getComputedStyle(el).animationDuration;
@@ -293,7 +306,7 @@ export class RateFilmComponent implements OnInit {
   }
 
 
-  /// ---------------------------------------- Formatting ----------------------------------------  \\\
+  /// -======================================-  Formatting  -======================================- \\\
   alterReleaseForDatabase(releaseDate: string) {
     if (!releaseDate || releaseDate.length < 4) return releaseDate || '';
 

@@ -2,13 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit, inject, signal, computed } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs';
-
 import { RoutingService } from '../../services/routing.service';
-import { LocalStorageService } from '../../services/local-storage.service';
-import { AccountInformationModel } from '../../models/database-models/account-information-model';
-import { RatedMovieModel } from '../../models/database-models/rating-model';
-import { RatedSeriesModel } from '../../models/database-models/rated-series-model';
 import { SidebarService } from '../../services/sidebar.service';
+import { UsersService } from '../../services/users.service';
+import { UserModel } from '../../models/database-models/user-model';
+import { MovieCriteria, RatingModel, SeriesCriteria } from '../../models/database-models/rating-model';
+import { RatingsService } from '../../services/ratings.service';
 
 type FilmKind = 'movie' | 'series';
 type ChartDatum = { 
@@ -35,9 +34,10 @@ type FavoriteEntry = {
 
 export class FilmsSummaryComponent implements OnInit {
   readonly routingService = inject(RoutingService);
-  readonly localStorageService = inject(LocalStorageService);
-  private router = inject(Router);
   readonly sidebarService = inject(SidebarService);
+  readonly usersService = inject(UsersService);
+  readonly ratingsService = inject(RatingsService);
+  private router = inject(Router);
 
   readonly filmKind = signal<FilmKind>('movie');
 
@@ -50,10 +50,51 @@ export class FilmsSummaryComponent implements OnInit {
 
   readonly fallbackPoster = 'assets/images/no-poster.png';
 
-  public currentUser: AccountInformationModel = this.localStorageService.getInformation('current-user');
+  public currentUser = signal<UserModel | null>(null);
+
+  ///  User's rated movies  \\\
+  private allRatedMovies = signal<RatingModel[]>([]);
+  public usersRatedMovies = computed(() =>
+    this.allRatedMovies()
+  );
+
+  ///  User's rated series/shows  \\\ 
+  private allRatedSeries = signal<RatingModel[]>([]);
+  public usersRatedSeries = computed(() =>
+    this.allRatedSeries()
+  );
+
+  public usersRatedList = computed<RatingModel[]>(() =>
+    this.filmKind() === 'series' ? this.usersRatedSeries() : this.usersRatedMovies()
+  );
+
 
   ngOnInit() {
-    this.addRandomStartPointForRows();
+    this.usersService.getCurrentUserProfile()
+      .then(async (u) => {
+        this.currentUser.set(u);
+        this.addRandomStartPointForRows();
+
+        if (u) {
+          const [movies, series] = await Promise.all([
+            this.ratingsService.getUserMovies(u.id),
+            this.ratingsService.getUserSeries(u.id),
+          ]);
+
+          this.allRatedMovies.set(movies);
+          this.allRatedSeries.set(series);
+        } else {
+          this.allRatedMovies.set([]);
+          this.allRatedSeries.set([]);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load current user', err);
+        this.currentUser.set(null);
+        this.allRatedMovies.set([]);
+        this.allRatedSeries.set([]);
+        this.addRandomStartPointForRows();
+      });
 
     const setKindFromUrl = () => {
       const url = (this.router.url || '').toLowerCase();
@@ -100,29 +141,21 @@ export class FilmsSummaryComponent implements OnInit {
     return Math.max(0, firstNum ? parseInt(firstNum, 10) : 0);
   }
 
-  private movieRuntimeMinutes(m: Partial<RatedMovieModel>): number {
-    const direct = (m as any)?.runTime ?? (m as any)?.runtimeMinutes ?? (m as any)?.runtime_min ?? null;
-    if (Number.isFinite(direct)) return Math.max(0, Number(direct));
+  private movieRuntimeMinutes(m: Partial<RatingModel>): number {
+    const runtime = (m.criteria as MovieCriteria | undefined)?.runtime;
+    if (typeof runtime === 'number' && Number.isFinite(runtime)) return Math.max(0, runtime);
 
-    const rt = (m as any)?.runtime ?? (m as any)?.Runtime ?? '';
-
-    return this.parseRuntimeToMinutes(rt);
+    return this.parseRuntimeToMinutes(runtime as unknown);
   }
 
-  private seriesEpisodes(s: Partial<RatedSeriesModel>): number {
-    const raw =
-      (s as any)?.episodes ??
-      (s as any)?.episodeCount ??
-      (s as any)?.totalEpisodes ??
-      (s as any)?.episodes_watched ??
-      0;
-
-    const n = Number(raw);
+  private seriesEpisodes(s: Partial<RatingModel>): number {
+    const c = s.criteria as SeriesCriteria | undefined;
+    const n = c?.episodes ?? 0;
 
     return Number.isFinite(n) && n > 0 ? n : 0;
   }
 
-  private genresOf(m: Partial<RatedMovieModel | RatedSeriesModel>): string[] {
+  private genresOf(m: Partial<RatingModel>): string[] {
     const g = (m as any)?.genres ?? [];
 
     if (Array.isArray(g)) return g.map(x => String(x).trim()).filter(Boolean);
@@ -132,44 +165,18 @@ export class FilmsSummaryComponent implements OnInit {
     return [];
   }
 
-  private canonicalRated(m: Partial<RatedMovieModel | RatedSeriesModel>): string[] {
+  private canonicalRated(m: Partial<RatingModel>): string[] {
     const r = String((m as any)?.rated ?? '').trim();
     if (!r) return [];
     
     return r.split(/[|,/•]+/).map(s => s.trim()).filter(Boolean);
   }
 
-  // ---------- Data ----------
-  private allRatedMovies = computed<RatedMovieModel[]>(() => {
-    const list = this.localStorageService.getInformation('rated-movies') ?? [];
-    return list as RatedMovieModel[];
-  });
-
-  private allRatedSeries = computed<RatedSeriesModel[]>(() => {
-    const list = this.localStorageService.getInformation('rated-series') ?? [];
-    return list as RatedSeriesModel[];
-  });
-
-  private usersRatedMovies = computed<RatedMovieModel[]>(() => {
-    const u = this.currentUser?.username;
-    return (this.allRatedMovies() ?? []).filter(m => m.username === u);
-  });
-
-  private usersRatedSeries = computed<RatedSeriesModel[]>(() => {
-    const u = this.currentUser?.username;
-    return (this.allRatedSeries() ?? []).filter(s => (s as any).username === u);
-  });
-
-  ///  Current list based on filmKind  \\\
-  private items = computed<(RatedMovieModel | RatedSeriesModel)[]>(() =>
-    this.filmKind() === 'movie' ? this.usersRatedMovies() : this.usersRatedSeries()
-  );
-
 
   /// ---------------------------------------- Cells ----------------------------------------  \\\
   /// ---------- Cell 1: Favorites ---------- \\\
   private bestOverall = computed<FavoriteEntry | null>(() => {
-    const items = this.items();
+    const items = this.usersRatedList();
     if (!items.length) return null;
 
     const best = [...items].sort((a: any, b: any) => (b.rating ?? 0) - (a.rating ?? 0))[0] as any;
@@ -178,15 +185,15 @@ export class FilmsSummaryComponent implements OnInit {
     return {
       label,
       movieTitle: best.title ?? 'Unknown',
-      rated: best?.rated,
-      poster: best?.poster,
+      rated: best?.rated ?? undefined,
+      poster: best?.poster_url ?? undefined,
       rating: best?.rating ?? undefined,
       runtimeMin: this.filmKind() === 'movie' ? this.movieRuntimeMinutes(best) : 0,
     };
   });
 
   private favoritesByGenreCombined = computed<FavoriteEntry[]>(() => {
-    const items = this.items();
+    const items = this.usersRatedList();
     const byGenreTop = new Map<string, any>();
 
     for (const m of items) {
@@ -197,7 +204,7 @@ export class FilmsSummaryComponent implements OnInit {
       }
     }
 
-    const key = (m: any) => `${m.title ?? ''}::${m.poster ?? ''}`;
+    const key = (m: RatingModel) => `${m.title ?? ''}::${m.poster_url ?? ''}`;
     const groups = new Map<string, { movie: any; genres: string[] }>();
 
     for (const [g, m] of byGenreTop.entries()) {
@@ -212,8 +219,8 @@ export class FilmsSummaryComponent implements OnInit {
       entries.push({
         label: `Favorite ${genres.sort((a, b) => a.localeCompare(b)).join('/')}`,
         movieTitle: movie.title ?? 'Unknown',
-        rated: movie?.rated,
-        poster: movie?.poster,
+        rated: movie?.rated ?? undefined,
+        poster: movie?.poster_url ?? undefined,
         rating: movie?.rating ?? undefined,
         runtimeMin: this.filmKind() === 'movie' ? this.movieRuntimeMinutes(movie) : 0,
       });
@@ -253,22 +260,22 @@ export class FilmsSummaryComponent implements OnInit {
   }
 
   /// ---------- Cell 2: Totals ---------- \\\
-  readonly totalItems = computed(() => this.items().length);
+  readonly totalItems = computed(() => this.usersRatedList().length);
 
   /** Movies: sum minutes. Series: sum episodes. */
   readonly totalProgressUnit = computed(() => {
     if (this.filmKind() === 'movie') {
-      return this.items().reduce((acc, m) => acc + this.movieRuntimeMinutes(m as any), 0);
+      return this.usersRatedList().reduce((acc, m) => acc + this.movieRuntimeMinutes(m as any), 0);
     }
 
-    return this.items().reduce((acc, s) => acc + this.seriesEpisodes(s as any), 0);
+    return this.usersRatedList().reduce((acc, s) => acc + this.seriesEpisodes(s as any), 0);
   });
 
   // Movies: Longest / Shortest (ignore 0-minute runtimes)
   readonly longestMovieTitle = computed(() => {
     if (this.filmKind() !== 'movie') return '';
 
-    const items = (this.items() as RatedMovieModel[]).filter(m => this.movieRuntimeMinutes(m) > 0);
+    const items = (this.usersRatedList() as RatingModel[]).filter(m => this.movieRuntimeMinutes(m) > 0);
     if (!items.length) return '';
 
     const best = [...items].sort((a, b) => this.movieRuntimeMinutes(b) - this.movieRuntimeMinutes(a))[0];
@@ -278,7 +285,7 @@ export class FilmsSummaryComponent implements OnInit {
   readonly longestMovieMinutes = computed(() => {
     if (this.filmKind() !== 'movie') return 0;
 
-    const nums = (this.items() as RatedMovieModel[]).map(m => this.movieRuntimeMinutes(m)).filter(n => n > 0);
+    const nums = (this.usersRatedList() as RatingModel[]).map(m => this.movieRuntimeMinutes(m)).filter(n => n > 0);
 
     return nums.length ? Math.max(...nums) : 0;
   });
@@ -286,7 +293,7 @@ export class FilmsSummaryComponent implements OnInit {
   readonly shortestMovieTitle = computed(() => {
     if (this.filmKind() !== 'movie') return '';
 
-    const items = (this.items() as RatedMovieModel[]).filter(m => this.movieRuntimeMinutes(m) > 0);
+    const items = (this.usersRatedList() as RatingModel[]).filter(m => this.movieRuntimeMinutes(m) > 0);
     if (!items.length) return '';
 
     const best = [...items].sort((a, b) => this.movieRuntimeMinutes(a) - this.movieRuntimeMinutes(b))[0];
@@ -296,7 +303,7 @@ export class FilmsSummaryComponent implements OnInit {
   readonly shortestMovieMinutes = computed(() => {
     if (this.filmKind() !== 'movie') return 0;
 
-    const nums = (this.items() as RatedMovieModel[]).map(m => this.movieRuntimeMinutes(m)).filter(n => n > 0);
+    const nums = (this.usersRatedList() as RatingModel[]).map(m => this.movieRuntimeMinutes(m)).filter(n => n > 0);
 
     return nums.length ? Math.min(...nums) : 0;
   });
@@ -305,7 +312,7 @@ export class FilmsSummaryComponent implements OnInit {
   readonly mostEpisodesTitle = computed(() => {
     if (this.filmKind() !== 'series') return '';
 
-    const items = this.items() as RatedSeriesModel[];
+    const items = this.usersRatedList() as RatingModel[];
     if (!items.length) return '';
 
     const best = [...items].sort((a, b) => this.seriesEpisodes(b) - this.seriesEpisodes(a))[0];
@@ -315,7 +322,7 @@ export class FilmsSummaryComponent implements OnInit {
   readonly mostEpisodesCount = computed(() => {
     if (this.filmKind() !== 'series') return 0;
 
-    const nums = (this.items() as RatedSeriesModel[]).map(s => this.seriesEpisodes(s));
+    const nums = (this.usersRatedList() as RatingModel[]).map(s => this.seriesEpisodes(s));
 
     return nums.length ? Math.max(...nums) : 0;
   });
@@ -323,7 +330,7 @@ export class FilmsSummaryComponent implements OnInit {
   readonly fewestEpisodesTitle = computed(() => {
     if (this.filmKind() !== 'series') return '';
 
-    const items = (this.items() as RatedSeriesModel[]).filter(s => this.seriesEpisodes(s) > 0);
+    const items = (this.usersRatedList() as RatingModel[]).filter(s => this.seriesEpisodes(s) > 0);
     if (!items.length) return '';
 
     const best = [...items].sort((a, b) => this.seriesEpisodes(a) - this.seriesEpisodes(b))[0];
@@ -333,7 +340,7 @@ export class FilmsSummaryComponent implements OnInit {
   readonly fewestEpisodesCount = computed(() => {
     if (this.filmKind() !== 'series') return 0;
 
-    const nums = (this.items() as RatedSeriesModel[]).map(s => this.seriesEpisodes(s)).filter(n => n > 0);
+    const nums = (this.usersRatedList() as RatingModel[]).map(s => this.seriesEpisodes(s)).filter(n => n > 0);
 
     return nums.length ? Math.min(...nums) : 0;
   });
@@ -342,14 +349,14 @@ export class FilmsSummaryComponent implements OnInit {
   readonly genresExplored = computed(() => {
     const set = new Set<string>();
 
-    this.items().forEach(m => this.genresOf(m).forEach(g => set.add(g)));
+    this.usersRatedList().forEach(m => this.genresOf(m).forEach(g => set.add(g)));
 
     return set.size;
   });
   readonly ratingsExplored = computed(() => {
     const set = new Set<string>();
 
-    this.items().forEach(m => this.canonicalRated(m).forEach(r => set.add(r)));
+    this.usersRatedList().forEach(m => this.canonicalRated(m).forEach(r => set.add(r)));
 
     return set.size;
   });
@@ -398,9 +405,9 @@ export class FilmsSummaryComponent implements OnInit {
 
   // ---------- Buckets built from current items ----------
   private genreBuckets = computed(() => {
-    const buckets = new Map<string, (RatedMovieModel | RatedSeriesModel)[]>();
+    const buckets = new Map<string, (RatingModel)[]>();
 
-    for (const m of this.items()) {
+    for (const m of this.usersRatedList()) {
       const genres = this.genresOf(m);
       for (const g of genres) {
         if (!buckets.has(g)) buckets.set(g, []);
@@ -412,9 +419,9 @@ export class FilmsSummaryComponent implements OnInit {
   });
 
   private ratedBuckets = computed(() => {
-    const buckets = new Map<string, (RatedMovieModel | RatedSeriesModel)[]>();
+    const buckets = new Map<string, (RatingModel)[]>();
 
-    for (const m of this.items()) {
+    for (const m of this.usersRatedList()) {
       const rs = this.canonicalRated(m);
       const keyList = rs.length ? rs : ['N/A'];
       for (const r of keyList) {

@@ -1,25 +1,22 @@
 import { CommonModule } from "@angular/common";
-import { Component, OnInit, inject, signal, computed, effect, HostListener, ElementRef, ViewChild, NgZone, AfterViewInit } from "@angular/core";
+import { Component, OnInit, inject, signal, computed, HostListener, ElementRef, ViewChild, NgZone, AfterViewInit } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { AccountInformationModel } from "../../models/database-models/account-information-model";
-import { CommentModel } from "../../models/database-models/comment-model";
-import { RatedMovieModel } from "../../models/database-models/rating-model";
-import { RawAccountInformationModel } from "../../models/database-models/raw-account-information-model";
-import { ReplyModel } from "../../models/database-models/reply-model";
 import { LocalStorageService } from "../../services/local-storage.service";
 import { RoutingService } from "../../services/routing.service";
-import { RawPostModel } from "../../models/database-models/raw-post-model";
 import { RatedFilmComponent } from "../templates/rated-film/rated-film.component";
-import { RatedSeriesModel } from "../../models/database-models/rated-series-model";
 import { NavigationEnd, Router } from "@angular/router";
 import { filter } from "rxjs/operators";
 import { FilmCacheService } from "../../services/film-cache.service";
 import { SidebarService } from "../../services/sidebar.service";
+import { UsersService } from "../../services/users.service";
+import { MovieCriteria, RatingModel, SeriesCriteria } from "../../models/database-models/rating-model";
+import { RatingsService } from "../../services/ratings.service";
+import { UserModel } from "../../models/database-models/user-model";
 
 type SortKey = 'rating' | 'runtime' | 'dateRated' | 'title';
 
-type RatedItem = | (RatedMovieModel & { kind: 'movie' }) | (RatedSeriesModel & { kind: 'series'; length?: number });
 type FilmKind = 'movie' | 'series';
+type RatedItem = RatingModel;
 
 type FilmUIState = {
   movie: { activePostId?: string; scrollTop?: number };
@@ -43,12 +40,14 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
   readonly filmCache = inject(FilmCacheService);
   private router = inject(Router);
   readonly sidebarService = inject(SidebarService);
+  readonly usersService = inject(UsersService);
+  readonly ratingsService = inject(RatingsService);
 
   private readonly SLOW_SCROLL_MS = 500;
   private readonly UI_STATE_KEY = 'films-ui-state';
   @ViewChild('scrollBox', { static: false }) scrollBoxRef?: ElementRef<HTMLElement>;
 
-  public currentUser: AccountInformationModel = this.localStorageService.getInformation('current-user');
+  public currentUser = signal<UserModel | null>(null);
 
   readonly searchInput = signal('');
 
@@ -89,39 +88,48 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
   readonly fallbackPoster = 'assets/images/no-poster.png';
 
   ///  User's rated movies  \\\
-  private allRatedMovies = signal<RatedMovieModel[]>([]);
-
+  private allRatedMovies = signal<RatingModel[]>([]);
   public usersRatedMovies = computed(() =>
     this.allRatedMovies()
-      .filter(m => m.username === this.currentUser.username)
-      .map(m => ({ ...m, kind: 'movie' as const }))
-  );
-  public usersRatedMoviesWithKind = computed<RatedItem[]>(() =>
-    this.usersRatedMovies().map(m => ({ ...m, kind: 'movie' as const }))
   );
 
   ///  User's rated series/shows  \\\ 
-  private allRatedSeries = signal<RatedSeriesModel[]>([]);
-
+  private allRatedSeries = signal<RatingModel[]>([]);
   public usersRatedSeries = computed(() =>
     this.allRatedSeries()
-      .filter(s => s.username === this.currentUser.username)
-      .map(s => ({ ...s, kind: 'series' as const }))
-  );
-  public usersRatedSeriesWithKind = computed<RatedItem[]>(() =>
-    this.usersRatedSeries().map(s => ({ ...s, kind: 'series' as const }))
   );
 
-  public usersRatedList = computed<RatedItem[]>(() =>
+  public usersRatedList = computed<RatingModel[]>(() =>
     this.filmKind() === 'series' ? this.usersRatedSeries() : this.usersRatedMovies()
   );
 
 
   ngOnInit(): void {
-    this.addRandomStartPointForRows();
-    
-    this.allRatedMovies.set(this.localStorageService.getInformation('rated-movies') ?? []);
-    this.allRatedSeries.set(this.localStorageService.getInformation('rated-series') ?? []);
+    this.usersService.getCurrentUserProfile()
+      .then(async (u) => {
+        this.currentUser.set(u);
+        this.addRandomStartPointForRows();
+
+        if (u) {
+          const [movies, series] = await Promise.all([
+            this.ratingsService.getUserMovies(u.id),
+            this.ratingsService.getUserSeries(u.id),
+          ]);
+
+          this.allRatedMovies.set(movies);
+          this.allRatedSeries.set(series);
+        } else {
+          this.allRatedMovies.set([]);
+          this.allRatedSeries.set([]);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load current user', err);
+        this.currentUser.set(null);
+        this.allRatedMovies.set([]);
+        this.allRatedSeries.set([]);
+        this.addRandomStartPointForRows();
+      });
 
     const setKindFromUrl = () => {
       const url = (this.router.url || '').toLowerCase();
@@ -155,74 +163,9 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
   }
 
 
-
   /// ---------------------------------------- Delete Functionality ----------------------------------------  \\\
-  onDelete(item: RatedItem) {
-    ///  Load databases  \\\
-    const rawPosts: RawPostModel[] = this.localStorageService.getInformation('raw-posts') ?? [];
-    const rawUsers: RawAccountInformationModel[] = this.localStorageService.getInformation('raw-users') ?? [];
-    const comments: CommentModel[] = this.localStorageService.getInformation('comments') ?? [];
-    const replies: ReplyModel[] = this.localStorageService.getInformation('replies') ?? [];
+  async onDelete(item: { postId?: string; id: string; media_type: 'movie'|'series' }) {
 
-    const currentPost = rawPosts.find(p => p.postId === item.postId);
-    const taggedUsernames = currentPost ? currentPost.taggedUsers.map(t => t.split('::::')[1]!).filter(Boolean) : [];
-    const affectedUsernames = Array.from(new Set([...taggedUsernames, this.currentUser.username]));
-
-    ///  Update rawUsers  \\\
-    const updatedRawUsers: RawAccountInformationModel[] = rawUsers.map(u => {
-      if (u.username === this.currentUser.username) {
-        return { ...u, postIds: u.postIds.filter(id => id !== item.postId) };
-      }
-      if (affectedUsernames.includes(u.username) && u.username !== this.currentUser.username) {
-        return { ...u, taggedPostIds: u.taggedPostIds.filter(id => id !== item.postId) };
-      }
-      return u;
-    });
-
-    ///  Update currentUser mirror  \\\
-    const newCurrentUser: AccountInformationModel = {
-      ...this.currentUser,
-      postIds: this.currentUser.postIds.filter(id => id !== item.postId),
-    };
-
-    ///  Remove the film + post + comments + replies  \\\
-    const newRawPosts  = rawPosts.filter(p => p.postId !== item.postId);
-    const newComments  = comments.filter(c => c.postId !== item.postId);
-    const newReplies   = replies.filter(r => r.postId !== item.postId);
-
-    if (item.kind === 'series') {
-      const ratedSeries: RatedSeriesModel[] = this.localStorageService.getInformation('rated-series') ?? [];
-      const newRatedSeries = ratedSeries.filter(s => s.postId !== item.postId);
-      this.localStorageService.setInformation('rated-series', newRatedSeries);
-      this.allRatedSeries.set(newRatedSeries);
-    } else {
-      const ratedMovies: RatedMovieModel[] = this.localStorageService.getInformation('rated-movies') ?? [];
-      const newRatedMovies = ratedMovies.filter(m => m.postId !== item.postId);
-      this.localStorageService.setInformation('rated-movies', newRatedMovies);
-      this.allRatedMovies.set(newRatedMovies);
-    }
-
-    ///  Persist shared stores  \\\
-    this.localStorageService.setInformation('current-user', newCurrentUser);
-    this.localStorageService.setInformation('raw-users', updatedRawUsers);
-    this.localStorageService.setInformation('raw-posts', newRawPosts);
-    this.localStorageService.setInformation('comments', newComments);
-    this.localStorageService.setInformation('replies', newReplies);
-
-    ///  Update local state + selection  \\\
-    this.currentUser = newCurrentUser;
-
-    if (this.activeFilm?.postId === item.postId) {
-      this.activeFilm = this.usersRatedList()[0] ?? null;
-    }
-
-    if (this.activeFilm) {
-      this.saveActive(this.activeFilm.postId);
-    } else {
-      this.saveActive(undefined);
-    }
-
-    this.saveScrollTop();
   }
 
   openConfirm(item: RatedItem) {
@@ -260,10 +203,10 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
 
   ///  Returns true if film is specified type, false if not \\\
   get isMovie(): boolean { 
-    return (this.activeFilm?.kind ?? '').toLowerCase() === 'movie'; 
+    return (this.activeFilm?.media_type ?? '').toLowerCase() === 'movie'; 
   }
   get isSeries(): boolean { 
-    return (this.activeFilm?.kind ?? '').toLowerCase() === 'series'; 
+    return (this.activeFilm?.media_type ?? '').toLowerCase() === 'series'; 
   }
 
   ///  Derived counts for Movie  \\\
@@ -294,21 +237,9 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
 
     return Math.max(0, firstNum ? parseInt(firstNum, 10) : 0);
   }
-  get runtimeMinutes(): number {
-    const nLike =
-      (this.activeFilm as any)?.runTime ??
-      (this.activeFilm as any)?.runtimeMinutes ??
-      (this.activeFilm as any)?.runtime_min ??
-      null;
 
-    if (Number.isFinite(nLike)) return Math.max(0, Number(nLike));
-
-    const rt = (this.activeFilm as any)?.runtime ?? (this.activeFilm as any)?.Runtime ?? '';
-
-    return this.parseRuntimeToMinutes(rt);
-  }
   get runtimeMinutesRemainder(): number {
-    return this.runtimeMinutes % 60;
+    return (this.activeFilm?.criteria as MovieCriteria).runtime % 60;
   }
   get minutesLabel(): string {
     const n = this.runtimeMinutesRemainder;
@@ -319,7 +250,7 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
   }
 
   get runtimeHours(): number {
-    return Math.floor(this.runtimeMinutes / 60);
+    return Math.floor((this.activeFilm?.criteria as MovieCriteria).runtime / 60);
   }
   get hoursLabel(): string {
     const n = this.runtimeHours;
@@ -329,56 +260,16 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
     return n === 1 ? 'Hour' : 'Hours';
   }
 
-  ///  Derived counts for Series  \\\
-  private toInt(n: any): number {
-    const v = Number(n);
-    return Number.isFinite(v) ? Math.max(0, Math.trunc(v)) : 0;
-  }
-
-  get totalSeasons(): number {
-    const af: any = this.activeFilm || {};
-
-    const asNumber = this.toInt(af.seasons);
-    if (asNumber) return asNumber;
-
-    if (Array.isArray(af.seasons)) {
-      return af.seasons.filter((s: any) => this.toInt(s?.episode_count) > 0).length;
-    }
-
-    return (
-      this.toInt(af.number_of_seasons) ||
-      this.toInt(af.numberOfSeasons) ||
-      this.toInt(af.totalSeasons) ||
-      0
-    );
-  }
   get seasonsLabel(): string {
-    const n = this.totalSeasons;
+    const n = (this.activeFilm?.criteria as SeriesCriteria).seasons;
 
     if (!n) return 'N/A';
 
     return n === 1 ? 'Season' : 'Seasons';
   }
 
-  get totalEpisodes(): number {
-    const af: any = this.activeFilm || {};
-
-    const direct = this.toInt(af.episodes);
-    if (direct) return direct;
-
-    if (Array.isArray(af.seasons)) {
-      return af.seasons.reduce((acc: number, s: any) => acc + this.toInt(s?.episode_count), 0);
-    }
-
-    return (
-      this.toInt(af.number_of_episodes) ||
-      this.toInt(af.numberOfEpisodes) ||
-      this.toInt(af.totalEpisodes) ||
-      0
-    );
-  }
   get episodesLabel(): string {
-    const n = this.totalEpisodes;
+    const n = (this.activeFilm?.criteria as SeriesCriteria).episodes;
 
     if (!n) return 'N/A';
 
@@ -387,13 +278,13 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
 
   ///  Dynmaic counts for Movie/Series (Count 1: Hours/Seasons - Count 2: Minutes/Episodes)  \\\
   get count1Num(): number {
-    return this.isMovie ? this.runtimeHours : this.totalSeasons;
+    return this.isMovie ? this.runtimeHours : (this.activeFilm?.criteria as SeriesCriteria).seasons;
   }
   get count1Label(): string {
     return this.isMovie ? this.hoursLabel : this.seasonsLabel;
   }
   get count2Num(): number {
-    return this.isMovie ? this.runtimeMinutesRemainder : this.totalEpisodes;
+    return this.isMovie ? this.runtimeMinutesRemainder : (this.activeFilm?.criteria as SeriesCriteria).episodes;
   }
   get count2Label(): string {
     return this.isMovie ?  this.minutesLabel : this.episodesLabel;
@@ -403,21 +294,21 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
     this.activeFilm = film;
     this.useFallback = false;
 
-    this.saveActive(film.postId);
+    this.saveActive(film.id);
     this.saveScrollTop();
   }
 
   onEdit(film: RatedItem) {
-    this.saveActive(film.postId);
+    this.saveActive(film.id);
     this.saveScrollTop();
 
-    this.filmCache.setDraft(film.postId, film);
-    this.routingService.navigateToEditFilm(film.kind, film.postId);
+    this.filmCache.setDraft(film.id, film);
+    this.routingService.navigateToEditFilm(film.media_type, film.id);
   }
 
   ///  Get poster if not use fallback "No Poster" image  \\\
   get posterSrc(): string {
-    const poster = this.activeFilm?.poster;
+    const poster = this.activeFilm?.poster_url;
     const hasPoster = !!poster && poster !== 'N/A';
 
     return (hasPoster && !this.useFallback) ? poster! : this.fallbackPoster;
@@ -432,7 +323,7 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
 
   /// ---------------------------------------- Scroll to Active Film Functionality ----------------------------------------  \\\
   private scrollActiveIntoViewIfNeeded(center = false) {
-    const id = this.activeFilm?.postId;
+    const id = this.activeFilm?.id;
     if (!id) return;
 
     const container = this.scrollBoxRef?.nativeElement;
@@ -507,7 +398,7 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
     const list = this.usersRatedList();
 
     // restore active item (fallback to first)
-    const found = wantedId ? list.find(x => x.postId === wantedId) : list[0];
+    const found = wantedId ? list.find(x => x.id === wantedId) : list[0];
     this.activeFilm = found ?? null;
 
     // restore scrollTop *after* DOM paints
@@ -528,15 +419,15 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
 
   /** Call this whenever filters/sort/search change and the list is rederived */
   private ensureActiveStillValid() {
-    const cur = this.activeFilm?.postId;
+    const cur = this.activeFilm?.id;
     if (!cur) return;
 
-    const exists = this.filteredRatedFilms().some(x => x.postId === cur);
+    const exists = this.filteredRatedFilms().some(x => x.id === cur);
     if (!exists) {
       // If filtered out or deleted → pick first visible
       const first = this.filteredRatedFilms()[0] ?? null;
       this.activeFilm = first;
-      this.saveActive(first?.postId);
+      this.saveActive(first?.id);
     }
   }
 
@@ -580,15 +471,10 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
 
   /// ---------------------------------------- Filtering Functionality ----------------------------------------  \\\
   private runtimeMinutesOf(movie: RatedItem): number {
-    const direct =
-      (movie as any)?.runTime ??
-      (movie as any)?.runtimeMinutes ??
-      (movie as any)?.runtime_min ??
-      null;
-
+    const direct = (movie.criteria as MovieCriteria).runtime
     if (Number.isFinite(direct)) return Math.max(0, Number(direct));
 
-    const rt = (movie as any)?.runtime ?? (movie as any)?.Runtime ?? '';
+    const rt = (movie.criteria as MovieCriteria).runtime
     return this.parseRuntimeToMinutes(rt);
   }
 
@@ -681,7 +567,7 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
       switch (key) {
         case 'rating':    av = a.rating ?? 0;                 bv = b.rating ?? 0;                 break;
         case 'runtime':   av = this.runtimeMinutesOf(a);      bv = this.runtimeMinutesOf(b);      break;
-        case 'dateRated': av = this.dateValue(a.dateRated);   bv = this.dateValue(b.dateRated);   break;
+        case 'dateRated': av = this.dateValue(a.date_rated);  bv = this.dateValue(b.date_rated);   break;
         case 'title':     return sign * a.title.localeCompare(b.title);
       }
 
@@ -812,5 +698,5 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
     return `${hours} HR ${minutes} MIN`;
   }
 
-  trackByPostId(index: number, item: { postId: string }) { return item.postId; }
+  trackByPostId(index: number, item: { id: string }) { return item.id; }
 }

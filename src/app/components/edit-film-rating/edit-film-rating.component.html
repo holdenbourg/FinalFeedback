@@ -25,7 +25,7 @@
     <div class="film-left">
       <div class="film-scroll">
         <p class="title">{{ draft.title }}</p>
-        <p class="release" *ngIf="draft.releaseDate">{{ formatLongDate(draft.releaseDate) }}</p>
+        <p class="release" *ngIf="draft.release_date">{{ formatLongDate(draft.release_date) }}</p>
 
         <div class="meta">
           <span class="badge" *ngIf="draft.rated">{{ draft.rated }}</span>
@@ -58,7 +58,7 @@
         <div class="edit-ratings">
           <a (click)="onDown('acting')"><i class='bx bx-chevron-left'></i></a>
 
-          <p>{{ draft.acting }}</p>
+          <p>{{ acting() }}</p>
 
           <a (click)="onUp('acting')"><i class='bx bx-chevron-right'></i></a>
         </div>
@@ -70,7 +70,7 @@
         <div class="edit-ratings">
           <a (click)="onDown('visuals')"><i class='bx bx-chevron-left'></i></a>
 
-          <p>{{ draft.visuals }}</p>
+          <p>{{ visuals() }}</p>
 
           <a (click)="onUp('visuals')"><i class='bx bx-chevron-right'></i></a>
         </div>
@@ -82,7 +82,7 @@
         <div class="edit-ratings">
           <a (click)="onDown('story')"><i class='bx bx-chevron-left'></i></a>
           
-          <p>{{ draft.story }}</p>
+          <p>{{ story() }}</p>
           
           <a (click)="onUp('story')"><i class='bx bx-chevron-right'></i></a>
         </div>
@@ -94,37 +94,37 @@
         <div class="edit-ratings">
           <a (click)="onDown('pacing')"><i class='bx bx-chevron-left'></i></a>
           
-          <p>{{ draft.pacing }}</p>
+          <p>{{ pacing() }}</p>
           
           <a (click)="onUp('pacing')"><i class='bx bx-chevron-right'></i></a>
         </div>
       </div>
 
       <!-- Movie uses Climax; Series uses Length -->
-      <ng-container *ngIf="movie() as movie; else seriesBlock">
+      <ng-container *ngIf="movie() as mc; else seriesBlock">
         <div class="rating">
-            <p>Climax</p>
+          <p>Climax</p>
 
-            <div class="edit-ratings">
-              <a (click)="onDown('climax')"><i class="bx bx-chevron-left"></i></a>
-              
-              <p>{{ movie.climax }}</p>
-              
-              <a (click)="onUp('climax')"><i class="bx bx-chevron-right"></i></a>
-            </div>
+          <div class="edit-ratings">
+            <a (click)="onDown('climax')"><i class="bx bx-chevron-left"></i></a>
+
+            <p>{{ mc.climax }}</p>
+
+            <a (click)="onUp('climax')"><i class="bx bx-chevron-right"></i></a>
+          </div>
         </div>
       </ng-container>
 
       <ng-template #seriesBlock>
-        <ng-container *ngIf="series() as series">
+        <ng-container *ngIf="series() as sc">
           <div class="rating">
             <p>Length</p>
 
             <div class="edit-ratings">
               <a (click)="onDown('length')"><i class="bx bx-chevron-left"></i></a>
-              
-              <p>{{ series.length }}</p>
-              
+
+              <p>{{ sc.length }}</p>
+
               <a (click)="onUp('length')"><i class="bx bx-chevron-right"></i></a>
             </div>
           </div>
@@ -137,7 +137,7 @@
         <div class="edit-ratings">
           <a (click)="onDown('ending')"><i class='bx bx-chevron-left'></i></a>
           
-          <p>{{ draft.ending }}</p>
+          <p>{{ ending() }}</p>
           
           <a (click)="onUp('ending')"><i class='bx bx-chevron-right'></i></a>
         </div>

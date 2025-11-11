@@ -1,13 +1,7 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RatingModel } from '../../../models/database-models/rating-model';
 
-export interface RatedMedia {
-  postId: string;
-  poster: string;
-  title: string;
-  releaseDate: string;
-  rating: number;
-}
 
 @Component({
   selector: 'app-rated-film',
@@ -19,7 +13,7 @@ export interface RatedMedia {
 })
 
 export class RatedFilmComponent {
-  @Input() ratedFilm!: RatedMedia;
+  @Input() ratedFilm!: RatingModel;
   @Input() active = false;
 
   private useFallback = false;
@@ -28,7 +22,7 @@ export class RatedFilmComponent {
 
   ///  Get poster if not use fallback "No Poster" image  \\\
   get posterSrc(): string {
-    const poster = this.ratedFilm?.poster;
+    const poster = this.ratedFilm?.poster_url;
     const hasPoster = !!poster && poster !== 'N/A';
 
     return (hasPoster && !this.useFallback) ? poster! : this.fallbackPoster;

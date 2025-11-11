@@ -1,13 +1,13 @@
 import { Injectable } from '@angular/core';
 import { supabase } from '../core/supabase.client';
-import { CommentRow } from '../models/database-models/comment-model';
+import { CommentModel } from '../models/database-models/comment-model';
 
-type ChildrenByParent = Map<string, CommentRow[]>;
+type ChildrenByParent = Map<string, CommentModel[]>;
 
 @Injectable({ providedIn: 'root' })
 export class CommentsService {
   ///  Load all comments for a post and the replies to those comments  \\\
-  async fetchThread(postId: string): Promise<{ roots: CommentRow[]; childrenByParent: Map<string, CommentRow[]>; }> {
+  async fetchThread(postId: string): Promise<{ roots: CommentModel[]; childrenByParent: Map<string, CommentModel[]>; }> {
     const { data, error } = await supabase
       .from('comments')
       .select(`
@@ -19,9 +19,9 @@ export class CommentsService {
 
     if (error) throw error;
 
-    const rows = (data ?? []) as unknown as CommentRow[];
+    const rows = (data ?? []) as unknown as CommentModel[];
 
-    const roots: CommentRow[] = [];
+    const roots: CommentModel[] = [];
     const childrenByParent: ChildrenByParent = new Map();
 
     for (const row of rows) {
@@ -44,7 +44,7 @@ export class CommentsService {
   }
 
   ///  Add a new comment to a post  \\\
-  async addComment(postId: string, text: string): Promise<CommentRow> {
+  async addComment(postId: string, text: string): Promise<CommentModel> {
     const { data, error } = await supabase
       .from('comments')
       .insert({ post_id: postId, text })
@@ -56,11 +56,11 @@ export class CommentsService {
 
     if (error) throw error;
 
-    return data as unknown as CommentRow;
+    return data as unknown as CommentModel;
   }
 
   ///  Add a reply to a comment/reply  \\\
-  async addReply(parentCommentId: string, text: string): Promise<CommentRow> {
+  async addReply(parentCommentId: string, text: string): Promise<CommentModel> {
     const { data: parent, error: pErr } = await supabase
       .from('comments')
       .select('post_id')
@@ -84,6 +84,6 @@ export class CommentsService {
 
     if (error) throw error;
 
-    return data as unknown as CommentRow;
+    return data as unknown as CommentModel;
   }
 }

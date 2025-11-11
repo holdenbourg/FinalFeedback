@@ -7,13 +7,13 @@ import { LocalStorageService } from '../../services/local-storage.service';
 import { RoutingService } from '../../services/routing.service';
 import { SearchService } from '../../services/search.service';
 
-import { AccountInformationModel } from '../../models/database-models/account-information-model';
-
 import { SearchType } from '../../models/search-models/search.types';  ///  'movies' | 'series' | 'users'  \\\
 
 import { SearchedFilmComponent } from '../templates/searched-film/searched-film.component';
 import { SearchedUserComponent } from '../templates/searched-user/searched-user.component';
 import { SidebarService } from '../../services/sidebar.service';
+import { UsersService } from '../../services/users.service';
+import { UserModel } from '../../models/database-models/user-model';
 
 
 @Component({
@@ -35,10 +35,11 @@ export class SearchComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private searchService = inject(SearchService);
+  readonly usersService = inject(UsersService);
   public localStorageService = inject(LocalStorageService);
   readonly sidebarService = inject(SidebarService);
 
-  public currentUser: AccountInformationModel = this.localStorageService.getInformation('current-user');
+  public currentUser = signal<UserModel | null>(null);
 
   public type: SearchType = 'movies';
   public searchInput = '';
@@ -65,9 +66,18 @@ export class SearchComponent implements OnInit {
       if (!q) this.clearResults();
     });
 
+    this.usersService.getCurrentUserProfile()
+      .then(u => this.currentUser.set(u))
+      .catch(err => {
+        console.error('Failed to load current user', err);
+        this.currentUser.set(null);
+      });
+
     this.localStorageService.cleanTemporaryLocalStorages();
   }
 
+
+  /// -======================================-  Search Functionality  -======================================- \\\
   onSearch() {
     const query = (this.searchInput || '').trim();
 
@@ -97,6 +107,17 @@ export class SearchComponent implements OnInit {
     this.showWarning = false;
   }
 
+
+  /// -======================================-  Helper Methods  -======================================- \\\
+  addRandomStartPointForRows() {
+    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
+      const durStr = getComputedStyle(el).animationDuration;
+      const dur = parseFloat(durStr.split(',')[0]) || 140;
+
+      el.style.animationDelay = `${-(Math.random() * dur)}s`;
+    });
+  }
+
   toggleMoviesActive() {
     this.router.navigate(['/search', 'movies'], { queryParams: { q: this.searchInput || null } });
   }
@@ -108,18 +129,7 @@ export class SearchComponent implements OnInit {
   }
 
 
-  /// ---------------------------------------- Helper Methods ---------------------------------------- \\\
-  addRandomStartPointForRows() {
-    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
-      const durStr = getComputedStyle(el).animationDuration;
-      const dur = parseFloat(durStr.split(',')[0]) || 140;
-
-      el.style.animationDelay = `${-(Math.random() * dur)}s`;
-    });
-  }
-
-
-  /// ---------------------------------------- Responsive Sidebar ----------------------------------------  \\\
+  /// -======================================-  Responsive Sidebar  -======================================- \\\
   @HostListener('window:resize', ['$event'])
   onWindowResize(evt: UIEvent) {
     const width = (evt.target as Window).innerWidth;
