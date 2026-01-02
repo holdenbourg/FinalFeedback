@@ -73,9 +73,8 @@ export class FeedPostComponent implements OnInit {
   reversedComments: UiComment[] = [];
   repliesByComment = new Map<string, UiReply[]>();
 
+  // ✅ TikTok-style: Start hidden (0), first click shows 3, subsequent clicks add 5
   replyDisplayLimit = new Map<string, number>();
-  private readonly INITIAL_REPLY_LIMIT = 3;
-  private readonly VIEW_MORE_STEP = 10;
 
   private seenOnce = false;
   private seenTimer: any = null;
@@ -85,12 +84,10 @@ export class FeedPostComponent implements OnInit {
 
   taggedUsernames: string[] = [];
 
-  // NEW: Rating data
   postRating: PostRating | null = null;
-  isLoadingData = true; // Track if we're still loading initial data
+  isLoadingData = true;
 
   async ngOnInit() {
-    // Load all data in parallel
     await Promise.all([
       this.loadLikeState(),
       this.loadRatingData(),
@@ -98,14 +95,10 @@ export class FeedPostComponent implements OnInit {
       this.loadTaggedUsers()
     ]);
 
-    // All data loaded - show the post
     this.isLoadingData = false;
     this.changeDetectorRef.detectChanges();
   }
 
-  // ======================
-  // NEW: Load like state
-  // ======================
   private async loadLikeState() {
     try {
       this.liked = await this.likesService.isLiked('post', this.feedPost.id);
@@ -115,9 +108,6 @@ export class FeedPostComponent implements OnInit {
     }
   }
 
-  // ======================
-  // NEW: Load rating data
-  // ======================
   private async loadRatingData() {
     try {
       const rating = await this.ratingsService.getRatingByPostId(this.feedPost.id);
@@ -130,9 +120,6 @@ export class FeedPostComponent implements OnInit {
     }
   }
 
-  // ======================
-  // NEW: Load tagged users
-  // ======================
   private async loadTaggedUsers() {
     try {
       const tags = await this.tagsService.getVisibleTaggedUsers(this.feedPost.id);
@@ -143,9 +130,6 @@ export class FeedPostComponent implements OnInit {
     }
   }
 
-  // ======================
-  // Load whole thread
-  // ======================
   private async loadThread() {
     const { roots, childrenByParent } = await this.commentsService.fetchThread(this.feedPost.id);
 
@@ -189,32 +173,20 @@ export class FeedPostComponent implements OnInit {
         };
       });
       this.repliesByComment.set(parentId, uiReplies);
-    }
-
-    for (const [parentId, list] of this.repliesByComment.entries()) {
-      if (!this.replyDisplayLimit.has(parentId)) {
-        this.replyDisplayLimit.set(parentId, Math.min(this.INITIAL_REPLY_LIMIT, list.length));
-
-      } else {
-        const current = this.replyDisplayLimit.get(parentId)!;
-        this.replyDisplayLimit.set(parentId, Math.min(current, list.length));
-      }
+      
+      // ✅ TikTok-style: Start with all replies hidden (limit = 0)
+      this.replyDisplayLimit.set(parentId, 0);
     }
   }
 
 
   // ======================
-  // Reply reveal helpers
+  // TikTok-style reply reveal logic
   // ======================
   replyLimit(parentId: string): number {
-    const set = this.replyDisplayLimit.get(parentId);
-    if (typeof set === 'number') return set;
-
-    const total = this.repliesByComment.get(parentId)?.length ?? 0;
-
-    return Math.min(this.INITIAL_REPLY_LIMIT, total);
+    // Return the current display limit (default 0 = hidden)
+    return this.replyDisplayLimit.get(parentId) ?? 0;
   }
-
 
   getVisibleReplies(parentId: string) {
     const all = this.repliesByComment.get(parentId) ?? [];
@@ -223,7 +195,6 @@ export class FeedPostComponent implements OnInit {
     return all.slice(0, lim);
   }
 
-
   getRemainingReplies(parentId: string): number {
     const total = this.repliesByComment.get(parentId)?.length ?? 0;
     const lim = this.replyLimit(parentId);
@@ -231,20 +202,36 @@ export class FeedPostComponent implements OnInit {
     return Math.max(total - lim, 0);
   }
 
+  getTotalReplies(parentId: string): number {
+    return this.repliesByComment.get(parentId)?.length ?? 0;
+  }
 
-  onViewMoreReplies(parentId: string, step = this.VIEW_MORE_STEP) {
+  // ✅ TikTok-style: First click shows 3, subsequent clicks add 5
+  onViewMoreReplies(parentId: string) {
     const total = this.repliesByComment.get(parentId)?.length ?? 0;
     const current = this.replyLimit(parentId);
-    const next = Math.min(total, current + step);
+
+    let next: number;
+    
+    if (current === 0) {
+      // First click: show 3 replies
+      next = Math.min(3, total);
+    } else {
+      // Subsequent clicks: add 5 more
+      next = Math.min(total, current + 5);
+    }
 
     this.replyDisplayLimit.set(parentId, next);
   }
 
-
+  // ✅ TikTok-style: Hide all replies
   onHideReplies(parentId: string) {
-    const total = this.repliesByComment.get(parentId)?.length ?? 0;
+    this.replyDisplayLimit.set(parentId, 0);
+  }
 
-    this.replyDisplayLimit.set(parentId, Math.min(this.INITIAL_REPLY_LIMIT, total));
+  // ✅ Check if replies are currently visible
+  areRepliesVisible(parentId: string): boolean {
+    return this.replyLimit(parentId) > 0;
   }
 
 
@@ -257,7 +244,6 @@ export class FeedPostComponent implements OnInit {
 
     setTimeout(() => this.commentInputReference?.nativeElement?.focus(), 0);
   }
-
 
   clearReplyContext() {
     this.pendingReplyToCommentId = null;
@@ -333,7 +319,8 @@ export class FeedPostComponent implements OnInit {
           author_id: v.authorId
         });
 
-        this.highlightAndScroll('c-' + v.id);
+        this.changeDetectorRef.detectChanges();
+        setTimeout(() => this.highlightAndScroll('c-' + v.id), 100);
 
       } else {
         const parentId = this.pendingReplyToCommentId;
@@ -342,7 +329,8 @@ export class FeedPostComponent implements OnInit {
         const bucket = this.repliesByComment.get(parentId) ?? [];
         const replyingToUsername = this.pendingReplyToUsername ?? '';
 
-        bucket.push({
+        // ✅ TikTok-style: Add new reply to the TOP of the list (unshift instead of push)
+        bucket.unshift({
           replyId: v.id,
           username: v.authorUsername,
           replyingToUsername,
@@ -356,14 +344,14 @@ export class FeedPostComponent implements OnInit {
 
         this.repliesByComment.set(parentId, bucket);
 
-        const total = this.repliesByComment.get(parentId)?.length ?? 0;
+        // ✅ Ensure new reply is visible by expanding limit by 1
         const current = this.replyLimit(parentId);
+        
+        // Always show at least 1 (the new reply)
+        this.replyDisplayLimit.set(parentId, Math.max(1, current + 1));
 
-        if (total > current) {
-          this.replyDisplayLimit.set(parentId, current + 1);
-        }
-
-        this.highlightAndScroll('r-' + v.id);
+        this.changeDetectorRef.detectChanges();
+        setTimeout(() => this.highlightAndScroll('r-' + v.id), 100);
       }
 
       this.commentInput = '';
@@ -431,11 +419,23 @@ export class FeedPostComponent implements OnInit {
   // Utilities used by template
   // ======================
   private highlightAndScroll(elementId: string) {
-    const host = this.scrollBoxRef?.nativeElement ?? document;
-    const el = host.querySelector<HTMLElement>(`#${CSS.escape(elementId)}`);
+    const scrollContainer = this.scrollBoxRef?.nativeElement;
+    if (!scrollContainer) return;
+
+    const el = scrollContainer.querySelector<HTMLElement>(`#${CSS.escape(elementId)}`);
     if (!el) return;
 
-    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const containerRect = scrollContainer.getBoundingClientRect();
+    const elementRect = el.getBoundingClientRect();
+    
+    const relativeTop = elementRect.top - containerRect.top;
+    const targetScroll = scrollContainer.scrollTop + relativeTop - (containerRect.height / 2) + (elementRect.height / 2);
+
+    scrollContainer.scrollTo({
+      top: targetScroll,
+      behavior: 'smooth'
+    });
+
     el.classList.add('flash');
     setTimeout(() => el.classList.remove('flash'), 1200);
   }
@@ -453,7 +453,6 @@ export class FeedPostComponent implements OnInit {
 
     return n;
   }
-
 
   ///  changes date format from YYYY-MM-DD to Month Day, Year  \\\
   fixCommentDate(date?: string) {

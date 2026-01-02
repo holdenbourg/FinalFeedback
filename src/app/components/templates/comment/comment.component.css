@@ -52,12 +52,9 @@
 }
 
 .content-inline .atted {
-  font-weight: 600;
+  font-weight: 550;
   color: #fff;
   text-decoration: none;
-}
-.content-inline .atted:hover { 
-  text-decoration: underline; 
 }
 
 .options {

@@ -88,7 +88,7 @@
 
     <div class="right-side">
       <div class="comment-scroll-box" #scrollBox>
-        <!-- NEW: Rating Criteria Box -->
+        <!-- Rating Criteria Box -->
         <div *ngIf="postRating" 
              [ngClass]="postRating.media_type === 'movie' ? 'movie-rating-info' : 'series-rating-info'">
           <p class="rating-information">{{ postRating.title }}</p>
@@ -144,16 +144,12 @@
               </app-comment>
             </div>
 
-            <ng-container *ngIf="repliesByComment.get(c.commentId) as allReplies">
-
-              <div *ngIf="replyLimit(c.commentId) > 3" class="replies-top-controls">
-                <button type="button" (click)="onHideReplies(c.commentId)">
-                  - Hide Replies -
-                </button>
-              </div>
-
-              <ul class="post-replies" *ngIf="getVisibleReplies(c.commentId) as visible">
-                <li *ngFor="let r of visible">
+            <!-- ✅ TikTok-style: Only show replies if limit > 0 -->
+            <ng-container *ngIf="getTotalReplies(c.commentId) > 0">
+              
+              <!-- Show visible replies -->
+              <ul class="post-replies" *ngIf="areRepliesVisible(c.commentId)">
+                <li *ngFor="let r of getVisibleReplies(c.commentId)">
                   <div class="reply-row" [attr.id]="'r-' + r.replyId">
                     <app-reply
                       [reply]="r"
@@ -164,14 +160,17 @@
                 </li>
               </ul>
 
-              <div class="replies-bottom-controls">
+              <!-- ✅ TikTok-style button logic -->
+              <div class="replies-controls">
+                <!-- Show "View X Replies" when replies are hidden OR there are more to load -->
                 <button *ngIf="getRemainingReplies(c.commentId) > 0"
                         type="button"
-                        (click)="onViewMoreReplies(c.commentId, 10)">
-                  - View {{ getRemainingReplies(c.commentId) }} Replies -
+                        (click)="onViewMoreReplies(c.commentId)">
+                  - View {{ getRemainingReplies(c.commentId) }} {{ getRemainingReplies(c.commentId) === 1 ? 'Reply' : 'Replies' }} -
                 </button>
 
-                <button *ngIf="getRemainingReplies(c.commentId) === 0 && replyLimit(c.commentId) > 3"
+                <!-- Show "Hide Replies" when replies are visible AND all are shown -->
+                <button *ngIf="areRepliesVisible(c.commentId) && getRemainingReplies(c.commentId) === 0"
                         type="button"
                         (click)="onHideReplies(c.commentId)">
                   - Hide Replies -

@@ -9,7 +9,18 @@
         <a class="atted-username" [href]="'/account/' + reply.replyingToUsername + '/posts'">{{ reply.replyingToUsername }}</a>
       </div>
 
-      <p class="reply-text">{{ reply.comment }}</p>
+      <p class="reply-text">        
+        <ng-container *ngFor="let t of tokensOf(reply.comment)">
+          <ng-container *ngIf="t.handle; else plain">
+            <a class="atted" 
+               [href]="'/account/' + t.handle + '/posts'"
+               [class.clickable]="t.handle">
+              {{ t.text }}
+            </a>
+          </ng-container>
+          <ng-template #plain>{{ t.text }}</ng-template>
+        </ng-container>
+      </p>
 
       <div class="options">
         <span class="likes">

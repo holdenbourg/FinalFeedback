@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
 import { LikesService } from '../../../services/likes.service';
+import { CommentModerationService, MentionToken } from '../../../services/comment-moderation.service';
+import { UsersService } from '../../../services/users.service';
 
 export type FeedUiReply = {
   replyId: string;
@@ -47,6 +49,9 @@ export class ReplyComponent implements OnInit {
 
   private likesService = inject(LikesService);
   private changeDetectorRef = inject(ChangeDetectorRef);
+
+  private commentModerationService = inject(CommentModerationService);
+  private usersService = inject(UsersService);
 
   meLiked = false;
   submittingLike = false;
@@ -97,6 +102,10 @@ export class ReplyComponent implements OnInit {
 
   likeReply() {
     this.toggleLike();
+  }
+
+  tokensOf(text: string | null | undefined): MentionToken[] {
+    return this.commentModerationService.tokenizeMentions(text);
   }
 
   requestReply() {

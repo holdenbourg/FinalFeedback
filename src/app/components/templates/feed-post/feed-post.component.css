@@ -285,9 +285,9 @@
 }
 
 .post-replies {
-  list-style: none;  /* Remove bullet points */
+  list-style: none;
   margin: 0;
-  padding-left: 32px;  /* Indent replies to distinguish from comments */
+  padding-left: 45px;
 }
 
 .caption-row { 
@@ -297,7 +297,7 @@
 
 .caption {
   display: flex; 
-  flex-wrap: nowrap;  /* Changed from wrap - keeps username and caption on same line */
+  flex-wrap: nowrap;
   align-items: baseline; 
   gap: 8px;
   color: #fff; 
@@ -307,21 +307,71 @@
   font-weight: 600; 
   text-decoration: none; 
   color: #fff; 
-  white-space: nowrap;  /* Prevents username from breaking */
-  flex-shrink: 0;  /* Prevents username from shrinking */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .actual-caption { 
   margin: 0; 
   font-weight: 400; 
-  word-wrap: break-word;  /* Allows long words to break */
-  overflow-wrap: break-word;  /* Modern property */
-  min-width: 0;  /* Allows flex item to shrink */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 .actual-caption .atted { 
   font-weight: 600; 
   color: #fff; 
   text-decoration: none; 
+}
+
+/* ✅ FIX: Add flash animation for new comments/replies */
+.comment-row.flash,
+.reply-row.flash {
+  animation: highlight-flash 1.2s ease;
+}
+
+@keyframes highlight-flash {
+  0% {
+    background-color: transparent;
+  }
+  15% {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    background-color: rgba(255, 255, 255, 0.15);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* ✅ TikTok-style: Reply control button aligned with reply actions */
+.replies-controls {
+  display: flex;
+  justify-content: flex-start;
+  padding-left: 64px;  /* Match reply indent */
+  margin: 4px 0;
+}
+
+.replies-controls button {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95vw;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 0px;
+  transition: color 0.15s ease, transform 0.15s ease;
+  font-family: "Poppins", sans-serif;
+}
+
+.replies-controls button:hover {
+  color: #fff;
+  transform: scale(1.02);
+}
+
+.replies-controls button:active {
+  transform: scale(0.98);
 }
 
 .input-box { 
@@ -359,7 +409,7 @@
   color: #ff6b6b; 
 }
 .input-box input::placeholder {
-  color: rgba(255, 255, 255, 0.7);  /* White at 50% opacity */
+  color: rgba(255, 255, 255, 0.7);
   font-weight: 400;
 }
 
@@ -456,6 +506,7 @@
 .post-comment a:hover { 
   transform: scale(1.05); 
 }
+
 /* Loading skeleton styles */
 .loading-skeleton {
   opacity: 0.6;

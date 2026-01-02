@@ -7,7 +7,18 @@
     <div class="comment-main">
       <div class="line">
         <a class="username" [href]="'/account/' + comment.username + '/posts'">{{ comment.username }}</a>
-        <span class="content-inline">{{ comment.comment }}</span>
+        <span class="content-inline">          <!-- ✅ Clickable @mentions -->
+          <ng-container *ngFor="let t of tokensOf(comment.comment)">
+            <ng-container *ngIf="t.handle; else plain">
+              <a class="atted" 
+                 [href]="'/account/' + t.handle + '/posts'"
+                 [class.clickable]="t.handle">
+                {{ t.text }}
+              </a>
+            </ng-container>
+            <ng-template #plain>{{ t.text }}</ng-template>
+          </ng-container>
+        </span>
       </div>
 
       <div class="options">
