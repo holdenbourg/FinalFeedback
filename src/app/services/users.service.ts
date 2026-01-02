@@ -5,14 +5,28 @@ import { UserModel } from '../models/database-models/user-model';
 
 @Injectable({ providedIn: 'root' })
 export class UsersService {
-  private static readonly USER_COLS = 
-    `id, username, first_name, last_name, bio, profile_picture_url,
-    private, post_count, follower_count, following_count, created_at, updated_at`;
+  private static readonly USER_COLS = `
+    id,
+    username,
+    email,
+    first_name,
+    last_name,
+    bio,
+    profile_picture_url,
+    private,
+    post_count,
+    follower_count,
+    following_count,
+    created_at,
+    updated_at
+  `;
 
   private normalizeHandle(u?: string): string {
     return String(u ?? '').trim().replace(/^@/, '').toLowerCase();
   }
 
+
+  /// -======================================-  Auth Wrappers  -======================================- \\\
   ///  Get Supabase Auth user   \\\
   async getCurrentAuthUser(): Promise<User | null> {
     const { data, error } = await supabase.auth.getUser();
@@ -25,6 +39,7 @@ export class UsersService {
     return data?.user ?? null;
   }
 
+
   ///  Get current user id from auth  \\\
   async getCurrentUserId(): Promise<string | null> {
     const authUser = await this.getCurrentAuthUser();
@@ -32,6 +47,8 @@ export class UsersService {
     return authUser?.id ?? null;
   }
 
+
+  /// -======================================-  Profile Queries  -======================================- \\\
   ///  Get current user profile from public.users  \\\
   async getCurrentUserProfile(): Promise<UserModel | null> {
     const authUser = await this.getCurrentAuthUser();
@@ -86,6 +103,8 @@ export class UsersService {
     return data as UserModel;
   }
 
+
+  /// -======================================-  Existence Checks  -======================================- \\\
   ///  Case-insensitive existence check for a username  \\\
   async usernameExistsCaseInsensitive(username: string): Promise<boolean> {
     const handle = this.normalizeHandle(username);
@@ -98,32 +117,34 @@ export class UsersService {
       .limit(1);
 
     if (error) {
-      console.error(`usernameExistsCaseInsensitive("${username}") error:`, error.message);
+      console.error(`usernameExists("${username}") error:`, error.message);
       return false;
     }
 
-    return !!(data && data.length > 0);
+    return !!data?.length;
   }
 
-  ///  Return canonical-cased username for a case-insensitive query  \\\
-  async getCanonicalUsername(username: string): Promise<string | null> {
-    const handle = this.normalizeHandle(username);
-    if (!handle) return null;
+  ///  Case-insensitive existence check for an email  \\\
+  async emailExistsCaseInsensitive(email: string): Promise<boolean> {
+    const addr = String(email ?? '').trim().toLowerCase();
+    if (!addr) return false;
 
     const { data, error } = await supabase
       .from('users')
-      .select('username')
-      .ilike('username', handle)
+      .select('id')
+      .ilike('email', addr)
       .limit(1);
 
     if (error) {
-      console.error(`getCanonicalUsername("${username}") error:`, error.message);
-      return null;
+      console.error(`emailExists("${email}") error:`, error.message);
+      return false;
     }
 
-    return data?.[0]?.username ?? null;
+    return !!data?.length;
   }
 
+
+  /// -======================================-  Search RPC  -======================================- \\\
   async searchUsersRpc(q: string, lim = 20, off = 0): Promise<UserModel[]> {
     const query = String(q ?? '').trim();
     if (!query) return [];
@@ -133,6 +154,7 @@ export class UsersService {
       console.error('search_users RPC error:', error.message);
       return [];
     }
+
     return (data ?? []) as UserModel[];
   }
 }

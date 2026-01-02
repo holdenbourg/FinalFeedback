@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, HostListener, OnInit, ViewChild, ElementRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnInit, ViewChild, ElementRef, inject, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { SidebarService } from '../../services/sidebar.service';
 import { RoutingService } from '../../services/routing.service';
@@ -22,6 +22,7 @@ export class HomeComponent implements OnInit {
   readonly sidebarService = inject(SidebarService);
   readonly usersService = inject(UsersService);
   private feedService = inject(FeedService);
+  private changeDetectorRef = inject(ChangeDetectorRef);
 
   public currentUser = signal<UserModel | null>(null);
   public authUserId = signal<string | null>(null);
@@ -31,7 +32,7 @@ export class HomeComponent implements OnInit {
 
   mode: 'feed' | 'memory' = 'feed';
 
-  @ViewChild('feedScroll', { static: true }) feedScrollRef!: ElementRef<HTMLDivElement>;
+  @ViewChild('feedScroll') feedScrollRef?: ElementRef<HTMLDivElement>;
 
   private FEED_FETCH_BATCH = 60;
   private MEMORY_FETCH_BATCH = 60;
@@ -48,6 +49,7 @@ export class HomeComponent implements OnInit {
   loadingFeed = signal(false);
   loadingMemory = signal(false);
   error = signal<string | null>(null);
+  readonly initialFeedLoaded = signal(false);
 
 
   async ngOnInit() {
@@ -70,6 +72,10 @@ export class HomeComponent implements OnInit {
       await this.fetchMemoryBatch();
       this.usersMemoryLanePosts = this.memoryCache.slice(0, this.PAGE);
 
+      this.initialFeedLoaded.set(true);
+      this.loadingFeed.set(false);
+      this.changeDetectorRef.markForCheck();
+
     } catch (e: any) {
       this.error.set(e?.message ?? 'Failed to load feed');
     }
@@ -89,6 +95,8 @@ export class HomeComponent implements OnInit {
       this.followersCache.push(...data);
       this.feedServerOffset += this.FEED_FETCH_BATCH;
 
+      this.changeDetectorRef.markForCheck();
+
     } finally {
       this.loadingFeed.set(false);
     }
@@ -106,6 +114,8 @@ export class HomeComponent implements OnInit {
       this.memoryCache.push(...data);
       this.memoryServerOffset += this.MEMORY_FETCH_BATCH;
 
+      this.changeDetectorRef.markForCheck();
+
     } finally {
       this.loadingMemory.set(false);
     }
@@ -116,6 +126,8 @@ export class HomeComponent implements OnInit {
     const cache = this.mode === 'feed' ? this.followersCache : this.memoryCache;
     this.visibleCount = Math.min(cache.length, this.visibleCount + this.PAGE);
     this.usersFeedPosts = cache.slice(0, this.visibleCount);
+
+    this.changeDetectorRef.markForCheck();
 
     ///  Pre-fetch more posts if we’re getting low  \\\
     const remaining = cache.length - this.visibleCount;
@@ -136,6 +148,8 @@ export class HomeComponent implements OnInit {
     if (this.memoryCache.length === 0) await this.fetchMemoryBatch();
     this.revealMoreFromCache();
     this.scrollToTop();
+
+    this.changeDetectorRef.markForCheck();
   }
 
 
@@ -145,23 +159,31 @@ export class HomeComponent implements OnInit {
     if (feedScrollBox) feedScrollBox.scrollTop = 0;
   }
 
-  onFeedScroll() {
-    const feedScrollBox = this.feedScrollRef.nativeElement;
+  onFeedScroll(): void {
+    const feedScrollBox = this.feedScrollRef?.nativeElement;
+    if (!feedScrollBox) return; // element not ready yet
 
-    const nearBottom = feedScrollBox.scrollHeight - (feedScrollBox.scrollTop + feedScrollBox.clientHeight) <= this.NEAR_BOTTOM_PX;
+    const nearBottom =
+      feedScrollBox.scrollHeight -
+        (feedScrollBox.scrollTop + feedScrollBox.clientHeight) <=
+      this.NEAR_BOTTOM_PX;
+
     if (!nearBottom) return;
 
-    ///  If there is still more cached post, reveal the next batch  \\\
+    // If there is still more cached posts, reveal the next batch
     const cache = this.mode === 'feed' ? this.followersCache : this.memoryCache;
-    
+
     if (this.visibleCount < cache.length) {
       this.revealMoreFromCache();
       return;
     }
 
-    ///  If the cache is fully revealed, ensure a prefetch is in-flight  \\\
-    if (this.mode === 'feed' && !this.loadingFeed()) this.fetchFollowersBatch().then(() => this.revealMoreFromCache());
-    if (this.mode === 'memory' && !this.loadingMemory()) this.fetchMemoryBatch().then(() => this.revealMoreFromCache());
+    // If the cache is fully revealed, ensure a prefetch is in-flight
+    if (this.mode === 'feed' && !this.loadingFeed()) {
+      this.fetchFollowersBatch().then(() => this.revealMoreFromCache());
+    } else if (this.mode === 'memory' && !this.loadingMemory()) {
+      this.fetchMemoryBatch().then(() => this.revealMoreFromCache());
+    }
   }
 
   @HostListener('window:resize', ['$event'])

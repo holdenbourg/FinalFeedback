@@ -16,7 +16,10 @@
           {{ reply.likeCount || 0 }}
           {{ (reply.likeCount || 0) === 1 ? 'like' : 'likes' }}
         </span>
-        <span class="date">{{ reply.commentDate | date: 'short' }}</span>
+        
+        <button class="reply-button" type="button" (click)="requestReply()">Reply</button>
+        
+        <span class="date">{{ formatDate(reply.commentDate) }}</span>
       </div>
     </div>
 

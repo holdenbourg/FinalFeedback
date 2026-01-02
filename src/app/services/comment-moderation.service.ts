@@ -261,13 +261,18 @@ export class CommentModerationService {
         const raw = String(rawUsername ?? '').trim();
         if (!raw) return raw;
 
-        const canonical = await this.usersService.getCanonicalUsername(raw);
-        if (canonical) return canonical;
+        // Remove leading "@" if present
+        const handle = raw.replace(/^@/, '');
 
-        const allUsers = (this.localStorageService?.getInformation?.('users') as Array<{ username: string }> | undefined) ?? [];
-        const foundUser = allUsers.find(u => u.username.toLowerCase() === raw.toLowerCase());
+        // Query Supabase for proper-cased username
+        const profile = await this.usersService.getUserProfileByUsername(handle);
 
-        return foundUser?.username ?? raw;
+        if (profile?.username) {
+            return '@' + profile.username;   // Preserve @ for UI consistency
+        }
+
+        // No match → fallback to raw input
+        return raw.startsWith('@') ? raw : '@' + raw;
     }
 
     private userLowerToCanonical(): Map<string, string> {

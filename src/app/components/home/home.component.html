@@ -71,7 +71,9 @@
     <div class="feed-container">
         <p class="feed-title">Feed</p>
 
-        <div class="no-new-posts" *ngIf="usersFeedPosts.length === 0">
+
+
+        <div class="no-new-posts" *ngIf="initialFeedLoaded() && !loadingFeed() && usersFeedPosts.length === 0">
             <p class="no-posts-message">No New Posts</p>
 
             <button
@@ -82,15 +84,18 @@
             </button>
         </div>
 
-        <div class="feed-scroll-box" #feedScroll (scroll)="onFeedScroll()">
-            <div class="feed-posts">
-                <div class="post" *ngFor="let userFeedPost of usersFeedPosts; trackBy: trackPost; let i = index">
-                    <app-feed-post 
-                        [feedPost]="userFeedPost" 
-                        class="feed-post-{{ i }}">
-                    </app-feed-post>
-                </div>
+        <div class="feed-scroll-box"
+            #feedScroll
+            (scroll)="onFeedScroll()"
+            *ngIf="usersFeedPosts.length > 0">
+        <div class="feed-posts">
+            <div class="post" *ngFor="let userFeedPost of usersFeedPosts; trackBy: trackPost; let i = index">
+                <app-feed-post 
+                    [feedPost]="userFeedPost" 
+                    class="feed-post-{{ i }}">
+                </app-feed-post>
             </div>
+        </div>
         </div>
     </div>
 </div>

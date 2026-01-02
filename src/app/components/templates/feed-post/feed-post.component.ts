@@ -10,6 +10,7 @@ import { CommentsService } from '../../../services/comments.service';
 import { LikesService } from '../../../services/likes.service';
 import { ViewsService } from '../../../services/views.service';
 import { TagsService } from '../../../services/tags.service';
+import { RatingsService, PostRating, MovieCriteria, SeriesCriteria } from '../../../services/ratings.service';
 
 type UiComment = {
   commentId: string;
@@ -53,6 +54,7 @@ export class FeedPostComponent implements OnInit {
   private viewsService = inject(ViewsService);
   private commentModerationService = inject(CommentModerationService);
   private tagsService = inject(TagsService);
+  private ratingsService = inject(RatingsService);
   private changeDetectorRef = inject(ChangeDetectorRef);
 
   posterSrc = '';
@@ -81,18 +83,63 @@ export class FeedPostComponent implements OnInit {
   readonly showTags = signal(false);
   showThumbAnimation = signal(false);
 
-  revisedTaggedUsernames: string[] = [];
+  taggedUsernames: string[] = [];
 
+  // NEW: Rating data
+  postRating: PostRating | null = null;
+  isLoadingData = true; // Track if we're still loading initial data
 
   async ngOnInit() {
-    await this.loadThread();
+    // Load all data in parallel
+    await Promise.all([
+      this.loadLikeState(),
+      this.loadRatingData(),
+      this.loadThread(),
+      this.loadTaggedUsers()
+    ]);
 
+    // All data loaded - show the post
+    this.isLoadingData = false;
+    this.changeDetectorRef.detectChanges();
+  }
+
+  // ======================
+  // NEW: Load like state
+  // ======================
+  private async loadLikeState() {
+    try {
+      this.liked = await this.likesService.isLiked('post', this.feedPost.id);
+    } catch (err) {
+      console.error('Failed to load like state:', err);
+      this.liked = false;
+    }
+  }
+
+  // ======================
+  // NEW: Load rating data
+  // ======================
+  private async loadRatingData() {
+    try {
+      const rating = await this.ratingsService.getRatingByPostId(this.feedPost.id);
+      if (rating) {
+        this.postRating = rating;
+      }
+    } catch (err) {
+      console.error('Failed to load rating data:', err);
+      this.postRating = null;
+    }
+  }
+
+  // ======================
+  // NEW: Load tagged users
+  // ======================
+  private async loadTaggedUsers() {
     try {
       const tags = await this.tagsService.getVisibleTaggedUsers(this.feedPost.id);
-      this.revisedTaggedUsernames = tags.map(t => t.username);
-
-    } catch {
-      this.revisedTaggedUsernames = [];
+      this.taggedUsernames = tags.map(t => t.username);
+    } catch (err) {
+      console.error('Failed to load tags:', err);
+      this.taggedUsernames = [];
     }
   }
 
@@ -202,7 +249,7 @@ export class FeedPostComponent implements OnInit {
 
 
   // ======================
-  // Single input UX — set/clear reply context
+  // Single input UX – set/clear reply context
   // ======================
   startReplyTo(commentId: string, replyingToUsername: string) {
     this.pendingReplyToCommentId = commentId;
@@ -371,7 +418,7 @@ export class FeedPostComponent implements OnInit {
 
     this.seenTimer = setTimeout(async () => {
       try {
-        await this.viewsService.markSeen(this.feedPost.id);
+        await this.viewsService.markPostSeen(this.feedPost.id);
         this.seenOnce = true;
        
       } finally {
@@ -438,10 +485,12 @@ export class FeedPostComponent implements OnInit {
   }
 
   onPosterDoubleClick() {
-    this.togglePostLike();
-    
-    this.showThumbAnimation.set(true);
-    setTimeout(() => this.showThumbAnimation.set(false), 800);
+    if (!this.liked) {
+      this.togglePostLike();
+      
+      this.showThumbAnimation.set(true);
+      setTimeout(() => this.showThumbAnimation.set(false), 800);
+    }
   }
 
   onPosterMouseleave() {
@@ -456,13 +505,22 @@ export class FeedPostComponent implements OnInit {
   }
 
   get hasVisibleTags(): boolean {
-    return (this.revisedTaggedUsernames?.length ?? 0) > 0;
+    return (this.taggedUsernames?.length ?? 0) > 0;
   }
 
   toggleTagsViaPoster() {
     if (!this.hasVisibleTags) return;
 
     this.showTags.update(v => !v);
+  }
+
+  ///  Type-safe criteria accessors for template  \\\
+  getMovieCriteria(criteria: MovieCriteria | SeriesCriteria): MovieCriteria {
+    return criteria as MovieCriteria;
+  }
+
+  getSeriesCriteria(criteria: MovieCriteria | SeriesCriteria): SeriesCriteria {
+    return criteria as SeriesCriteria;
   }
 
   ///  If poster fails to load, use fallback "No Poster" image  \\\

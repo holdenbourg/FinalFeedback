@@ -13,12 +13,11 @@
   min-width: 26px; 
   min-height: 26px;
   border-radius: 50%;
-  -webkit-filter: invert(100%);
   object-fit: cover;
   transform: translateY(2px);
 }
 .reply-row .options {
-  font-size: 1rem;
+  font-size: 1vw;  /* Changed from 1rem to be responsive */
   color: #ccc;
   font-weight: 400;
   display: flex;
@@ -100,7 +99,14 @@
   border: 0;
   color: #fff;
   cursor: pointer;
-  font-size: 1.25rem;
+  font-size: 1.15vw;  /* Changed from rem to vw for responsive sizing */
+  display: inline-flex;
+  align-items: center;
+  width: 2vw;  /* Changed from fixed 32px to responsive */
+  height: 2vw;
+  min-width: 28px;  /* Minimum size on small screens */
+  min-height: 28px;
+  justify-content: center;
 }
 .icon-btn:focus-visible {
   outline: 2px solid rgba(255,255,255,.5);

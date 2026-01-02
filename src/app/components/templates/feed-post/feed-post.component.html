@@ -1,4 +1,35 @@
-<div class="container" (mouseenter)="onHoverSeen()">
+<!-- Loading skeleton -->
+<div class="container loading-skeleton" *ngIf="isLoadingData">
+  <div class="current-user-info" style="margin-top: 12px; margin-bottom: 12px;">
+    <div class="profile-picture-username">
+      <div class="skeleton-circle" style="width: 2vw; height: 2vw; min-width: 24px; min-height: 24px;"></div>
+      <div class="skeleton-text" style="width: 120px; height: 1.145vw; margin-left: 10px;"></div>
+    </div>
+    <div class="skeleton-text" style="width: 100px; height: 1.145vw;"></div>
+  </div>
+  
+  <div class="bottom">
+    <div class="user-post" style="width: auto; aspect-ratio: 2/3;">
+      <div class="poster-frame">
+        <div class="skeleton-poster"></div>
+      </div>
+    </div>
+    
+    <div class="right-side">
+      <div class="comment-scroll-box">
+        <div class="skeleton-text" style="width: 80%; height: 20px; margin: 10px;"></div>
+        <div class="skeleton-text" style="width: 60%; height: 20px; margin: 10px;"></div>
+      </div>
+      
+      <div class="commenting-area">
+        <div class="skeleton-text" style="width: 100%; height: 32px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Actual post content -->
+<div class="container" (mouseenter)="onHoverSeen()" *ngIf="!isLoadingData">
   <div class="current-user-info">
     <div class="profile-picture-username">
       <img class="user-profile-picture"
@@ -30,7 +61,7 @@
              loading="lazy"
              decoding="async" />
 
-        <div class="thumb-animation" *ngIf="liked">
+        <div class="thumb-animation" *ngIf="showThumbAnimation()">
           <i class="bx bxs-like"></i>
         </div>
 
@@ -47,7 +78,8 @@
 
         <div class="post-info" *ngIf="hasVisibleTags" [class.visible]="showTags()">
           <p class="watched-with">Watched With:</p>
-          <a *ngFor="let name of revisedTaggedUsernames" class="tagged-name" [href]="'/account/' + name + '/posts'">
+          
+          <a *ngFor="let name of taggedUsernames" class="tagged-name" [href]="'/account/' + name + '/posts'">
             {{ name }}
           </a>
         </div>
@@ -56,6 +88,34 @@
 
     <div class="right-side">
       <div class="comment-scroll-box" #scrollBox>
+        <!-- NEW: Rating Criteria Box -->
+        <div *ngIf="postRating" 
+             [ngClass]="postRating.media_type === 'movie' ? 'movie-rating-info' : 'series-rating-info'">
+          <p class="rating-information">{{ postRating.title }}</p>
+          
+          <!-- Movie Criteria -->
+          <div *ngIf="postRating.media_type === 'movie'" class="movie-criteria">
+            <p>Acting: {{ postRating.criteria.acting }}</p>
+            <p>Visuals: {{ postRating.criteria.visuals }}</p>
+            <p>Story: {{ postRating.criteria.story }}</p>
+            <p>Pacing: {{ postRating.criteria.pacing }}</p>
+            <p>Climax: {{ getMovieCriteria(postRating.criteria).climax }}</p>
+            <p>Ending: {{ postRating.criteria.ending }}</p>
+          </div>
+          
+          <!-- Series Criteria -->
+          <div *ngIf="postRating.media_type === 'series'" class="series-criteria">
+            <p>Acting: {{ postRating.criteria.acting }}</p>
+            <p>Visuals: {{ postRating.criteria.visuals }}</p>
+            <p>Story: {{ postRating.criteria.story }}</p>
+            <p>Pacing: {{ postRating.criteria.pacing }}</p>
+            <p>Length: {{ getSeriesCriteria(postRating.criteria).length }}</p>
+            <p>Ending: {{ postRating.criteria.ending }}</p>
+          </div>
+          
+          <p class="overall-rating">Overall Rating: {{ postRating.rating }}</p>
+        </div>
+
         <ul class="post-comments">
           <li *ngIf="(feedPost.caption || '').length !== 0" class="caption-row">
             <div class="caption">
@@ -97,7 +157,8 @@
                   <div class="reply-row" [attr.id]="'r-' + r.replyId">
                     <app-reply
                       [reply]="r"
-                      [parentCommentId]="c.commentId">
+                      [parentCommentId]="c.commentId"
+                      (replyRequested)="startReplyTo($event.commentId, $event.replyingToUsername)">
                     </app-reply>
                   </div>
                 </li>
@@ -138,10 +199,6 @@
         </div>
 
         <div class="input-box">
-          <label [class.active]="isPromptActive || commentInput.length > 0">
-            {{ pendingReplyToUsername ? ('Replying to @' + pendingReplyToUsername) : 'Comment' }}
-          </label>
-
           <input
             #commentInputReference
             class="input-enter"
@@ -151,8 +208,6 @@
             [readOnly]="errorState"
             [attr.aria-invalid]="errorState ? 'true' : 'false'"
             name="commentInput"
-            (focus)="isPromptActive = true"
-            (blur)="isPromptActive = false"
             (keydown.escape)="clearReplyContext()"
             (keyup.enter)="onPostComment()"
             [placeholder]="pendingReplyToUsername ? ('Replying to @' + pendingReplyToUsername) : 'Add a comment…'"
@@ -169,6 +224,7 @@
             <i class="bx bx-send"></i>
           </a>
         </div>
+
       </div>
 
     </div>

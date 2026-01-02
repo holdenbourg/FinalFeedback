@@ -1,136 +1,274 @@
-// src/app/services/ratings.service.ts
 import { Injectable } from '@angular/core';
 import { supabase } from '../core/supabase.client';
-import {
-  RatingModel,
-  MovieCriteria,
-  SeriesCriteria,
-} from '../models/database-models/rating-model';
 
-type Criteria = MovieCriteria | SeriesCriteria;
+// Import the actual models from your codebase
+// These match your rating-model.ts exactly
+export interface BaseCriteria {
+  acting: number;
+  visuals: number;
+  story: number;
+  pacing: number;
+  ending: number;
+}
+
+export interface MovieCriteria extends BaseCriteria {
+  climax: number;
+  runtime: number;  // Runtime in minutes
+}
+
+export interface SeriesCriteria extends BaseCriteria {
+  length: number;
+  seasons: number;   // Total seasons
+  episodes: number;  // Total episodes
+}
+
+// This matches your RatingModel exactly
+export interface PostRating {
+  id: string;
+  user_id: string;
+  media_type: 'movie' | 'series';
+  media_id: string;
+  title: string;
+  release_date: string | null;
+  rating: number;
+  criteria: MovieCriteria | SeriesCriteria;
+  date_rated: string;
+  date_edited?: string | null;
+  poster_url: string;
+  rated?: string | null;
+  genres: string[];
+}
 
 @Injectable({ providedIn: 'root' })
 export class RatingsService {
-  ///  Insert rating into ratings table  \\\
-  async insertRating(model: RatingModel): Promise<RatingModel> {
-    const payload = { ...model, date_edited: model.date_edited ?? null };
-
-    const { data, error } = await supabase
-      .from('ratings')
-      .insert([payload])
-      .select()
+  ///  Get rating data for a specific post (via post.rating_id)  \\\
+  async getRatingByPostId(postId: string): Promise<PostRating | null> {
+    // First get the post to find its rating_id
+    const { data: post, error: postError } = await supabase
+      .from('posts')
+      .select('rating_id')
+      .eq('id', postId)
       .single();
 
-    if (error) throw error;
+    if (postError || !post?.rating_id) {
+      return null;
+    }
 
-    return data as RatingModel;
-  }
-
-  ///  Get rating by id  \\\
-  async getRatingById(id: string): Promise<RatingModel | null> {
+    // Now get the actual rating
     const { data, error } = await supabase
       .from('ratings')
-      .select('*')
-      .eq('id', id)
+      .select('id, user_id, media_type, media_id, title, rating, criteria, poster_url, release_date, date_rated, date_edited, rated, genres')
+      .eq('id', post.rating_id)
       .single();
 
     if (error) {
-      if (String(error.message).toLowerCase().includes('row not found')) return null;
+      if (error.code === 'PGRST116') {
+        return null;
+      }
       throw error;
     }
 
-    return data as RatingModel;
+    return data as PostRating;
   }
 
-  ///  Get all current users ratings  \\\
-  async getUserRatings(userId: string): Promise<RatingModel[]> {
-    const { data, error } = await supabase
-    .from('ratings')
-    .select('*')
-    .eq('user_id', userId)
-    .order('date_edited', { ascending: false, nullsFirst: false })
-    .order('date_rated', { ascending: false });
-
-    if (error) throw error;
-    
-    return (data ?? []) as RatingModel[];
-  }
-
-  ///  Get a rating by the ratings imdbId  \\\
-  async getUserMediaRating(userId: string, mediaId: string): Promise<RatingModel | null> {
+  ///  Get rating directly by rating_id  \\\
+  async getRatingById(ratingId: string): Promise<PostRating | null> {
     const { data, error } = await supabase
       .from('ratings')
-      .select('*')
+      .select('id, user_id, media_type, media_id, title, rating, criteria, poster_url, release_date, date_rated, date_edited, rated, genres')
+      .eq('id', ratingId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      throw error;
+    }
+
+    return data as PostRating;
+  }
+
+  ///  Get all ratings for a user  \\\
+  async getUserRatings(userId: string): Promise<PostRating[]> {
+    const { data, error } = await supabase
+      .from('ratings')
+      .select('id, user_id, media_type, media_id, title, rating, criteria, poster_url, release_date, date_rated, date_edited, rated, genres')
       .eq('user_id', userId)
-      .eq('media_id', mediaId)
-      .limit(1)
-      .single();
-
-    if (error) {
-      if (String(error.message).toLowerCase().includes('row not found')) return null;
-      throw error;
-    }
-
-    return data as RatingModel;
-  }
-
-  ///  update a users rating that is already in the ratings table  \\\
-  async updateRating(id: string, patch: Partial<Omit<RatingModel, 'id' | 'user_id'> & { criteria: Criteria }>): Promise<RatingModel> {
-    const payload = { ...patch, date_edited: patch.date_edited ?? null };
-
-    const { data, error } = await supabase
-      .from('ratings')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
+      .order('date_rated', { ascending: false });
 
     if (error) throw error;
 
-    return data as RatingModel;
+    return (data ?? []) as PostRating[];
   }
 
-  ///  Update and auto-stamp date_edited  \\\
-  async updateRatingAndStamp(id: string, patch: Partial<Omit<RatingModel, 'id' | 'user_id'>> & { criteria?: Criteria }): Promise<RatingModel> {
-    const todayISO = new Date().toISOString().slice(0, 10);
-
-    return this.updateRating(id, { ...patch, date_edited: todayISO });
-  }
-
-  ///  Get all movies rated by a user  \\\
-  async getUserMovies(userId: string): Promise<RatingModel[]> {
+  ///  Get only movies for a user  \\\
+  async getUserMovies(userId: string): Promise<PostRating[]> {
     const { data, error } = await supabase
       .from('ratings')
-      .select('*')
+      .select('id, user_id, media_type, media_id, title, rating, criteria, poster_url, release_date, date_rated, date_edited, rated, genres')
       .eq('user_id', userId)
       .eq('media_type', 'movie')
-      .order('date_edited', { ascending: false, nullsFirst: false })
       .order('date_rated', { ascending: false });
 
     if (error) throw error;
 
-    return (data ?? []) as RatingModel[];
+    return (data ?? []) as PostRating[];
   }
 
-  ///  Get all series rated by a user  \\\
-  async getUserSeries(userId: string): Promise<RatingModel[]> {
+  ///  Get only series for a user  \\\
+  async getUserSeries(userId: string): Promise<PostRating[]> {
     const { data, error } = await supabase
       .from('ratings')
-      .select('*')
+      .select('id, user_id, media_type, media_id, title, rating, criteria, poster_url, release_date, date_rated, date_edited, rated, genres')
       .eq('user_id', userId)
       .eq('media_type', 'series')
-      .order('date_edited', { ascending: false, nullsFirst: false })
       .order('date_rated', { ascending: false });
 
     if (error) throw error;
 
-    return (data ?? []) as RatingModel[];
+    return (data ?? []) as PostRating[];
   }
 
-  ///  Delete rating by id  \\\
-  async deleteRating(id: string): Promise<void> {
-    const { error } = await supabase.from('ratings').delete().eq('id', id);
-    
+  ///  Create a new rating (returns the rating ID to use when creating a post)  \\\
+  async createRating(
+    mediaType: 'movie' | 'series',
+    mediaId: string,
+    title: string,
+    posterUrl: string,
+    criteria: MovieCriteria | SeriesCriteria,
+    releaseDate?: string | null,
+    rated?: string | null,
+    genres?: string[]
+  ): Promise<string> {
+    const { data: { user }, error: uErr } = await supabase.auth.getUser();
+    if (uErr || !user) throw uErr ?? new Error('Not signed in');
+
+    // Calculate overall rating from criteria
+    const criteriaValues = [
+      criteria.acting,
+      criteria.visuals,
+      criteria.story,
+      criteria.pacing,
+      criteria.ending
+    ];
+
+    // Add climax for movies or length for series
+    if (mediaType === 'movie') {
+      criteriaValues.push((criteria as MovieCriteria).climax);
+    } else {
+      criteriaValues.push((criteria as SeriesCriteria).length);
+    }
+
+    const overall = criteriaValues.reduce((sum, val) => sum + val, 0) / criteriaValues.length;
+    const overallRating = Math.round(overall * 10) / 10;
+
+    const { data, error } = await supabase
+      .from('ratings')
+      .insert({
+        user_id: user.id,
+        media_type: mediaType,
+        media_id: mediaId,
+        title: title,
+        release_date: releaseDate,
+        rating: overallRating,
+        criteria: criteria as any, // JSONB - includes runtime/seasons/episodes automatically
+        poster_url: posterUrl,
+        rated: rated,
+        genres: genres || []
+      })
+      .select('id')
+      .single();
+
+    if (error) throw error;
+
+    return data.id;
+  }
+
+  ///  Update an existing rating's criteria  \\\
+  async updateRating(ratingId: string, criteria: Partial<MovieCriteria | SeriesCriteria>): Promise<void> {
+    const { data: { user }, error: uErr } = await supabase.auth.getUser();
+    if (uErr || !user) throw uErr ?? new Error('Not signed in');
+
+    // Get current rating
+    const current = await this.getRatingById(ratingId);
+    if (!current) throw new Error('Rating not found');
+
+    // Merge updated criteria (type-safe merge based on media_type)
+    const updatedCriteria = { ...current.criteria, ...criteria } as MovieCriteria | SeriesCriteria;
+
+    // Recalculate overall rating
+    const criteriaValues = [
+      updatedCriteria.acting,
+      updatedCriteria.visuals,
+      updatedCriteria.story,
+      updatedCriteria.pacing,
+      updatedCriteria.ending
+    ];
+
+    if (current.media_type === 'movie') {
+      criteriaValues.push((updatedCriteria as MovieCriteria).climax);
+    } else {
+      criteriaValues.push((updatedCriteria as SeriesCriteria).length);
+    }
+
+    const overall = criteriaValues.reduce((sum, val) => sum + val, 0) / criteriaValues.length;
+    const overallRating = Math.round(overall * 10) / 10;
+
+    const { error } = await supabase
+      .from('ratings')
+      .update({
+        criteria: updatedCriteria as any,
+        rating: overallRating,
+        date_edited: new Date().toISOString().split('T')[0]
+      })
+      .eq('id', ratingId)
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+  }
+
+  ///  Update rating with full data and timestamp (used by edit-film-rating)  \\\
+  async updateRatingAndStamp(
+    ratingId: string, 
+    updates: {
+      title?: string;
+      release_date?: string | null;
+      rating?: number;
+      criteria?: MovieCriteria | SeriesCriteria;
+    }
+  ): Promise<void> {
+    const { data: { user }, error: uErr } = await supabase.auth.getUser();
+    if (uErr || !user) throw uErr ?? new Error('Not signed in');
+
+    const payload: any = {
+      date_edited: new Date().toISOString().split('T')[0]
+    };
+
+    if (updates.title !== undefined) payload.title = updates.title;
+    if (updates.release_date !== undefined) payload.release_date = updates.release_date;
+    if (updates.rating !== undefined) payload.rating = updates.rating;
+    if (updates.criteria !== undefined) payload.criteria = updates.criteria;
+
+    const { error } = await supabase
+      .from('ratings')
+      .update(payload)
+      .eq('id', ratingId)
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+  }
+
+  ///  Delete a rating (use delete_rating_cascade function instead for safety)  \\\
+  async deleteRating(ratingId: string): Promise<void> {
+    const { data: { user }, error: uErr } = await supabase.auth.getUser();
+    if (uErr || !user) throw uErr ?? new Error('Not signed in');
+
+    // Use the database function for proper cascade deletion
+    const { error } = await supabase.rpc('delete_rating_cascade', {
+      p_rating_id: ratingId
+    });
+
     if (error) throw error;
   }
 }

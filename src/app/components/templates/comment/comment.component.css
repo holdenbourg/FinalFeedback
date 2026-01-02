@@ -19,7 +19,6 @@
   min-width: 28px;
   min-height: 28px;
   border-radius: 50%;
-  -webkit-filter: invert(100%);
   object-fit: cover;
   transform: translateY(2px);
 }
@@ -62,7 +61,7 @@
 }
 
 .options {
-  font-size: 1rem;
+  font-size: 1vw;  /* Changed from 1rem to be responsive */
   color: #ccc;
   display: flex;
   align-items: center;
@@ -95,9 +94,14 @@
   border: 0;
   color: #fff;
   cursor: pointer;
-  font-size: 1.35rem;
+  font-size: 1.6vw;  /* Changed from rem to vw for responsive sizing */
   display: inline-flex;
   align-items: center;
+  width: 2vw;  /* Changed from fixed 32px to responsive */
+  height: 2vw;
+  min-width: 28px;  /* Minimum size on small screens */
+  min-height: 28px;
+  justify-content: center;
 }
 .icon-btn:focus-visible {
   outline: 2px solid rgba(255,255,255,.5);

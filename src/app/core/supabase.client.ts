@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../environments/environment';
-
+ 
 declare global {
   interface Window { __supabase?: SupabaseClient }
 }

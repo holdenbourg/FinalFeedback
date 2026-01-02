@@ -18,7 +18,7 @@
 
         <button class="reply-button" type="button" (click)="requestReply()">Reply</button>
 
-        <span class="date">{{ comment.commentDate | date: 'short' }}</span>
+        <span class="date">{{ formatDate(comment.commentDate) }}</span>
       </div>
     </div>
 

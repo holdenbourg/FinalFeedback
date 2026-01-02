@@ -40,6 +40,10 @@ export class ReplyComponent implements OnInit {
     liked: boolean;
     likeCount: number;
   }>();
+  @Output() replyRequested = new EventEmitter<{ 
+    commentId: string; 
+    replyingToUsername: string;
+  }>();
 
   private likesService = inject(LikesService);
   private changeDetectorRef = inject(ChangeDetectorRef);
@@ -93,5 +97,41 @@ export class ReplyComponent implements OnInit {
 
   likeReply() {
     this.toggleLike();
+  }
+
+  requestReply() {
+    this.replyRequested.emit({
+      commentId: this.parentCommentId,
+      replyingToUsername: this.reply.username,
+    });
+  }
+
+  /// ---------------------------------------- Formatting ---------------------------------------- \\\
+  formatDate(isoDate?: string): string {
+    if (!isoDate) return '';
+    
+    try {
+      const date = new Date(isoDate);
+      if (isNaN(date.getTime())) return '';
+      
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+      
+      const month = monthNames[date.getMonth()];
+      const day = date.getDate();
+      const year = date.getFullYear();
+      
+      // Add time formatting
+      let hours = date.getHours();
+      const minutes = date.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12; // 0 should be 12
+      const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+      
+      return `${month} ${day}, ${year} at ${hours}:${minutesStr} ${ampm}`;
+    } catch {
+      return '';
+    }
   }
 }

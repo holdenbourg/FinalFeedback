@@ -82,15 +82,31 @@ export class CommentComponent implements OnInit {
 
 
   /// ---------------------------------------- Formatting ---------------------------------------- \\\
-  formatDate(date?: string): string {
-    if (!date) return '';
-
-    const [y, m, d] = date.split('-');
-
-    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const month = monthNames[(+m || 1) - 1] ?? '';
-    const day = (d ?? '').startsWith('0') ? (d ?? '').slice(1) : d ?? '';
-
-    return `${month} ${day}, ${y}`;
+  formatDate(isoDate?: string): string {
+    if (!isoDate) return '';
+    
+    try {
+      const date = new Date(isoDate);
+      if (isNaN(date.getTime())) return '';
+      
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+      
+      const month = monthNames[date.getMonth()];
+      const day = date.getDate();
+      const year = date.getFullYear();
+      
+      // Add time formatting
+      let hours = date.getHours();
+      const minutes = date.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12; // 0 should be 12
+      const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+      
+      return `${month} ${day}, ${year} at ${hours}:${minutesStr} ${ampm}`;
+    } catch {
+      return '';
+    }
   }
 }
