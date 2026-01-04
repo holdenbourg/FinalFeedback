@@ -1,1 +1,165 @@
-<p>post-film works!</p>
+<div class="poster-rows" aria-hidden="true">
+  <div class="row r1"><div class="inner"></div></div>
+  <div class="row r2"><div class="inner"></div></div>
+  <div class="row r3"><div class="inner"></div></div>
+  <div class="row r4"><div class="inner"></div></div>
+  <div class="row r5"><div class="inner"></div></div>
+  <div class="row r6"><div class="inner"></div></div>
+  <div class="row r7"><div class="inner"></div></div>
+  <div class="row r8"><div class="inner"></div></div>
+  <div class="row r9"><div class="inner"></div></div>
+  <div class="row r10"><div class="inner"></div></div>
+</div>
+
+<head>
+    <title>Post {{ isMovie ? 'Movie' : 'Series' }}</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+
+<body>
+    <div class="container" *ngIf="currentUser() as user; else loading">
+        <!-- Left side: Post preview -->
+        <div class="post">
+            <div id="film-poster" class="film-poster">
+                <img class="poster" [src]="filmData()?.poster" [attr.alt]="filmData()?.title">
+                <p class="tagged-accounts" *ngIf="watchedWithText">{{ watchedWithText }}</p>
+            </div>
+            
+            <div class="post-information">
+                <!-- User info header -->
+                <div class="current-user-info">
+                    <div class="profile-picture-username">
+                        <img class="user-profile-picture" 
+                             [src]="user.profile_picture_url || 'assets/images/default-avatar.png'" 
+                             [attr.alt]="user.username">
+                        <p class="user-username">{{ user.username }}</p>
+                    </div>
+                    <p class="post-date">{{ fixCommentDate(filmData()?.dateRated) }}</p>
+                </div>
+
+                <!-- Rating criteria -->
+                <div *ngIf="filmData() as film" 
+                     [class.movie-rating-info]="isMovie" 
+                     [class.series-rating-info]="isSeries">
+                    <p class="rating-information">{{ film.title }}</p>
+                    
+                    <div [class.movie-criteria]="isMovie" [class.series-criteria]="isSeries">
+                        <div class="left-three">
+                            <p>Acting: {{ film.criteria.acting }}</p>
+                            <p>Visuals: {{ film.criteria.visuals }}</p>
+                            <p>Story: {{ film.criteria.story }}</p>
+                        </div>
+                        <div class="right-three">
+                            <p *ngIf="isMovie && film.criteria.climax">Climax: {{ film.criteria.climax }}</p>
+                            <p *ngIf="isSeries && film.criteria.length">Length: {{ film.criteria.length }}</p>
+                            <p>Pacing: {{ film.criteria.pacing }}</p>
+                            <p>Ending: {{ film.criteria.ending }}</p>
+                        </div>
+                    </div>
+                    
+                    <p class="overall-rating">Overall Rating: {{ film.rating }}</p>
+                </div>
+
+                <!-- Caption preview -->
+                <div class="written-caption" *ngIf="caption.length > 0">
+                    <img class="caption-profile-picture" 
+                         [src]="user.profile_picture_url || 'assets/images/default-avatar.png'" 
+                         [attr.alt]="user.username">
+                    <div class="caption">
+                        <p class="caption-username">{{ user.username }}</p>
+                        <p class="caption-text">{{ caption }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right side: Input controls -->
+        <div class="right-side">
+            <!-- Caption input -->
+            <div class="caption-input-box">
+                <textarea 
+                    type="text" 
+                    [(ngModel)]="caption" 
+                    (input)="saveCaption()"
+                    name="caption" 
+                    required>
+                </textarea>
+                <label>What do you want to caption it?</label>
+                <p>{{ caption.length }}/150</p>
+            </div>
+            <p class="caption-warning" *ngIf="captionWarning">{{ captionWarning }}</p>
+
+            <!-- Tagging section -->
+            <div class="taggable-people">
+                <div class="search-bar">
+                    <label class="prompt" [class.active]="searchLabelActive || searchInput.length > 0">
+                        Who did you watch it with?
+                    </label>
+                    <input 
+                        class="input-enter" 
+                        type="text" 
+                        [(ngModel)]="searchInput" 
+                        name="searchInput" 
+                        (keyup.enter)="onSearchUsers()" 
+                        (blur)="untoggleSearchLabel()" 
+                        (focus)="toggleSearchLabel(); saveCaption()" 
+                        required
+                    />
+                    <a (click)="onSearchUsers()">
+                        <i class='bx bx-search'></i>
+                    </a>
+                </div>
+
+                <div class="scroll-box">
+                    <div class="taggable-accounts">
+                        <!-- Tagged users -->
+                        <div 
+                            *ngFor="let taggedUser of taggedUsers(); let i = index" 
+                            class="tagged-user-{{i}}">
+                            <app-tagged-user
+                                [user]="taggedUser"
+                                [isTagged]="true"
+                                (tagToggle)="onUntagUser(taggedUser)">
+                            </app-tagged-user>
+                        </div>
+
+                        <!-- Search results (untagged) -->
+                        <div 
+                            *ngFor="let searchUser of searchResults(); let i = index" 
+                            class="taggable-user-{{i}}">
+                            <app-tagged-user
+                                [user]="searchUser"
+                                [isTagged]="false"
+                                (tagToggle)="onTagUser(searchUser)">
+                            </app-tagged-user>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <p class="tag-warning" *ngIf="tagWarning">{{ tagWarning }}</p>
+
+            <!-- Action buttons -->
+            <div class="buttons">
+                <button 
+                    type="submit" 
+                    class="post-button" 
+                    (click)="onPost()"
+                    [disabled]="isPosting">
+                    {{ isPosting ? 'Posting...' : 'Post' }}
+                </button>
+                <button 
+                    type="submit" 
+                    class="archive-button" 
+                    (click)="onArchive()"
+                    [disabled]="isPosting">
+                    {{ isPosting ? 'Archiving...' : 'Archive' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <ng-template #loading>
+        <div class="loading">Loading...</div>
+    </ng-template>
+</body>

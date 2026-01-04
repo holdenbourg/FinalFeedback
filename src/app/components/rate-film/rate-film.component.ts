@@ -5,8 +5,7 @@ import { CombinedFilmApiResponseModel } from '../../models/api-models/combined-f
 import { ApiService } from '../../services/api.service';
 import { FilmCacheService } from '../../services/film-cache.service';
 import { RoutingService } from '../../services/routing.service';
-import { RateItemComponent, RatingCriterion, RateResult } from '../templates/rate-item/rate-item.component';
-import { MovieCriteria, RatingModel, SeriesCriteria } from '../../models/database-models/rating-model';
+import { RateItemComponent, RatingCriterion } from '../templates/rate-item/rate-item.component';
 import { UsersService } from '../../services/users.service';
 
 @Component({
@@ -85,68 +84,29 @@ export class RateFilmComponent implements OnInit {
     const userId = await this.usersService.getCurrentUserId();
     if (!userId) {
       console.error('No user logged in');
+      this.routingService.navigateToHome();
       return;
     }
 
-    const currentFilm = this.film;
-    const runtimeMinutes = this.runtimeMinutes;
+    const todayISO = new Date().toISOString();
 
-    const seasonsArray = Array.isArray(currentFilm.seasons) ? currentFilm.seasons : [];
-    const totalSeasons = seasonsArray.length;
-    const totalEpisodes = seasonsArray.reduce(
-      (sum: number, s: any) => sum + (Number(s?.episode_count) || 0), 0
-    );
-
-    const releaseDate = this.alterReleaseForDatabase(currentFilm.released || '') || null;
-    const todayISO = new Date().toISOString().slice(0, 10);
-
-    // --- Criteria (typed) ---
-    const movieCriteria: MovieCriteria = {
-      acting : result.criteria['acting']  ?? 0,
-      visuals: result.criteria['visuals'] ?? 0,
-      story  : result.criteria['story']   ?? 0,
-      pacing : result.criteria['pacing']  ?? 0,
-      climax : result.criteria['climax']  ?? 0,
-      ending : result.criteria['ending']  ?? 0,
-      runtime: runtimeMinutes ?? 0,   // <-- use 'runtime' to match MovieCriteria
-    };
-
-    const seriesCriteria: SeriesCriteria = {
-      acting  : result.criteria['acting']  ?? 0,
-      visuals : result.criteria['visuals'] ?? 0,
-      story   : result.criteria['story']   ?? 0,
-      pacing  : result.criteria['pacing']  ?? 0,
-      ending  : result.criteria['ending']  ?? 0,
-      length  : result.criteria['length']  ?? 0,
-      seasons : totalSeasons,
-      episodes: totalEpisodes,
-    };
-
-    // genres is required on RatingModel; derive safely
-    const genres: string[] = Array.isArray((currentFilm as any).genres)
-      ? (currentFilm as any).genres.map((g: any) => (typeof g === 'string' ? g : g?.name)).filter(Boolean)
-      : [];
-
-    const model: RatingModel = {
-      id: (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`) as string,
-      user_id: userId,
-      media_type: this.isMovie ? 'movie' : 'series',
-      media_id: this.imdbId,
-      title: currentFilm.title || '',
-      release_date: releaseDate,
+    // Prepare film data for post-film component
+    const filmData = {
+      imdbId: this.imdbId,
+      title: this.film.title || '',
+      poster: this.posterSrc,
+      type: this.isMovie ? ('movie' as const) : ('series' as const),
+      criteria: result.criteria,
       rating: result.average,
-      criteria: this.isMovie ? movieCriteria : seriesCriteria,
-      date_rated: todayISO,
-      poster_url: currentFilm.poster || '',
-      genres,  // <-- required by your interface
+      dateRated: todayISO
     };
 
-    const postId = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`) as string;
-    this.filmCache.setDraft(postId, model);
+    // Save to sessionStorage for post-film component
+    sessionStorage.setItem('currentFilmRating', JSON.stringify(filmData));
 
-    this.isMovie
-      ? this.routingService.navigateToPostMovie(postId)
-      : this.routingService.navigateToPostSeries(postId);
+    // Navigate to unified post-film route
+    const filmType = this.isMovie ? 'movie' : 'series';
+    this.router.navigate(['/post', filmType]);
   }
 
 
@@ -182,7 +142,7 @@ export class RateFilmComponent implements OnInit {
     return (this.film?.type ?? '').toLowerCase() === 'series'; 
   }
 
-  ///  Dynamic title for rating criteris  \\\
+  ///  Dynamic title for rating criteria  \\\
   get titleText(): string {
     return this.isMovie ? 'Rate the movie on the following aspects' : 'Rate the series on the following aspects';
   }
@@ -291,7 +251,7 @@ export class RateFilmComponent implements OnInit {
     return n === 1 ? 'Minute' : 'Minutes';
   }
 
-  ///  Dynmaic counts for Movie/Series (Count 1: Hours/Seasons - Count 2: Minutes/Episodes)  \\\
+  ///  Dynamic counts for Movie/Series (Count 1: Hours/Seasons - Count 2: Minutes/Episodes)  \\\
   get count1Num(): number {
     return this.isMovie ? this.runtimeHours : this.totalSeasons;
   }
@@ -307,24 +267,6 @@ export class RateFilmComponent implements OnInit {
 
 
   /// -======================================-  Formatting  -======================================- \\\
-  alterReleaseForDatabase(releaseDate: string) {
-    if (!releaseDate || releaseDate.length < 4) return releaseDate || '';
-
-    ///  Handles "18 Dec 2009" or "2009" gracefully  \\\
-    if (releaseDate.length >= 11) {
-      const day = releaseDate.substring(0,2);
-      let month = releaseDate.substring(3,6);
-      const year = releaseDate.substring(7);
-
-      const map: Record<string,string> = { Jan:'01', Feb:'02', Mar:'03', Apr:'04', May:'05', Jun:'06', Jul:'07', Aug:'08', Sep:'09', Oct:'10', Nov:'11', Dec:'12' };
-      month = map[month] ?? '01';
-
-      return `${year}-${month}-${day}`;
-    }
-
-    return releaseDate;
-  }
-
   fixRelease(releaseDate: string) {
     if (!releaseDate || releaseDate.length < 11) return releaseDate || '';
 

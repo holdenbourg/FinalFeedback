@@ -8,6 +8,7 @@ import { EditFilmRatingComponent } from './components/edit-film-rating/edit-film
 import { FilmsLibraryComponent } from './components/films-library/films-library.component';
 import { FilmsSummaryComponent } from './components/films-summary/films-summary.component';
 import { AuthGuard } from './core/auth.guard';
+import { PostFilmComponent } from './components/post-film/post-film.component';
 
 
 export const routes: Routes = [
@@ -23,7 +24,7 @@ export const routes: Routes = [
 
     { path: 'rate/:type/:imdbId', component: RateFilmComponent, canActivate: [AuthGuard] }, // movies | series
 
-    { path: 'post/:type', component: RateFilmComponent, canActivate: [AuthGuard] }, // movies | series
+    { path: 'post/:type', component: PostFilmComponent, canActivate: [AuthGuard] }, // movies | series
     
     { path: 'movies/library', component: FilmsLibraryComponent, data: { kind: 'movie' }, canActivate: [AuthGuard] },
     { path: 'movies/summary', component: FilmsSummaryComponent, data: { kind: 'movie' }, canActivate: [AuthGuard] },

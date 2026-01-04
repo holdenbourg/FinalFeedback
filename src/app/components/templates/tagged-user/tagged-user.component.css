@@ -1,0 +1,78 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
+
+.tagged-user {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.05);
+    transition: background 0.2s;
+}
+
+.tagged-user:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.tagged-user.is-tagged {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.tagged-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-picture {
+    width: 2vw;
+    height: 2vw;
+    min-width: 30px;
+    min-height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.username {
+    font-size: 0.95vw;
+    font-weight: 500;
+    color: #fff;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.username:hover {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.button {
+    padding: 6px 16px;
+    border: 0.15vw solid #fff;
+    border-radius: 5px;
+    background: transparent;
+    color: #fff;
+    font-size: 0.86vw;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+}
+
+.button:active {
+    transform: scale(0.95);
+}
+
+/* Different style for "Undo" vs "Tag" */
+.tagged-user.is-tagged .button {
+    border-color: #ff4444;
+    color: #ff4444;
+}
+
+.tagged-user.is-tagged .button:hover {
+    background: rgba(255, 68, 68, 0.1);
+}

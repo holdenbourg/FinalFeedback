@@ -1,0 +1,11 @@
+<div class="tagged-user" [class.is-tagged]="isTagged">
+    <div class="tagged-info">
+        <img class="profile-picture" 
+             [src]="user.profile_picture_url || 'assets/images/default-avatar.png'" 
+             [attr.alt]="user.username">
+        <p class="username" (click)="onUsernameClick()">{{ user.username }}</p>
+    </div>
+    <button type="button" class="button" (click)="onButtonClick()">
+        {{ buttonText }}
+    </button>
+</div>

@@ -23,14 +23,11 @@ export class TagsService {
           // p_user_id is optional - function uses auth.uid() by default
         });
 
-      console.log('[TagsService] RPC response:', { data, error });
-
       if (error) {
         console.error('[TagsService] Error calling get_visible_tags:', error);
         return [];
       }
       
-      console.log('[TagsService] Returning', data?.length || 0, 'tags');
       return (data ?? []) as TaggedUser[];
     } catch (err) {
       console.error('[TagsService] Exception in getVisibleTaggedUsers:', err);
