@@ -316,6 +316,6 @@
 }
 .feed-scroll-box::-webkit-scrollbar-thumb {
     background: white; 
-    border-radius: 0.25em; 
+    border-radius: 0.25em;  
     cursor: pointer; 
 }

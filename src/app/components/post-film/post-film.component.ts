@@ -45,7 +45,6 @@ interface TaggedUser {
   templateUrl: './post-film.component.html',
   styleUrl: './post-film.component.css'
 })
-
 export class PostFilmComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private usersService = inject(UsersService);
@@ -99,8 +98,6 @@ export class PostFilmComponent implements OnInit, OnDestroy {
   }
 
   async ngOnInit() {
-    this.addRandomStartPointForRows();
-    
     // Get film type from route
     this.filmType = (this.route.snapshot.paramMap.get('type') as FilmType) ?? 'movie';
 
@@ -162,7 +159,8 @@ export class PostFilmComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const currentUsername = this.currentUser()?.username.toLowerCase();
+    const currentUser = this.currentUser();
+    const currentUsername = currentUser?.username.toLowerCase();
     
     if (query.toLowerCase() === currentUsername) {
       this.tagWarning = 'You cannot tag yourself';
@@ -170,21 +168,32 @@ export class PostFilmComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!currentUser?.id) {
+      console.error('No current user ID');
+      return;
+    }
+
     this.isSearching = true;
 
     try {
-      const results = await this.usersService.searchUsersRpc(query, 10, 0);
+      // Use the new method that filters out blocked users
+      const results = await this.usersService.searchUsersExcludingBlocked(
+        query, 
+        currentUser.id, 
+        10, 
+        0
+      );
       
       const taggedIds = new Set(this.taggedUsers().map(u => u.id));
       
-      const filtered = results.filter(u => 
-        !taggedIds.has(u.id) && 
-        u.username.toLowerCase() !== currentUsername
-      ).map(u => ({
-        id: u.id,
-        username: u.username,
-        profile_picture_url: u.profile_picture_url
-      }));
+      // Filter out already tagged users
+      const filtered = results
+        .filter(u => !taggedIds.has(u.id))
+        .map(u => ({
+          id: u.id,
+          username: u.username,
+          profile_picture_url: u.profile_picture_url
+        }));
 
       this.searchResults.set(filtered);
     } catch (err) {
@@ -213,8 +222,9 @@ export class PostFilmComponent implements OnInit, OnDestroy {
     // Remove from search results
     this.searchResults.set(this.searchResults().filter(u => u.id !== user.id));
     
-    // Clear search
-    this.searchInput = '';
+    // Clear search input AND reset label state
+    // this.searchInput = '';
+    // this.searchLabelActive = false;
   }
 
   onUntagUser(user: TaggedUser) {
@@ -359,15 +369,6 @@ export class PostFilmComponent implements OnInit, OnDestroy {
     } catch {
       return '';
     }
-  }
-
-  addRandomStartPointForRows() {
-    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
-      const durStr = getComputedStyle(el).animationDuration;
-      const dur = parseFloat(durStr.split(',')[0]) || 140;
-
-      el.style.animationDelay = `${-(Math.random() * dur)}s`;
-    });
   }
 
   toggleSearchLabel() {

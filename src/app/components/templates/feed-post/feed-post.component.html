@@ -89,8 +89,7 @@
     <div class="right-side">
       <div class="comment-scroll-box" #scrollBox>
         <!-- Rating Criteria Box -->
-        <div *ngIf="postRating" 
-             [ngClass]="postRating.media_type === 'movie' ? 'movie-rating-info' : 'series-rating-info'">
+        <div *ngIf="postRating" [ngClass]="postRating.media_type === 'movie' ? 'movie-rating-info' : 'series-rating-info'">
           <p class="rating-information">{{ postRating.title }}</p>
           
           <!-- Movie Criteria -->

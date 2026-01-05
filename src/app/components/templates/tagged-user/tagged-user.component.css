@@ -5,10 +5,10 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px;
+    padding: 5px 15px;
     border-radius: 5px;
-    background: rgba(255, 255, 255, 0.05);
     transition: background 0.2s;
+    border: 0.15vw solid #fff;
 }
 
 .tagged-user:hover {

@@ -144,6 +144,64 @@ export class UsersService {
   }
 
 
+  /// -======================================-  Block Checks  -======================================- \\\
+  ///  Get all user IDs that current user has blocked or been blocked by  \\\
+  async getBlockedUserIds(userId: string): Promise<Set<string>> {
+    const blockedIds = new Set<string>();
+
+    try {
+      // Get users current user has blocked
+      const { data: blockedByMe, error: error1 } = await supabase
+        .from('user_blocks')
+        .select('blocked_id')
+        .eq('blocker_id', userId);
+
+      if (error1) {
+        console.error('Error fetching blocked users:', error1.message);
+      } else if (blockedByMe) {
+        blockedByMe.forEach(b => blockedIds.add(b.blocked_id));
+      }
+
+      // Get users who have blocked current user
+      const { data: blockedMe, error: error2 } = await supabase
+        .from('user_blocks')
+        .select('blocker_id')
+        .eq('blocked_id', userId);
+
+      if (error2) {
+        console.error('Error fetching blocking users:', error2.message);
+      } else if (blockedMe) {
+        blockedMe.forEach(b => blockedIds.add(b.blocker_id));
+      }
+    } catch (err) {
+      console.error('getBlockedUserIds error:', err);
+    }
+
+    return blockedIds;
+  }
+
+  ///  Check if there's a block relationship between two users (either direction)  \\\
+  async isBlockedRelationship(userId1: string, userId2: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('user_blocks')
+        .select('id')
+        .or(`and(blocker_id.eq.${userId1},blocked_id.eq.${userId2}),and(blocker_id.eq.${userId2},blocked_id.eq.${userId1})`)
+        .limit(1);
+
+      if (error) {
+        console.error('isBlockedRelationship error:', error.message);
+        return false;
+      }
+
+      return !!data?.length;
+    } catch (err) {
+      console.error('isBlockedRelationship error:', err);
+      return false;
+    }
+  }
+
+
   /// -======================================-  Search RPC  -======================================- \\\
   async searchUsersRpc(q: string, lim = 20, off = 0): Promise<UserModel[]> {
     const query = String(q ?? '').trim();
@@ -156,5 +214,20 @@ export class UsersService {
     }
 
     return (data ?? []) as UserModel[];
+  }
+
+  ///  Search users excluding blocked relationships  \\\
+  async searchUsersExcludingBlocked(q: string, currentUserId: string, lim = 20, off = 0): Promise<UserModel[]> {
+    const query = String(q ?? '').trim();
+    if (!query) return [];
+
+    // Get all search results
+    const allResults = await this.searchUsersRpc(q, lim, off);
+
+    // Get blocked user IDs
+    const blockedIds = await this.getBlockedUserIds(currentUserId);
+
+    // Filter out blocked users
+    return allResults.filter(user => !blockedIds.has(user.id));
   }
 }
