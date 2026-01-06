@@ -5,15 +5,15 @@ import { catchError, map } from 'rxjs/operators';
 
 import { environment } from '../../environments/environment';
 
-import { SearchedFilmModel } from '../models/api-models/omdb-models/searched-film-model';
-import { FilmSearchResposneModel } from '../models/api-models/omdb-models/film-search-response-model';
-import { ExtensiveSearchFilmModel } from '../models/api-models/omdb-models/extensive-search-film-model';
+import { SearchedFilmModel } from '../models/api-models/omdb-models/searched-film.model';
+import { FilmSearchResposneModel } from '../models/api-models/omdb-models/film-search-response.model';
+import { ExtensiveSearchFilmModel } from '../models/api-models/omdb-models/extensive-search-film.model';
 
-import { UpcomingFilmModel } from '../models/api-models/tmdb-models/upcoming-film-model';
-import { UpcomingFilmApiResponseModel } from '../models/api-models/tmdb-models/upcoming-film-api-response-model';
+import { UpcomingFilmModel } from '../models/api-models/tmdb-models/upcoming-film.model';
+import { UpcomingFilmApiResponseModel } from '../models/api-models/tmdb-models/upcoming-film-api-response.model';
 
-import { SeriesResponseModel } from '../models/api-models/mdb-models/series-response-model';
-import { MovieResponseModel } from '../models/api-models/mdb-models/movie-response-model';
+import { SeriesResponseModel } from '../models/api-models/mdb-models/series-response.model';
+import { MovieResponseModel } from '../models/api-models/mdb-models/movie-response.model';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {

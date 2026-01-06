@@ -9,9 +9,9 @@ import { filter } from "rxjs/operators";
 import { FilmCacheService } from "../../services/film-cache.service";
 import { SidebarService } from "../../services/sidebar.service";
 import { UsersService } from "../../services/users.service";
-import { MovieCriteria, RatingModel, SeriesCriteria } from "../../models/database-models/rating-model";
+import { MovieCriteria, RatingModel, SeriesCriteria } from "../../models/database-models/rating.model";
 import { RatingsService } from "../../services/ratings.service";
-import { UserModel } from "../../models/database-models/user-model";
+import { UserModel } from "../../models/database-models/user.model";
 
 type SortKey = 'rating' | 'runtime' | 'dateRated' | 'title';
 

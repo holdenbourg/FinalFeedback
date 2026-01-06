@@ -1,8 +1,8 @@
-import { RatingModel } from "./rating-model";
-import { ReviewModel } from "./review-model";
-import { StreamModel } from "./stream-model";
+import { RatingModel } from "./rating.model";
+import { SeasonModel } from "./season.model";
+import { StreamModel } from "./stream.model";
 
-export interface MovieResponseModel {
+export interface SeriesResponseModel {
     title: string,
     year: number,
     released: string,
@@ -18,7 +18,7 @@ export interface MovieResponseModel {
     ratings: RatingModel[],
     streams: StreamModel[],
     watch_providers: StreamModel[],
-    reviews: ReviewModel[],
+    reviews: any[],
     keywords: StreamModel[],
     language: string,
     spoken_language: string,
@@ -31,5 +31,7 @@ export interface MovieResponseModel {
     poster: string,
     backdrop: string,
     response: boolean,
-    apiused: number
+    apiused: number,
+    tvdbid: number,
+    seasons: SeasonModel[]
 }

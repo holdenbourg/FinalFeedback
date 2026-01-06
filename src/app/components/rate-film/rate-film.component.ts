@@ -1,12 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CombinedFilmApiResponseModel } from '../../models/api-models/combined-film-api-response';
 import { ApiService } from '../../services/api.service';
 import { FilmCacheService } from '../../services/film-cache.service';
 import { RoutingService } from '../../services/routing.service';
 import { RateItemComponent, RatingCriterion } from '../templates/rate-item/rate-item.component';
 import { UsersService } from '../../services/users.service';
+import { CombinedFilmApiResponseModel } from '../../models/api-models/combined-film-api-response.model';
+import { FilmData } from '../../models/helper-models/film-data.model';
+import { MovieCriteria, SeriesCriteria } from '../../services/ratings.service';
 
 @Component({
   selector: 'app-rate-film',
@@ -90,18 +92,53 @@ export class RateFilmComponent implements OnInit {
 
     const todayISO = new Date().toISOString();
 
-    // Prepare film data for post-film component
-    const filmData = {
+    // Build complete criteria using existing RatingModel types
+    let completeCriteria: MovieCriteria | SeriesCriteria;
+
+    if (this.isMovie) {
+      // MovieCriteria: acting, visuals, story, pacing, ending, climax, runtime
+      completeCriteria = {
+        acting: result.criteria['acting'],
+        visuals: result.criteria['visuals'],
+        story: result.criteria['story'],
+        pacing: result.criteria['pacing'],
+        ending: result.criteria['ending'],
+        climax: result.criteria['climax'],
+        runtime: this.runtimeMinutes  // Add runtime for database
+      } as MovieCriteria;
+    } else {
+      // SeriesCriteria: acting, visuals, story, pacing, ending, length, seasons, episodes
+      completeCriteria = {
+        acting: result.criteria['acting'],
+        visuals: result.criteria['visuals'],
+        story: result.criteria['story'],
+        pacing: result.criteria['pacing'],
+        ending: result.criteria['ending'],
+        length: result.criteria['length'],
+        seasons: this.totalSeasons,   // Add seasons for database
+        episodes: this.totalEpisodes  // Add episodes for database
+      } as SeriesCriteria;
+    }
+
+    // Extract genres from API data
+    const genresArray = this.extractGenres(this.film);
+
+    // Prepare complete film data for post-film component
+    const filmData: FilmData = {
       imdbId: this.imdbId,
       title: this.film.title || '',
       poster: this.posterSrc,
-      type: this.isMovie ? ('movie' as const) : ('series' as const),
-      criteria: result.criteria,
+      type: this.isMovie ? 'movie' : 'series',
+      criteria: completeCriteria,
       rating: result.average,
-      dateRated: todayISO
+      dateRated: todayISO,
+      // Add missing fields from API for database
+      releaseDate: this.extractReleaseDate(this.film),
+      rated: this.film.rated || (this.film as any).Rated || null,
+      genres: genresArray
     };
 
-    // Save to sessionStorage for post-film component
+    // Save to sessionStorage (survives refresh)
     sessionStorage.setItem('currentFilmRating', JSON.stringify(filmData));
 
     // Navigate to unified post-film route
@@ -111,6 +148,59 @@ export class RateFilmComponent implements OnInit {
 
 
   /// -======================================-  Helper Methods  -======================================- \\\
+  
+  /**
+   * Extract genres from API response
+   * Handles various API response formats
+   */
+  private extractGenres(film: CombinedFilmApiResponseModel): string[] {
+    // Try different possible genre field names from APIs
+    const genreString = 
+      (film as any).genres || 
+      (film as any).Genre || 
+      (film as any).genre || 
+      '';
+
+    if (!genreString || genreString === 'N/A') {
+      return [];
+    }
+
+    // Genres usually come as comma-separated string: "Action, Adventure, Sci-Fi"
+    return genreString
+      .split(',')
+      .map((g: string) => g.trim())
+      .filter((g: string) => g.length > 0);
+  }
+
+  /**
+   * Extract release date in YYYY-MM-DD format
+   * Handles various API response formats
+   */
+  private extractReleaseDate(film: CombinedFilmApiResponseModel): string | null {
+    const released = 
+      (film as any).released || 
+      (film as any).Released || 
+      (film as any).release_date ||
+      null;
+
+    if (!released || released === 'N/A') {
+      return null;
+    }
+
+    // Try to convert to YYYY-MM-DD format
+    try {
+      const date = new Date(released);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().split('T')[0];
+      }
+    } catch {
+      // If parsing fails, return as-is
+      return released;
+    }
+
+    return released;
+  }
+
   addRandomStartPointForRows() {
     document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
       const durStr = getComputedStyle(el).animationDuration;
@@ -278,5 +368,21 @@ export class RateFilmComponent implements OnInit {
     month = map[month] ?? month;
     
     return `${month} ${day}, ${year}`;
+  }
+
+  ///  Fix ongoing series dates (2005- → 2005-Present)  \\\
+  displayYear(year?: number) {
+    const raw = String(year ?? '').trim();
+    if (!raw) return '';
+
+    const norm = raw.replace(/–/g, '-').trim();
+
+    const isSeries = (this.film!.type || '').toLowerCase() === 'series';
+    const endsWithOpenRange = /-\s*$/.test(norm); // "2005-" (with optional trailing spaces)
+
+    if (isSeries && endsWithOpenRange) {
+      return norm.replace(/-\s*$/, '-Present');
+    }
+    return norm;
   }
 }

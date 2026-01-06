@@ -13,7 +13,7 @@ import { SearchedFilmComponent } from '../templates/searched-film/searched-film.
 import { SearchedUserComponent } from '../templates/searched-user/searched-user.component';
 import { SidebarService } from '../../services/sidebar.service';
 import { UsersService } from '../../services/users.service';
-import { UserModel } from '../../models/database-models/user-model';
+import { UserModel } from '../../models/database-models/user.model';
 
 
 @Component({

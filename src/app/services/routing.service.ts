@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { CombinedFilmApiResponseModel } from '../models/api-models/combined-film-api-response';
+import { CombinedFilmApiResponseModel } from '../models/api-models/combined-film-api-response.model';
 
 @Injectable({ providedIn: 'root' })
 export class RoutingService {

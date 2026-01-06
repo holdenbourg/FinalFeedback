@@ -16,7 +16,6 @@
     <div class="post">
         <div id="film-poster" class="film-poster">
             <img class="poster" [src]="filmData()?.poster" [attr.alt]="filmData()?.title">
-            <p class="tagged-accounts" *ngIf="watchedWithText">{{ watchedWithText }}</p>
         </div>
         
         <div class="post-information">
@@ -39,8 +38,8 @@
                     <p>Acting: {{ film.criteria.acting }}</p>
                     <p>Visuals: {{ film.criteria.visuals }}</p>
                     <p>Story: {{ film.criteria.story }}</p>
-                    <p *ngIf="isMovie && film.criteria.climax">Climax: {{ film.criteria.climax }}</p>
-                    <p *ngIf="isSeries && film.criteria.length">Length: {{ film.criteria.length }}</p>
+                    <p *ngIf="isMovie">Climax: {{ getMovieCriteria(film.criteria)?.climax }}</p>
+                    <p *ngIf="isSeries">Length: {{ getSeriesCriteria(film.criteria)?.length }}</p>
                     <p>Pacing: {{ film.criteria.pacing }}</p>
                     <p>Ending: {{ film.criteria.ending }}</p>
                 </div>
@@ -75,6 +74,7 @@
             <label>What do you want to caption it?</label>
             <p>{{ caption.length }}/150</p>
         </div>
+        
         <p class="caption-warning" *ngIf="captionWarning">{{ captionWarning }}</p>
 
         <!-- Tagging section -->

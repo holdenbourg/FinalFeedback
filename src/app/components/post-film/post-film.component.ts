@@ -6,37 +6,13 @@ import { ActivatedRoute } from '@angular/router';
 import { UsersService } from '../../services/users.service';
 import { RoutingService } from '../../services/routing.service';
 import { CommentModerationService } from '../../services/comment-moderation.service';
+import { PostsService } from '../../services/posts.service';
+import { RatingsService, MovieCriteria, SeriesCriteria } from '../../services/ratings.service';
+import { TagsService } from '../../services/tags.service';
 
-import { UserModel } from '../../models/database-models/user-model';
 import { TaggedUserComponent } from '../templates/tagged-user/tagged-user.component';
-
-type FilmType = 'movie' | 'series';
-
-interface RatingCriteria {
-  acting: number;
-  visuals: number;
-  story: number;
-  pacing: number;
-  ending: number;
-  climax?: number;  // Movies only
-  length?: number;  // Series only
-}
-
-interface FilmData {
-  imdbId: string;
-  title: string;
-  poster: string;
-  type: FilmType;
-  criteria: RatingCriteria;
-  rating: number;
-  dateRated: string;
-}
-
-interface TaggedUser {
-  id: string;
-  username: string;
-  profile_picture_url: string | null;  // Allow null from database
-}
+import { UserModel } from '../../models/database-models/user.model';
+import { FilmData, TaggedUser, FilmType } from '../../models/helper-models/film-data.model';
 
 @Component({
   selector: 'app-post-film',
@@ -50,6 +26,9 @@ export class PostFilmComponent implements OnInit, OnDestroy {
   private usersService = inject(UsersService);
   private routingService = inject(RoutingService);
   private commentModerationService = inject(CommentModerationService);
+  private postsService = inject(PostsService);
+  private ratingsService = inject(RatingsService);
+  private tagsService = inject(TagsService);
 
   // Signals
   currentUser = signal<UserModel | null>(null);
@@ -66,28 +45,6 @@ export class PostFilmComponent implements OnInit, OnDestroy {
   searchLabelActive = false;
   isSearching = false;
   isPosting = false;
-
-  // Computed
-  get watchedWithText(): string {
-    const tagged = this.taggedUsers();
-    const user = this.currentUser();
-    
-    if (!user || !this.filmData() || tagged.length === 0) {
-      return '';
-    }
-
-    const firstName = user.first_name || user.username;
-    const title = this.filmData()!.title;
-    
-    if (tagged.length === 1) {
-      return `${firstName} watched ${title} with ${tagged[0].username}`;
-    } else if (tagged.length === 2) {
-      return `${firstName} watched ${title} with ${tagged[0].username} and ${tagged[1].username}`;
-    } else {
-      const names = tagged.slice(0, -1).map(u => u.username).join(', ');
-      return `${firstName} watched ${title} with ${names}, and ${tagged[tagged.length - 1].username}`;
-    }
-  }
 
   get isMovie(): boolean {
     return this.filmType === 'movie';
@@ -107,7 +64,7 @@ export class PostFilmComponent implements OnInit, OnDestroy {
       this.routingService.navigateToHome();
       return;
     }
-    this.currentUser.set(user);
+    this.currentUser.set(user);      
 
     // Load film data from session storage
     const storedFilmData = sessionStorage.getItem('currentFilmRating');
@@ -177,7 +134,7 @@ export class PostFilmComponent implements OnInit, OnDestroy {
 
     try {
       // Use the new method that filters out blocked users
-      const results = await this.usersService.searchUsersExcludingBlocked(
+      const results = await this.usersService.searchUsersExcludingBlockedAndSelf(
         query, 
         currentUser.id, 
         10, 
@@ -244,18 +201,11 @@ export class PostFilmComponent implements OnInit, OnDestroy {
   validateCaption(): boolean {
     const trimmed = this.caption.trim();
 
-    if (trimmed.length > 150) {
-      this.captionWarning = 'Your caption cannot exceed 150 characters';
-      return false;
-    }
-
-    const result = this.commentModerationService.validate(trimmed, {
-      postId: '',
-      authorUsername: this.currentUser()?.username ?? '',
-      type: 'comment',
-      existing: [],
-      nowIso: new Date().toISOString()
-    });
+    // Use the caption-specific validation (allows empty captions)
+    const result = this.commentModerationService.validateCaption(
+      trimmed,
+      this.currentUser()?.username ?? ''
+    );
 
     if (!result.ok) {
       this.captionWarning = result.error;
@@ -272,46 +222,14 @@ export class PostFilmComponent implements OnInit, OnDestroy {
   // ========== Post Actions ==========
 
   async onPost() {
-    if (this.isPosting) return;
-
-    if (!this.validateCaption()) {
-      setTimeout(() => this.captionWarning = '', 3000);
-      return;
-    }
-
-    const user = this.currentUser();
-    const film = this.filmData();
-    
-    if (!user || !film) return;
-
-    this.isPosting = true;
-
-    try {
-      // TODO: Implement actual post creation via Supabase
-      // This would:
-      // 1. Create a rating record
-      // 2. Create a post record
-      // 3. Create tag records for tagged users
-      
-      console.log('Posting:', {
-        filmData: film,
-        caption: this.caption,
-        taggedUsers: this.taggedUsers()
-      });
-
-      // Navigate to posts
-      this.routingService.navigateToAccountsPosts(user.username);
-
-    } catch (err) {
-      console.error('Failed to create post:', err);
-      this.captionWarning = 'Failed to create post. Please try again.';
-      setTimeout(() => this.captionWarning = '', 3000);
-    } finally {
-      this.isPosting = false;
-    }
+    await this.createFilmPost('public');
   }
 
   async onArchive() {
+    await this.createFilmPost('archived');
+  }
+
+  private async createFilmPost(visibility: 'public' | 'archived') {
     if (this.isPosting) return;
 
     if (!this.validateCaption()) {
@@ -327,20 +245,53 @@ export class PostFilmComponent implements OnInit, OnDestroy {
     this.isPosting = true;
 
     try {
-      // TODO: Implement actual archive creation via Supabase
+      // Step 1: Create the rating - createRating calculates rating internally
+      console.log('[PostFilm] Creating rating...');
       
-      console.log('Archiving:', {
-        filmData: film,
-        caption: this.caption,
-        taggedUsers: this.taggedUsers()
-      });
+      const ratingId = await this.ratingsService.createRating(
+        film.type,
+        film.imdbId,
+        film.title,
+        film.poster,
+        film.criteria as MovieCriteria | SeriesCriteria,  // Criteria with runtime/seasons/episodes
+        film.releaseDate,      // From API
+        film.rated,            // From API (PG, PG-13, R, etc.)
+        film.genres            // From API
+      );
+      
+      console.log('[PostFilm] Rating created:', ratingId);
 
-      // Navigate to archived
-      this.routingService.navigateToAccountsArchived(user.username);
+      // Step 2: Create the post
+      console.log('[PostFilm] Creating post...');
+      const postId = await this.postsService.createPost({
+        rating_id: ratingId,
+        poster_url: film.poster,
+        caption: this.caption.trim() || undefined,
+        visibility: visibility
+      });
+      console.log('[PostFilm] Post created:', postId);
+
+      // Step 3: Create tags (if any)
+      const taggedUserIds = this.taggedUsers().map(u => u.id);
+      if (taggedUserIds.length > 0) {
+        console.log('[PostFilm] Creating tags:', taggedUserIds);
+        await this.tagsService.createTags(postId, taggedUserIds);
+        console.log('[PostFilm] Tags created successfully');
+      }
+
+      // Success! Navigate to appropriate page
+      if (visibility === 'public') {
+        //this.routingService.navigateToAccountsPosts(user.username);
+        this.routingService.navigateToHome();
+      } else {
+        //this.routingService.navigateToAccountsArchived(user.username);
+        this.routingService.navigateToSearchMovies();
+      }
+
 
     } catch (err) {
-      console.error('Failed to archive post:', err);
-      this.captionWarning = 'Failed to archive post. Please try again.';
+      console.error('[PostFilm] Failed to create post:', err);
+      this.captionWarning = `Failed to ${visibility === 'public' ? 'post' : 'archive'}. Please try again.`;
       setTimeout(() => this.captionWarning = '', 3000);
     } finally {
       this.isPosting = false;
@@ -348,6 +299,26 @@ export class PostFilmComponent implements OnInit, OnDestroy {
   }
 
   // ========== Helper Methods ==========
+
+  /**
+   * Type-safe helper to get MovieCriteria from union type
+   */
+  getMovieCriteria(criteria: MovieCriteria | SeriesCriteria): MovieCriteria | null {
+    if (this.isMovie) {
+      return criteria as MovieCriteria;
+    }
+    return null;
+  }
+
+  /**
+   * Type-safe helper to get SeriesCriteria from union type
+   */
+  getSeriesCriteria(criteria: MovieCriteria | SeriesCriteria): SeriesCriteria | null {
+    if (this.isSeries) {
+      return criteria as SeriesCriteria;
+    }
+    return null;
+  }
 
   fixCommentDate(isoDate?: string): string {
     if (!isoDate) return '';

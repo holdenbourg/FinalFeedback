@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { supabase } from '../core/supabase.client';
-import { CommentModel } from '../models/database-models/comment-model';
+import { CommentModel } from '../models/database-models/comment.model';
 
 type ChildrenByParent = Map<string, CommentModel[]>;
 

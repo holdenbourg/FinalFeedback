@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { supabase } from '../core/supabase.client';
-import { PostModelWithAuthor } from '../models/database-models/post-model';
+import { PostModelWithAuthor } from '../models/database-models/post.model';
 
 @Injectable({ providedIn: 'root' })
 export class FeedService {

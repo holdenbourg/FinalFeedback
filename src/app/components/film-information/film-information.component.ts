@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { CombinedFilmApiResponseModel } from '../../models/api-models/combined-film-api-response';
+import { CombinedFilmApiResponseModel } from '../../models/api-models/combined-film-api-response.model';
 import { ApiService } from '../../services/api.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { RoutingService } from '../../services/routing.service';
@@ -116,7 +116,7 @@ export class FilmInformationComponent implements OnInit {
       await this.loadTitle(this.imdbId);
     });
 
-    this.addRandomStartPointForRows();
+    this.addRandomStartPointForRows();    
   }
 
 
@@ -190,7 +190,6 @@ export class FilmInformationComponent implements OnInit {
         
     console.log(this.combinedApiResult);
 
-
     } catch (e: any) {
       console.error(e);
       this.error = 'Failed to load title details.';
@@ -247,11 +246,7 @@ export class FilmInformationComponent implements OnInit {
     const film = this.combinedApiResult as CombinedFilmApiResponseModel | null;
     if (!film) return;
 
-    const imdbId =
-      (film as any).imdbId ??
-      (film as any).imdbID ??
-      (film as any).id ??
-      '';
+    const imdbId = film.imdbId;
       
     if (!imdbId) {
       console.warn('onRateThisFilm(): missing imdbId');
@@ -420,6 +415,22 @@ export class FilmInformationComponent implements OnInit {
     month = map[month] ?? month;
 
     return `${month} ${day}, ${year}`;
+  }
+
+  ///  Fix ongoing series dates (2005- → 2005-Present)  \\\
+  displayYear(year?: number) {
+    const raw = String(year ?? '').trim();
+    if (!raw) return '';
+
+    const norm = raw.replace(/–/g, '-').trim();
+
+    const isSeries = (this.combinedApiResult.type || '').toLowerCase() === 'series';
+    const endsWithOpenRange = /-\s*$/.test(norm); // "2005-" (with optional trailing spaces)
+
+    if (isSeries && endsWithOpenRange) {
+      return norm.replace(/-\s*$/, '-Present');
+    }
+    return norm;
   }
 
   ///  Get director's name  \\\

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SearchedFilmModel } from '../../../models/api-models/omdb-models/searched-film-model';
+import { SearchedFilmModel } from '../../../models/api-models/omdb-models/searched-film.model';
 
 @Component({
   selector: 'app-searched-film',

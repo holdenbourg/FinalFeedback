@@ -5,8 +5,8 @@ import { filter } from 'rxjs';
 import { RoutingService } from '../../services/routing.service';
 import { SidebarService } from '../../services/sidebar.service';
 import { UsersService } from '../../services/users.service';
-import { UserModel } from '../../models/database-models/user-model';
-import { MovieCriteria, RatingModel, SeriesCriteria } from '../../models/database-models/rating-model';
+import { UserModel } from '../../models/database-models/user.model';
+import { MovieCriteria, RatingModel, SeriesCriteria } from '../../models/database-models/rating.model';
 import { RatingsService } from '../../services/ratings.service';
 
 type FilmKind = 'movie' | 'series';

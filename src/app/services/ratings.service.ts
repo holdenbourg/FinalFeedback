@@ -194,8 +194,11 @@ export class RatingsService {
     const current = await this.getRatingById(ratingId);
     if (!current) throw new Error('Rating not found');
 
-    // Merge updated criteria (type-safe merge based on media_type)
-    const updatedCriteria = { ...current.criteria, ...criteria } as MovieCriteria | SeriesCriteria;
+    // Merge updated criteria
+    const updatedCriteria = {
+      ...current.criteria,
+      ...criteria
+    } as MovieCriteria | SeriesCriteria;
 
     // Recalculate overall rating
     const criteriaValues = [
@@ -212,7 +215,10 @@ export class RatingsService {
       criteriaValues.push((updatedCriteria as SeriesCriteria).length);
     }
 
-    const overall = criteriaValues.reduce((sum, val) => sum + val, 0) / criteriaValues.length;
+    const overall =
+      criteriaValues.reduce((sum, val) => sum + val, 0) /
+      criteriaValues.length;
+
     const overallRating = Math.round(overall * 10) / 10;
 
     const { error } = await supabase
@@ -220,7 +226,7 @@ export class RatingsService {
       .update({
         criteria: updatedCriteria as any,
         rating: overallRating,
-        date_edited: new Date().toISOString().split('T')[0]
+        date_edited: new Date().toISOString()
       })
       .eq('id', ratingId)
       .eq('user_id', user.id);
@@ -229,20 +235,12 @@ export class RatingsService {
   }
 
   ///  Update rating with full data and timestamp (used by edit-film-rating)  \\\
-  async updateRatingAndStamp(
-    ratingId: string, 
-    updates: {
-      title?: string;
-      release_date?: string | null;
-      rating?: number;
-      criteria?: MovieCriteria | SeriesCriteria;
-    }
-  ): Promise<void> {
+  async updateRatingAndStamp(ratingId: string, updates: { title?: string; release_date?: string | null; rating?: number; criteria?: MovieCriteria | SeriesCriteria; }): Promise<void> {
     const { data: { user }, error: uErr } = await supabase.auth.getUser();
     if (uErr || !user) throw uErr ?? new Error('Not signed in');
 
     const payload: any = {
-      date_edited: new Date().toISOString().split('T')[0]
+      date_edited: new Date().toISOString()
     };
 
     if (updates.title !== undefined) payload.title = updates.title;

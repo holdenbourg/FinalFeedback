@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RatingModel } from '../../../models/database-models/rating-model';
+import { RatingModel } from '../../../models/database-models/rating.model';
 
 
 @Component({

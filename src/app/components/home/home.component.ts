@@ -4,10 +4,10 @@ import { RouterModule } from '@angular/router';
 import { SidebarService } from '../../services/sidebar.service';
 import { RoutingService } from '../../services/routing.service';
 import { FeedPostComponent } from '../templates/feed-post/feed-post.component';
-import { PostModelWithAuthor } from '../../models/database-models/post-model';
+import { PostModelWithAuthor } from '../../models/database-models/post.model';
 import { FeedService } from '../../services/feed.service';
 import { UsersService } from '../../services/users.service';
-import { UserModel } from '../../models/database-models/user-model';
+import { UserModel } from '../../models/database-models/user.model';
 
 @Component({
   selector: 'app-home',

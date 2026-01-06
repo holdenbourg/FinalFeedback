@@ -2,10 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { RatingModel, MovieCriteria, SeriesCriteria } from '../../models/database-models/rating-model';
+import { RatingModel, MovieCriteria, SeriesCriteria } from '../../models/database-models/rating.model';
 import { FilmCacheService } from '../../services/film-cache.service';
 import { RatingsService } from '../../services/ratings.service';
 import { from } from 'rxjs';
+import { RoutingService } from '../../services/routing.service';
 
 type FilmKind = 'movie' | 'series';
 
@@ -36,6 +37,7 @@ export class EditFilmRatingComponent implements OnInit {
   private router = inject(Router);
   private filmCache = inject(FilmCacheService);
   private ratingsService = inject(RatingsService);
+  private routingService = inject(RoutingService);
 
   readonly postId = signal<string>('');
   readonly type = signal<FilmKind>('movie');
@@ -99,7 +101,7 @@ export class EditFilmRatingComponent implements OnInit {
       });
 
       this.filmCache.clearDraft(this.postId());
-      this.navigateBackByKind(editDraft.media_type as FilmKind);
+      this.navigateBackByKind();
     } catch (e) {
       console.error('Failed to update rating', e);
       // TODO: surface toast/snackbar
@@ -174,9 +176,15 @@ export class EditFilmRatingComponent implements OnInit {
     );
   }
 
-  private navigateBackByKind(kind: FilmKind) {
-    if (kind === 'movie') this.router.navigate(['/movies']);
-    else this.router.navigate(['/shows']);
+  private navigateBackByKind() {
+    const draft = this.draft();
+    if (!draft) return;
+
+    if(draft.media_type === 'movie') {
+      this.routingService.navigateToMoviesLibrary();
+    } else {
+      this.routingService.navigateToShowsLibrary();
+    }
   }
 
   private clamp(v: number) { return Math.max(1, Math.min(10, v)); }
@@ -261,20 +269,20 @@ export class EditFilmRatingComponent implements OnInit {
   }
 
   openConfirmEdit() {
-    const d = this.draft();
-    if (!d) return;
+    const draft = this.draft();
+    if (!draft) return;
 
-    const currentCriteria = this.getCriteria(d);
+    const currentCriteria = this.getCriteria(draft);
     const init = this.initialCriteria();
 
     const changed = this.criteriaChanged(init, currentCriteria);
     if (!changed) {
-      this.navigateBackByKind(d?.media_type);
+      this.navigateBackByKind();
       return;
     }
 
-    this.oldRating.set(this.initialRating() ?? d.rating ?? 0);
-    this.newRating.set(d.rating ?? this.computeAverage(d));
+    this.oldRating.set(this.initialRating() ?? draft.rating ?? 0);
+    this.newRating.set(draft.rating ?? this.computeAverage(draft));
 
     if (init) {
       this.changeList.set(this.buildChangeList(init, currentCriteria));

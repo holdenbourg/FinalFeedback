@@ -1,12 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { RoutingService } from '../../../services/routing.service';
-
-interface TaggedUser {
-  id: string;
-  username: string;
-  profile_picture_url: string | null;
-}
+import { TaggedUser } from '../../../models/helper-models/film-data.model';
 
 @Component({
   selector: 'app-tagged-user',

@@ -1,5 +1,5 @@
-import { UpcomingFilmDatesModel } from "./upcoming-film-dates-model"
-import { UpcomingFilmModel } from "./upcoming-film-model"
+import { UpcomingFilmDatesModel } from "./upcoming-film-dates.model"
+import { UpcomingFilmModel } from "./upcoming-film.model"
 
 export interface UpcomingFilmApiResponseModel {
     dates: UpcomingFilmDatesModel,

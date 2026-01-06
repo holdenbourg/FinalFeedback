@@ -156,6 +156,67 @@ export class CommentModerationService {
         return { ok: true, text: cleaned, mentions };
     }
 
+    /**
+     * Validate caption for posts (more lenient than comments)
+     * Captions can be empty and have no minimum length requirement
+     */
+    validateCaption(inputRaw: string, username: string): CommentCheckResult {
+        const input = (inputRaw ?? '').trim();
+
+        ///  Caption CAN be empty - this is allowed  \\\
+        if (!input) {
+            return { ok: true, text: '', mentions: [] };
+        }
+
+        ///  Make sure caption doesn't exceed maximum length (150)  \\\
+        if (input.length > this.MAXIMUM_LENGTH) {
+            return { ok: false, error: `Caption cannot exceed ${this.MAXIMUM_LENGTH} characters, you're at ${inputRaw.length}` };
+        }
+
+        ///  Make sure caption has no control/non-printable characters  \\\
+        if (this.hasControlChars(input)) {
+            return { ok: false, error: 'Remove control/non-printable characters' };
+        }
+
+        ///  Make sure caption doesn't allow spam (loooooooooool)  \\\
+        if (/(.)\1{9,}/i.test(input)) {
+            return { ok: false, error: 'Please avoid long repeated characters' };
+        }
+
+        ///  Make sure caption doesn't contain more than 2 links  \\\
+        const linkCount = (input.match(/\bhttps?:\/\/[^\s)]+/gi) ?? []).length;
+
+        if (linkCount > this.MAXIMUM_LINKS) {
+            return { ok: false, error: `Limit links to at most ${this.MAXIMUM_LINKS}` };
+        }
+
+        ///  Make sure caption doesn't @ the same user twice or @ user that doesn't exist  \\\
+        const { corrected, duplicate } = this.canonicalizeMentionsAndFindDup(input);
+
+        if (duplicate) {
+            return { ok: false, error: 'You cannot @ the same user twice' };
+        }
+
+        ///  Make sure the atted username is as it is in the database (@holdenbourg -> @HoldenBourg)  \\\
+        const mentions = this.extractMentions(corrected);
+
+        const nonExistent = mentions.filter(u => !this.usersService.usernameExistsCaseInsensitive?.(u));
+
+        if (nonExistent.length) {
+            return { ok: false, error: `@${nonExistent[0]} does not exist` };
+        }
+
+        ///  Make sure caption doesn't contain any profanity  \\\
+        if (this.containsProfanity(corrected)) {
+            return { ok: false, error: 'Please remove profanity before posting' };
+        }
+
+        ///  Strip the caption of control/non-printable characters  \\\
+        const cleaned = this.stripControlChars(corrected);
+
+        return { ok: true, text: cleaned, mentions };
+    }
+
     /// ---------------------------------------- Helper Methods ---------------------------------------- \\\
     private extractMentions(s: string): string[] {
         const out: string[] = [];

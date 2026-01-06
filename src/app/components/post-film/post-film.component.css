@@ -175,21 +175,20 @@
 }
 
 /* Rating info - shared between movie and series */
+.rating-information {
+    font-size: 1.3vw;
+    font-weight: 700;
+    text-align: center;
+    padding: 10px 0;
+}
+
 .movie-rating-info,
 .series-rating-info {
   color: #fff; 
   font-size: 1vw; 
   margin: 9px 7.5px 0;
-  padding: 10px 20px;
   border: 2px solid #fff; 
   border-radius: 5px;
-}
-
-.rating-information {
-    font-size: 1.3vw;
-    font-weight: 700;
-    padding-bottom: 10px;
-    text-align: center;
 }
 
 .movie-criteria,
@@ -199,24 +198,13 @@
     justify-content: space-around;
     font-size: 0.86vw;
     font-weight: 500;
-}
-
-.left-three,
-.right-three {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.left-three p,
-.right-three p {
-    margin: 0;
+    padding: 0 20px;
 }
 
 .overall-rating {
     font-size: 1.04vw;
     font-weight: 600;
-    padding-top: 10px;
+    padding: 15px 0;
     text-align: center;
 }
 
@@ -319,9 +307,9 @@
     color: #ff4444;
     font-size: 0.86vw;
     font-weight: 500;
-    padding: 8px 0;
     min-height: 30px;
     flex-shrink: 0;  /* Prevent warning from shrinking */
+    text-align: center;
 }
 
 /* Tagging section */
@@ -388,7 +376,7 @@
     overflow-x: hidden;
     scrollbar-gutter: stable;  /* Reserves space for scrollbar to prevent shift */
     margin: 0 4px 0 12px;
-    padding-right: 3.5px;
+    padding: 4px 3.5px 4px 0;
 }
 
 .scroll-box::-webkit-scrollbar { 
@@ -414,7 +402,7 @@
     font-weight: 500;
     padding: 8px 0;
     min-height: 30px;
-    flex-shrink: 0;  /* Prevent warning from shrinking */
+    flex-shrink: 0;
 }
 
 /* Action buttons */
@@ -424,7 +412,7 @@
     justify-content: space-between;
     width: 100%;
     gap: 0.5vw;
-    flex-shrink: 0;  /* Prevent buttons from shrinking */
+    flex-shrink: 0;
 }
 
 .post-button,

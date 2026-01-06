@@ -3,8 +3,8 @@ import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
-import { LoginModel } from '../../models/login-register-models/login-model';
-import { RegisterModel } from '../../models/login-register-models/register-model';
+import { LoginModel } from '../../models/login-register-models/login.model';
+import { RegisterModel } from '../../models/login-register-models/register.model';
 import { AuthService } from '../../core/auth.service';
 import { UsersService } from '../../services/users.service';
 

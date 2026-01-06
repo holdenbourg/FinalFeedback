@@ -124,12 +124,12 @@
         </div>
 
         <div class="film-counts">
-          <div class="count" *ngIf="runtimeHours !== 0 || $any(af.criteria).seasons !== 0">
+          <div class="count" *ngIf="count1Num !== 0 || count1Label !== 'N/A'">
             <div class="count-num">{{ count1Num }}</div>
             <div class="count-label">{{ count1Label }}</div>
           </div>
 
-          <div class="count" *ngIf="runtimeMinutesRemainder !== 0 || $any(af.criteria).episodes !== 0">
+          <div class="count" *ngIf="count2Num !== 0 || count2Label !== 'N/A'">
             <div class="count-num">{{ count2Num }}</div>
             <div class="count-label">{{ count2Label }}</div>
           </div>

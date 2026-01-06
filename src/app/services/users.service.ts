@@ -1,7 +1,8 @@
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../core/supabase.client';
 import { Injectable } from '@angular/core';
-import { UserModel } from '../models/database-models/user-model';
+import { UserModel } from '../models/database-models/user.model';
+import { catchError, from, map, Observable, of } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class UsersService {
@@ -217,7 +218,7 @@ export class UsersService {
   }
 
   ///  Search users excluding blocked relationships  \\\
-  async searchUsersExcludingBlocked(q: string, currentUserId: string, lim = 20, off = 0): Promise<UserModel[]> {
+  async searchUsersExcludingBlockedAndSelf(q: string, currentUserId: string, lim = 20, off = 0): Promise<UserModel[]> {
     const query = String(q ?? '').trim();
     if (!query) return [];
 
@@ -226,7 +227,8 @@ export class UsersService {
 
     // Get blocked user IDs
     const blockedIds = await this.getBlockedUserIds(currentUserId);
-
+    blockedIds.add(currentUserId);
+    
     // Filter out blocked users
     return allResults.filter(user => !blockedIds.has(user.id));
   }

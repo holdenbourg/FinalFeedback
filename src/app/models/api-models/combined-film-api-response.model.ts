@@ -1,6 +1,6 @@
-import { RatingModel } from "./mdb-models/rating-model"
-import { SeasonModel } from "./mdb-models/season-model"
-import { StreamModel } from "./mdb-models/stream-model"
+import { RatingModel } from "./mdb-models/rating.model"
+import { SeasonModel } from "./mdb-models/season.model"
+import { StreamModel } from "./mdb-models/stream.model"
 
 export interface CombinedFilmApiResponseModel {
     title?: string,

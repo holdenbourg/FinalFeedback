@@ -1,4 +1,4 @@
-import { RatingModel } from "../mdb-models/rating-model";
+import { RatingModel } from "../mdb-models/rating.model";
 
 export interface ExtensiveSearchFilmModel {
     Title: string,

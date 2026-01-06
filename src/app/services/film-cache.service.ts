@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { supabase } from '../core/supabase.client';
-import { RatingModel } from '../models/database-models/rating-model';
+import { RatingModel } from '../models/database-models/rating.model';
 
 type CacheEntry<T> = { data: T; cachedAt: number; timeToLiveMs: number };
 
