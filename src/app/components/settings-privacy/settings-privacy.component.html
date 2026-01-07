@@ -1,0 +1,194 @@
+<!-- src/app/components/settings-privacy/settings-privacy.component.html -->
+
+<div class="poster-rows" aria-hidden="true">
+  <div class="row r1"><div class="inner"></div></div>
+  <div class="row r2"><div class="inner"></div></div>
+  <div class="row r3"><div class="inner"></div></div>
+  <div class="row r4"><div class="inner"></div></div>
+  <div class="row r5"><div class="inner"></div></div>
+  <div class="row r6"><div class="inner"></div></div>
+  <div class="row r7"><div class="inner"></div></div>
+  <div class="row r8"><div class="inner"></div></div>
+  <div class="row r9"><div class="inner"></div></div>
+  <div class="row r10"><div class="inner"></div></div>
+</div>
+
+<nav class="sidebar" [class.active]="sidebarService.sidebarActive()" [class.no-anim]="sidebarService.suppressAnim()">
+  <div class="logo-menu">
+    <h2 class="logo">What2Watch</h2>
+    <i class="bx bx-menu toggle-button" (click)="sidebarService.toggle()"></i>
+  </div>
+
+  <ul class="list">
+    <li class="list-item">
+      <a (click)="routingService.navigateToHome()">
+        <i class="bx bx-home-alt"></i>
+        <span class="link-name" style="--i:6;">Home</span>
+      </a>
+    </li>
+    
+    <li class="list-item">
+      <a (click)="routingService.navigateToSearchMovies()">
+        <i class="bx bx-search"></i>
+        <span class="link-name" style="--i:5;">Search</span>
+      </a>
+    </li>
+
+    <li class="list-item">
+      <a (click)="routingService.navigateToMoviesLibrary()">
+        <i class="bx bx-camera-movie"></i>
+        <span class="link-name" style="--i:4;">Movies</span>
+      </a>
+    </li>
+
+    <li class="list-item">
+      <a (click)="routingService.navigateToShowsLibrary()">
+        <i class="bx bx-collection"></i>
+        <span class="link-name" style="--i:3;">Shows</span>
+      </a>
+    </li>
+
+    <li class="list-item" *ngIf="currentUser() as cu">
+      <a (click)="routingService.navigateToAccountsPosts(cu.username)">
+        <i class="bx bx-user"></i>
+        <span class="link-name" style="--i:2;">Account</span>
+      </a>
+    </li>
+
+    <li class="list-item active">
+      <a (click)="routingService.navigateToSettings()">
+        <i class="bx bx-cog"></i>
+        <span class="link-name" style="--i:1;">Settings</span>
+      </a>
+    </li>
+
+    <li class="settings-item">
+      <a class="account-info-icon" (click)="routingService.navigateToSettings()">
+        <i class='bx bx-info-circle'></i>
+        <span class="link-name" style="--i:1;">Account Info</span>
+      </a>
+    </li>
+
+    <li class="settings-item active">
+      <a class="privacy-icon" (click)="routingService.navigateToPrivacy()">
+        <i class='bx bx-shield-quarter'></i>
+        <span class="link-name" style="--i:1;">Privacy</span>
+      </a>
+    </li>
+
+    <li class="settings-item">
+      <a class="logout-icon" (click)="showLogoutModal = true">
+        <i class='bx bx-exit'></i>
+        <span class="link-name" style="--i:1;">Log Out</span>
+      </a>
+    </li>
+
+    <li class="username" *ngIf="currentUser() as cu">
+      <p class="link-name" style="--i:1">Signed in as:</p>
+      <p class="link-name" style="--i:1">{{ cu.username }}</p>
+    </li>
+  </ul>
+</nav>
+
+<div class="container" [class.active]="!sidebarService.sidebarActive()">
+  
+  <div class="privacy-panel">
+    
+    <!-- Header -->
+    <div class="privacy-header">
+      <h1 class="privacy-title">Privacy Settings</h1>
+      <p class="privacy-subtitle">Control who can see your content and manage blocked accounts</p>
+    </div>
+
+    <!-- Status Messages -->
+    <div *ngIf="successMessage()" class="message success-message">
+      <i class='bx bx-check-circle'></i>
+      <span>{{ successMessage() }}</span>
+    </div>
+
+    <div *ngIf="errorMessage()" class="message error-message">
+      <i class='bx bx-error-circle'></i>
+      <span>{{ errorMessage() }}</span>
+    </div>
+
+    <!-- Account Privacy Section -->
+    <div class="privacy-section">
+      <h2 class="section-title">Account Privacy</h2>
+      
+      <div class="privacy-toggle-card">
+        <div class="toggle-header">
+          <div class="toggle-info">
+            <h3 class="toggle-label">
+              {{ isPrivate() ? 'Private Account' : 'Public Account' }}
+            </h3>
+            <p class="toggle-description">
+              <span *ngIf="!isPrivate()">
+                Your profile can be viewed by anyone who finds your account. This includes your followers, following list, and posts you've created or been tagged in.
+              </span>
+              <span *ngIf="isPrivate()">
+                Only followers you've accepted can see your profile. Others won't be able to see your posts, tagged content, or follower lists.
+              </span>
+            </p>
+          </div>
+          
+          <label class="toggle-switch">
+            <input 
+              type="checkbox" 
+              [checked]="isPrivate()"
+              (change)="onTogglePrivacy()"
+              [disabled]="isTogglingPrivacy()">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Blocked Accounts Section -->
+    <div class="privacy-section">
+      <h2 class="section-title">Blocked Accounts</h2>
+      
+      <div class="blocked-list-card">
+        <div *ngIf="blockedUsers().length > 0; else noBlockedUsers" class="blocked-list">
+          <div *ngFor="let blockedUser of blockedUsers()" class="blocked-user-item">
+            <div class="user-info">
+              <img 
+                [src]="blockedUser.profile_picture_url || 'assets/images/default-avatar.png'"
+                [alt]="blockedUser.username"
+                class="user-avatar">
+              <div class="user-details">
+                <p class="user-username">&#64;{{ blockedUser.username }}</p>
+                <p class="user-name" *ngIf="blockedUser.first_name || blockedUser.last_name">
+                  {{ blockedUser.first_name }} {{ blockedUser.last_name }}
+                </p>
+              </div>
+            </div>
+            
+            <button 
+              class="btn-unblock"
+              (click)="onUnblockUser(blockedUser)"
+              [disabled]="unblockingUserId() === blockedUser.id">
+              <i class='bx bx-user-plus'></i>
+              <span *ngIf="unblockingUserId() !== blockedUser.id">Unblock</span>
+              <span *ngIf="unblockingUserId() === blockedUser.id">Unblocking...</span>
+            </button>
+          </div>
+        </div>
+        
+        <ng-template #noBlockedUsers>
+          <div class="no-blocked-users">
+            <i class='bx bx-user-check'></i>
+            <p class="no-blocked-message">You haven't blocked any accounts yet</p>
+            <p class="no-blocked-hint">Blocked accounts will appear here</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<app-logout-modal 
+  *ngIf="showLogoutModal"
+  (confirm)="onLogout()"
+  (cancel)="showLogoutModal = false">
+</app-logout-modal>

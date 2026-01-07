@@ -122,6 +122,8 @@ export class AccountComponent implements OnInit {
   });
 
   async ngOnInit() {
+    this.addRandomStartPointForRows();
+
     // Load current user
     const current = await this.usersService.getCurrentUserProfile();
     this.currentUser.set(current);
@@ -618,12 +620,18 @@ export class AccountComponent implements OnInit {
 
     window.location.reload()
   }
-  ///  -======================================-  Profile Options  -======================================- \\\
-  onEditProfile() {
-    //!this.routingService.navigateToEditProfile();
-  }
+
 
   ///  -======================================-  Helper Methods  -======================================- \\\
+  addRandomStartPointForRows() {
+    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
+      const durStr = getComputedStyle(el).animationDuration;
+      const dur = parseFloat(durStr.split(',')[0]) || 140;
+
+      el.style.animationDelay = `${-(Math.random() * dur)}s`;
+    });
+  }
+
   private async loadSocialData(userId: string) {
     try {
       // Load followers

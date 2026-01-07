@@ -1,5 +1,3 @@
-<!-- src/app/components/account/account.component.html -->
-
 <div class="poster-rows" aria-hidden="true">
   <div class="row r1"><div class="inner"></div></div>
   <div class="row r2"><div class="inner"></div></div>
@@ -115,7 +113,7 @@
             <!-- Edit Profile Button (Own Account) -->
             <button *ngIf="canEditProfile()"
                     class="btn-edit-profile"
-                    (click)="onEditProfile()">
+                    (click)="routingService.navigateToSettings()">
               Edit Profile
             </button>
 

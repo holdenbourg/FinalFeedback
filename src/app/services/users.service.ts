@@ -252,4 +252,389 @@ export class UsersService {
     // Filter out blocked users
     return allResults.filter(user => !blockedIds.has(user.id));
   }
+
+  /// -======================================-  Helper: Check OAuth User  -======================================- \\\
+  /**
+   * Check if current user is signed in via OAuth (Google, GitHub, etc.)
+   */
+  private async isOAuthUser(): Promise<{ isOAuth: boolean; provider?: string }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { isOAuth: false };
+
+      // Use bracket notation to access providers from index signature
+      const providers = user.app_metadata?.['providers'] as string[] || [];
+      const oauthProviders = ['google', 'github', 'facebook', 'twitter', 'apple'];
+      
+      const oauthProvider = providers.find((p: string) => oauthProviders.includes(p));
+      
+      return {
+        isOAuth: !!oauthProvider,
+        provider: oauthProvider
+      };
+    } catch (err) {
+      console.error('isOAuthUser error:', err);
+      return { isOAuth: false };
+    }
+  }
+
+  /// -======================================-  Profile Updates  -======================================- \\\
+
+  /**
+   * Update user profile information (username, name, bio)
+   */
+  async updateUserProfile(userId: string, updates: {
+    username?: string;
+    first_name?: string;
+    last_name?: string;
+    bio?: string;
+    profile_picture_url?: string;
+  }): Promise<{ success: boolean; error?: string }> {
+    try {
+      // If updating username, check if it's already taken
+      if (updates.username) {
+        const normalized = this.normalizeHandle(updates.username);
+        
+        // Check if username is taken by another user
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .ilike('username', normalized)
+          .neq('id', userId)
+          .limit(1)
+          .single();
+
+        if (existingUser) {
+          return { success: false, error: 'Username is already taken' };
+        }
+
+        // Normalize username before saving
+        updates.username = normalized;
+      }
+
+      // Update the user profile
+      const { error } = await supabase
+        .from('users')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Error updating user profile:', error.message);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.error('updateUserProfile exception:', err);
+      return { success: false, error: 'An unexpected error occurred' };
+    }
+  }
+
+  /**
+   * Update user email (requires Supabase Auth update)
+   * ⚠️ Cannot be used by OAuth users (Google, GitHub, etc.)
+   */
+  async updateUserEmail(newEmail: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const addr = String(newEmail ?? '').trim().toLowerCase();
+      if (!addr) {
+        return { success: false, error: 'Email is required' };
+      }
+
+      // Check if user is OAuth user (cannot change email)
+      const oauthCheck = await this.isOAuthUser();
+      if (oauthCheck.isOAuth) {
+        return { 
+          success: false, 
+          error: `Cannot change email for accounts signed in with ${oauthCheck.provider}. Your email is managed by your OAuth provider.`
+        };
+      }
+
+      // Check if email is already in use
+      const emailExists = await this.emailExistsCaseInsensitive(addr);
+      if (emailExists) {
+        return { success: false, error: 'Email is already in use' };
+      }
+
+      // Update auth email (sends confirmation email)
+      const { error: authError } = await supabase.auth.updateUser({
+        email: addr
+      });
+
+      if (authError) {
+        console.error('Error updating email:', authError.message);
+        return { success: false, error: authError.message };
+      }
+
+      // Update public.users table (may be handled by trigger)
+      const authUser = await this.getCurrentAuthUser();
+      if (authUser) {
+        const { error: dbError } = await supabase
+          .from('users')
+          .update({ 
+            email: addr, 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', authUser.id);
+
+        if (dbError) {
+          console.error('Error updating email in database:', dbError.message);
+        }
+      }
+
+      return { 
+        success: true,
+        error: 'Email update initiated. Please check your new email for confirmation.'
+      };
+    } catch (err) {
+      console.error('updateUserEmail exception:', err);
+      return { success: false, error: 'An unexpected error occurred' };
+    }
+  }
+
+  /**
+   * Update user password (requires Supabase Auth update)
+   * ⚠️ Cannot be used by OAuth users (Google, GitHub, etc.)
+   */
+  async updateUserPassword(newPassword: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (!newPassword || newPassword.length < 6) {
+        return { success: false, error: 'Password must be at least 6 characters' };
+      }
+
+      // Check if user is OAuth user (cannot set password)
+      const oauthCheck = await this.isOAuthUser();
+      if (oauthCheck.isOAuth) {
+        return { 
+          success: false, 
+          error: `Cannot set password for accounts signed in with ${oauthCheck.provider}. Your authentication is managed by your OAuth provider.`
+        };
+      }
+
+      // Update auth password
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        console.error('Error updating password:', error.message);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.error('updateUserPassword exception:', err);
+      return { success: false, error: 'An unexpected error occurred' };
+    }
+  }
+
+  /**
+   * Toggle account privacy setting
+   */
+  async updateAccountPrivacy(userId: string, isPrivate: boolean): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ 
+          private: isPrivate,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Error updating privacy:', error.message);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.error('updateAccountPrivacy exception:', err);
+      return { success: false, error: 'An unexpected error occurred' };
+    }
+  }
+
+  /**
+   * Upload profile picture
+   */
+  async uploadProfilePicture(userId: string, file: File): Promise<{ success: boolean; url?: string; error?: string }> {
+    try {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        return { success: false, error: 'Invalid file type. Please upload an image (JPEG, PNG, GIF, or WebP).' };
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        return { success: false, error: 'File too large. Maximum size is 5MB.' };
+      }
+
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}-${Date.now()}.${fileExt}`;
+      const filePath = `profile-pictures/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.error('Error uploading profile picture:', uploadError.message);
+        return { success: false, error: uploadError.message };
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      if (!urlData?.publicUrl) {
+        return { success: false, error: 'Failed to get public URL' };
+      }
+
+      // Update user profile with new picture URL
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ 
+          profile_picture_url: urlData.publicUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (updateError) {
+        console.error('Error updating profile picture URL:', updateError.message);
+        return { success: false, error: updateError.message };
+      }
+
+      return { success: true, url: urlData.publicUrl };
+    } catch (err) {
+      console.error('uploadProfilePicture exception:', err);
+      return { success: false, error: 'An unexpected error occurred' };
+    }
+  }
+
+  /**
+   * Delete user account
+   */
+  async deleteUserAccount(userId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Delete from Supabase Auth (also triggers cascade delete in public.users if configured)
+      const { error } = await supabase.auth.admin.deleteUser(userId);
+
+      if (error) {
+        console.error('Error deleting user account:', error.message);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.error('deleteUserAccount exception:', err);
+      return { success: false, error: 'An unexpected error occurred' };
+    }
+  }
+
+  // ADD these methods to users.service.ts
+
+  /// -======================================-  Block/Unblock Users  -======================================- \\\
+
+  /**
+   * Block a user
+   */
+  async blockUser(blockerId: string, blockedId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Check if already blocked
+      const { data: existing } = await supabase
+        .from('user_blocks')
+        .select('id')
+        .eq('blocker_id', blockerId)
+        .eq('blocked_id', blockedId)
+        .single();
+
+      if (existing) {
+        return { success: false, error: 'User is already blocked' };
+      }
+
+      // Insert block record
+      const { error } = await supabase
+        .from('user_blocks')
+        .insert({
+          blocker_id: blockerId,
+          blocked_id: blockedId,
+          created_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error blocking user:', error.message);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.error('blockUser exception:', err);
+      return { success: false, error: 'An unexpected error occurred' };
+    }
+  }
+
+  /**
+   * Unblock a user
+   */
+  async unblockUser(blockerId: string, blockedId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('user_blocks')
+        .delete()
+        .eq('blocker_id', blockerId)
+        .eq('blocked_id', blockedId);
+
+      if (error) {
+        console.error('Error unblocking user:', error.message);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.error('unblockUser exception:', err);
+      return { success: false, error: 'An unexpected error occurred' };
+    }
+  }
+
+  /**
+   * Get list of users that current user has blocked
+   */
+  async getBlockedUsers(userId: string): Promise<UserModel[]> {
+    try {
+      const { data, error } = await supabase
+        .from('user_blocks')
+        .select(`
+          blocked_id,
+          blocked_user:users!blocked_id (
+            ${UsersService.USER_COLS}
+          )
+        `)
+        .eq('blocker_id', userId);
+
+      if (error) {
+        console.error('Error fetching blocked users:', error.message);
+        return [];
+      }
+
+      if (!data) return [];
+
+      // Extract user objects from the join and filter out nulls
+      return data
+        .map((block: any) => block.blocked_user)
+        .filter((user: any) => user !== null) as UserModel[];
+    } catch (err) {
+      console.error('getBlockedUsers exception:', err);
+      return [];
+    }
+  }
 }

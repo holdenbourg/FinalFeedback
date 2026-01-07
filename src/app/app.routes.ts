@@ -10,6 +10,8 @@ import { FilmsSummaryComponent } from './components/films-summary/films-summary.
 import { AuthGuard } from './core/auth.guard';
 import { PostFilmComponent } from './components/post-film/post-film.component';
 import { AccountComponent } from './components/account/account.component';
+import { SettingsAccountInfoComponent } from './components/settings-account-info/settings-account-info.component';
+import { SettingsPrivacyComponent } from './components/settings-privacy/settings-privacy.component';
 
 
 export const routes: Routes = [
@@ -37,6 +39,8 @@ export const routes: Routes = [
 
     { path: 'account/:username', component: AccountComponent, canActivate: [AuthGuard] },
 
+    { path: 'settings/account-info', component: SettingsAccountInfoComponent, canActivate: [AuthGuard] },
+    { path: 'settings/privacy', component: SettingsPrivacyComponent, canActivate: [AuthGuard] },
 
     // Fallback
     { path: '**', redirectTo: '' },

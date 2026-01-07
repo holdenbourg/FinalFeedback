@@ -1,0 +1,352 @@
+<!-- src/app/components/settings-account-info/settings-account-info.component.html -->
+
+<div class="poster-rows" aria-hidden="true">
+  <div class="row r1"><div class="inner"></div></div>
+  <div class="row r2"><div class="inner"></div></div>
+  <div class="row r3"><div class="inner"></div></div>
+  <div class="row r4"><div class="inner"></div></div>
+  <div class="row r5"><div class="inner"></div></div>
+  <div class="row r6"><div class="inner"></div></div>
+  <div class="row r7"><div class="inner"></div></div>
+  <div class="row r8"><div class="inner"></div></div>
+  <div class="row r9"><div class="inner"></div></div>
+  <div class="row r10"><div class="inner"></div></div>
+</div>
+
+<nav class="sidebar" [class.active]="sidebarService.sidebarActive()" [class.no-anim]="sidebarService.suppressAnim()">
+  <div class="logo-menu">
+    <h2 class="logo">What2Watch</h2>
+    <i class="bx bx-menu toggle-button" (click)="sidebarService.toggle()"></i>
+  </div>
+
+  <ul class="list">
+    <li class="list-item">
+      <a (click)="routingService.navigateToHome()">
+        <i class="bx bx-home-alt"></i>
+        <span class="link-name" style="--i:6;">Home</span>
+      </a>
+    </li>
+    
+    <li class="list-item">
+      <a (click)="routingService.navigateToSearchMovies()">
+        <i class="bx bx-search"></i>
+        <span class="link-name" style="--i:5;">Search</span>
+      </a>
+    </li>
+
+    <li class="list-item">
+      <a (click)="routingService.navigateToMoviesLibrary()">
+        <i class="bx bx-camera-movie"></i>
+        <span class="link-name" style="--i:4;">Movies</span>
+      </a>
+    </li>
+
+    <li class="list-item">
+      <a (click)="routingService.navigateToShowsLibrary()">
+        <i class="bx bx-collection"></i>
+        <span class="link-name" style="--i:3;">Shows</span>
+      </a>
+    </li>
+
+    <li class="list-item" *ngIf="currentUser() as cu">
+      <a (click)="routingService.navigateToAccountsPosts(cu.username)">
+        <i class="bx bx-user"></i>
+        <span class="link-name" style="--i:2;">Account</span>
+      </a>
+    </li>
+
+    <li class="list-item active">
+      <a (click)="routingService.navigateToSettings()">
+        <i class="bx bx-cog"></i>
+        <span class="link-name" style="--i:1;">Settings</span>
+      </a>
+    </li>
+
+    <li class="settings-item active">
+      <a class="account-info-icon" (click)="routingService.navigateToSettings()">
+        <i class='bx bx-info-circle'></i>
+        <span class="link-name" style="--i:1;">Account Info</span>
+      </a>
+    </li>
+
+    <li class="settings-item">
+      <a class="privacy-icon" (click)="routingService.navigateToPrivacy()">
+        <i class='bx bx-shield-quarter'></i>
+        <span class="link-name" style="--i:1;">Privacy</span>
+      </a>
+    </li>
+
+    <li class="settings-item">
+      <a class="logout-icon" (click)="showLogoutModal = true">
+        <i class='bx bx-exit'></i>
+        <span class="link-name" style="--i:1;">Log Out</span>
+      </a>
+    </li>
+
+    <li class="username" *ngIf="currentUser() as cu">
+      <p class="link-name" style="--i:1">Signed in as:</p>
+      <p class="link-name" style="--i:1">{{ cu.username }}</p>
+    </li>
+  </ul>
+</nav>
+
+<div class="container" [class.active]="!sidebarService.sidebarActive()">
+  <div class="settings-panel">
+  
+    <!-- Header -->
+    <div class="settings-header">
+      <h1 class="settings-title">Account Settings</h1>
+      <p class="settings-subtitle">Manage your account information and preferences</p>
+    </div>
+
+    <!-- OAuth Badge (if applicable) -->
+    <div *ngIf="isOAuthUser()" class="oauth-badge">
+      <i class='bx bxl-{{ authProvider().toLowerCase() }}'></i>
+      <span>Signed in with {{ authProvider() }}</span>
+    </div>
+
+    <!-- Status Messages -->
+    <div *ngIf="successMessage()" class="message success-message">
+        <i class='bx bx-check-circle'></i>
+        <span>{{ successMessage() }}</span>
+    </div>
+
+    <div *ngIf="errorMessage()" class="message error-message">
+        <i class='bx bx-error-circle'></i>
+        <span>{{ errorMessage() }}</span>
+    </div>
+
+    <!-- Profile Picture Section with Drag & Drop -->
+    <div class="settings-section">
+        <h2 class="section-title">Profile Picture</h2>
+        
+        <!-- Drag & Drop Zone (FIXED EVENTS) -->
+        <div 
+            class="profile-picture-drop-zone"
+            [class.dragging]="isDraggingOver()"
+            [class.uploading]="isUploadingPicture()"
+            (dragenter)="onDragEnter($event)"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)">
+            
+            <div class="profile-picture-section">
+            <img 
+                [src]="currentUser()?.profile_picture_url || 'assets/images/default-avatar.png'" 
+                [attr.alt]="currentUser()?.username"
+                class="current-avatar">
+            
+            <div class="avatar-actions">
+                <label for="avatar-upload" class="btn btn-secondary">
+                <i class='bx bx-upload'></i>
+                <span *ngIf="!isUploadingPicture()">Upload New Photo</span>
+                <span *ngIf="isUploadingPicture()">Uploading...</span>
+                </label>
+                <input 
+                type="file" 
+                id="avatar-upload" 
+                accept="image/*"
+                (change)="onFileSelected($event)"
+                [disabled]="isUploadingPicture()"
+                hidden>
+                <p class="helper-text">JPG, PNG, or GIF. Max 5MB.</p>
+                <p class="helper-text drag-hint">
+                <i class='bx bx-move'></i>
+                Or drag & drop your photo here
+                </p>
+            </div>
+            </div>
+            
+            <!-- Drag Overlay -->
+            <div class="drag-overlay" *ngIf="isDraggingOver()">
+            <div class="drag-content">
+                <i class='bx bx-cloud-upload'></i>
+                <p class="drag-message">Drop your photo here</p>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Basic Info Section -->
+    <div class="settings-section">
+      <h2 class="section-title">Basic Information</h2>
+      
+      <div class="form-grid">
+        <!-- Username -->
+        <div class="form-group full-width">
+          <label for="username" class="form-label">
+            <i class='bx bx-user'></i>
+            Username
+          </label>
+          <input 
+            type="text" 
+            id="username"
+            [(ngModel)]="username"
+            (ngModelChange)="checkForChanges()"
+            class="form-input"
+            placeholder="Enter username">
+        </div>
+
+        <!-- First Name -->
+        <div class="form-group">
+          <label for="firstName" class="form-label">
+            <i class='bx bx-id-card'></i>
+            First Name
+          </label>
+          <input 
+            type="text" 
+            id="firstName"
+            [(ngModel)]="firstName"
+            (ngModelChange)="checkForChanges()"
+            class="form-input"
+            placeholder="Enter first name">
+        </div>
+
+        <!-- Last Name -->
+        <div class="form-group">
+          <label for="lastName" class="form-label">
+            <i class='bx bx-id-card'></i>
+            Last Name
+          </label>
+          <input 
+            type="text" 
+            id="lastName"
+            [(ngModel)]="lastName"
+            (ngModelChange)="checkForChanges()"
+            class="form-input"
+            placeholder="Enter last name">
+        </div>
+
+        <!-- Bio -->
+        <div class="form-group full-width">
+          <label for="bio" class="form-label">
+            <i class='bx bx-message-square-detail'></i>
+            Bio
+          </label>
+          <textarea 
+            id="bio"
+            [(ngModel)]="bio"
+            (ngModelChange)="checkForChanges()"
+            class="form-textarea"
+            placeholder="Tell us about yourself..."
+            maxlength="150"
+            rows="3"></textarea>
+          <span class="char-count">{{ bio.length }}/150</span>
+        </div>
+      </div>
+
+      <button 
+        class="btn btn-primary"
+        (click)="onUpdateProfile()"
+        [disabled]="isUpdatingProfile() || !hasProfileChanges()">
+        <i class='bx bx-save'></i>
+        <span *ngIf="!isUpdatingProfile()">Save Changes</span>
+        <span *ngIf="isUpdatingProfile()">Saving...</span>
+      </button>
+    </div>
+
+    <!-- Email Section -->
+    <div class="settings-section">
+      <h2 class="section-title">Email Address</h2>
+      
+      <div class="form-group full-width">
+        <label for="email" class="form-label">
+          <i class='bx bx-envelope'></i>
+          Email
+          <span *ngIf="isOAuthUser()" class="locked-badge">
+            <i class='bx bx-lock-alt'></i>
+            Managed by {{ authProvider() }}
+          </span>
+        </label>
+        <input 
+          type="email" 
+          id="email"
+          [(ngModel)]="email"
+          class="form-input"
+          [class.locked]="isOAuthUser()"
+          [disabled]="isOAuthUser()"
+          placeholder="Enter email">
+        
+        <p *ngIf="isOAuthUser()" class="info-text">
+          <i class='bx bx-info-circle'></i>
+          Your email is managed by {{ authProvider() }} and cannot be changed here.
+        </p>
+      </div>
+
+      <button 
+        *ngIf="!isOAuthUser()"
+        class="btn btn-primary"
+        (click)="onUpdateEmail()"
+        [disabled]="isUpdatingEmail()">
+        <i class='bx bx-envelope'></i>
+        <span *ngIf="!isUpdatingEmail()">Update Email</span>
+        <span *ngIf="isUpdatingEmail()">Updating...</span>
+      </button>
+    </div>
+
+    <!-- Password Section -->
+    <div *ngIf="!isOAuthUser()" class="settings-section">
+      <h2 class="section-title">Change Password</h2>
+      
+      <div class="form-grid">
+        <!-- New Password -->
+        <div class="form-group">
+          <label for="newPassword" class="form-label">
+            <i class='bx bx-lock'></i>
+            New Password
+          </label>
+          <input 
+            type="password" 
+            id="newPassword"
+            [(ngModel)]="newPassword"
+            class="form-input"
+            placeholder="Enter new password"
+            minlength="6">
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="form-group">
+          <label for="confirmPassword" class="form-label">
+            <i class='bx bx-lock-alt'></i>
+            Confirm Password
+          </label>
+          <input 
+            type="password" 
+            id="confirmPassword"
+            [(ngModel)]="confirmPassword"
+            class="form-input"
+            placeholder="Confirm new password">
+        </div>
+      </div>
+
+      <button 
+        class="btn btn-primary"
+        (click)="onUpdatePassword()"
+        [disabled]="isUpdatingPassword()">
+        <i class='bx bx-key'></i>
+        <span *ngIf="!isUpdatingPassword()">Update Password</span>
+        <span *ngIf="isUpdatingPassword()">Updating...</span>
+      </button>
+    </div>
+
+    <!-- OAuth Password Info -->
+    <div *ngIf="isOAuthUser()" class="settings-section">
+      <h2 class="section-title">Password</h2>
+      <div class="info-box">
+        <i class='bx bx-lock-alt'></i>
+        <div>
+          <p class="info-title">No password required</p>
+          <p class="info-description">
+            You signed in with {{ authProvider() }}. Your authentication is managed by {{ authProvider() }} and no password is needed.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-logout-modal 
+  *ngIf="showLogoutModal"
+  (confirm)="onLogout()"
+  (cancel)="showLogoutModal = false">
+</app-logout-modal>

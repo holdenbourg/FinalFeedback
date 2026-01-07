@@ -1,0 +1,27 @@
+<div class="modal-overlay" (click)="onCancel()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    
+    <div class="modal-icon">
+      <i class='bx bx-exit'></i>
+    </div>
+
+    <h2 class="modal-title">Log Out?</h2>
+    
+    <p class="modal-message">
+      Are you sure you want to log out of your account?
+    </p>
+
+    <div class="modal-actions">
+      <button class="btn btn-cancel" (click)="onCancel()">
+        <i class='bx bx-x'></i>
+        <span>Go Back</span>
+      </button>
+      
+      <button class="btn btn-confirm" (click)="onConfirm()">
+        <i class='bx bx-check'></i>
+        <span>Yes, Log Out</span>
+      </button>
+    </div>
+
+  </div>
+</div>
