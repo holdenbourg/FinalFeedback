@@ -79,10 +79,7 @@ export class RoutingService {
   navigateToPrivacy() {
     this.router.navigate(['/settings', 'privacy']);
   }
-  navigateToLogout() {
-    this.router.navigate(['/settings', 'logout']);
+  navigateToPrivacyPolicy() {
+    this.router.navigate(['/settings', 'privacy-policy']);
   }
-
-  // edit
-
 }

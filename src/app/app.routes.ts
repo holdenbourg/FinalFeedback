@@ -12,10 +12,14 @@ import { PostFilmComponent } from './components/post-film/post-film.component';
 import { AccountComponent } from './components/account/account.component';
 import { SettingsAccountInfoComponent } from './components/settings-account-info/settings-account-info.component';
 import { SettingsPrivacyComponent } from './components/settings-privacy/settings-privacy.component';
+import { SettingsPrivacyPolicyComponent } from './components/settings-privacy-policy/settings-privacy-policy.component';
+import { PrivacyPolicyComponent } from './components/privacy-policy/privacy-policy.component';
 
 
 export const routes: Routes = [
     { path: '', component: LoginRegisterComponent, pathMatch: 'full' },
+        
+    { path: 'privacy-policy', component: PrivacyPolicyComponent },
 
     { path: 'home', component: HomeComponent, canActivate: [AuthGuard] },
 
@@ -41,6 +45,7 @@ export const routes: Routes = [
 
     { path: 'settings/account-info', component: SettingsAccountInfoComponent, canActivate: [AuthGuard] },
     { path: 'settings/privacy', component: SettingsPrivacyComponent, canActivate: [AuthGuard] },
+    { path: 'settings/privacy-policy', component: SettingsPrivacyPolicyComponent, canActivate: [AuthGuard] },
 
     // Fallback
     { path: '**', redirectTo: '' },

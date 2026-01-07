@@ -77,6 +77,13 @@
     </li>
 
     <li class="settings-item">
+      <a class="privacy-icon" (click)="routingService.navigateToPrivacyPolicy()">
+        <i class='bx bx-clipboard'></i>  
+        <span class="link-name" style="--i:1;">Privacy Policy</span>
+      </a>
+    </li>
+
+    <li class="settings-item">
       <a class="logout-icon" (click)="showLogoutModal = true">
         <i class='bx bx-exit'></i>
         <span class="link-name" style="--i:1;">Log Out</span>
@@ -91,10 +98,7 @@
 </nav>
 
 <div class="container" [class.active]="!sidebarService.sidebarActive()">
-  
   <div class="privacy-panel">
-    
-    <!-- Header -->
     <div class="privacy-header">
       <h1 class="privacy-title">Privacy Settings</h1>
       <p class="privacy-subtitle">Control who can see your content and manage blocked accounts</p>

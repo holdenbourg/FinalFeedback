@@ -264,7 +264,6 @@
   left: 120px;
 }
 
-/* ADD THESE STYLES TO YOUR settings-privacy.component.css (after the container styles) */
 
 /* ========== Privacy Panel ========== */
 .privacy-panel {
@@ -281,11 +280,13 @@
 .privacy-panel::-webkit-scrollbar {
   width: 0.5em;
 }
-
 .privacy-panel::-webkit-scrollbar-thumb {
   background: white;
   border-radius: 0.25em;
   cursor: pointer;
+}
+.privacy-panel::-webkit-scrollbar-track {
+  margin: 2.5px 0;
 }
 
 /* Header */

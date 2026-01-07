@@ -1,0 +1,56 @@
+<div class="modal-overlay" (click)="onCancel()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    
+    <div class="modal-icon">
+      <i class='bx bx-error'></i>
+    </div>
+
+    <h2 class="modal-title">Delete Account?</h2>
+    
+    <div class="modal-warning">
+      <p class="warning-text">
+        <strong>⚠️ This action cannot be undone!</strong>
+      </p>
+      <p class="warning-description">
+        Deleting your account will permanently remove:
+      </p>
+      <ul class="deletion-list">
+        <li>All your posts and ratings</li>
+        <li>All your comments and replies</li>
+        <li>Your followers and following</li>
+        <li>All your likes and saved posts</li>
+        <li>Your profile and account data</li>
+      </ul>
+    </div>
+
+    <div class="confirmation-input">
+      <label for="confirm-text" class="confirm-label">
+        Type <strong>DELETE MY ACCOUNT</strong> to confirm:
+      </label>
+      <input 
+        type="text" 
+        id="confirm-text"
+        class="confirm-input"
+        [value]="confirmationText()"
+        (input)="onTextChange($any($event.target).value)"
+        placeholder="DELETE MY ACCOUNT"
+        autocomplete="off">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-cancel" (click)="onCancel()">
+        <i class='bx bx-x'></i>
+        <span>Cancel</span>
+      </button>
+      
+      <button 
+        class="btn btn-delete" 
+        (click)="onConfirm()"
+        [disabled]="!isValid()">
+        <i class='bx bx-trash'></i>
+        <span>Delete Forever</span>
+      </button>
+    </div>
+
+  </div>
+</div>

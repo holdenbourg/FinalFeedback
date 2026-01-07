@@ -1,5 +1,3 @@
-<!-- src/app/components/settings-account-info/settings-account-info.component.html -->
-
 <div class="poster-rows" aria-hidden="true">
   <div class="row r1"><div class="inner"></div></div>
   <div class="row r2"><div class="inner"></div></div>
@@ -73,6 +71,13 @@
       <a class="privacy-icon" (click)="routingService.navigateToPrivacy()">
         <i class='bx bx-shield-quarter'></i>
         <span class="link-name" style="--i:1;">Privacy</span>
+      </a>
+    </li>
+
+    <li class="settings-item">
+      <a class="privacy-icon" (click)="routingService.navigateToPrivacyPolicy()">
+        <i class='bx bx-clipboard'></i>  
+        <span class="link-name" style="--i:1;">Privacy Policy</span>
       </a>
     </li>
 
@@ -342,8 +347,42 @@
         </div>
       </div>
     </div>
+
+      <!-- Danger Zone Section -->
+  <div class="settings-section danger-zone">
+    <h2 class="section-title danger-title">
+      <i class='bx bx-error-circle'></i>
+      Danger Zone
+    </h2>
+    
+    <div class="danger-card">
+      <div class="danger-content">
+        <h3 class="danger-card-title">Delete Account</h3>
+        <p class="danger-card-description">
+          Once you delete your account, there is no going back. All your posts, 
+          ratings, comments, and profile data will be permanently removed.
+        </p>
+      </div>
+      
+      <button 
+        class="btn-danger"
+        (click)="showDeleteAccountModal = true"
+        [disabled]="isDeletingAccount()">
+        <i class='bx bx-trash'></i>
+        <span *ngIf="!isDeletingAccount()">Delete Account</span>
+        <span *ngIf="isDeletingAccount()">Deleting...</span>
+      </button>
+    </div>
+  </div>
   </div>
 </div>
+
+<!-- Delete Account Modal -->
+<app-delete-account-modal 
+  *ngIf="showDeleteAccountModal"
+  (confirm)="onDeleteAccount()"
+  (cancel)="showDeleteAccountModal = false">
+</app-delete-account-modal>
 
 <app-logout-modal 
   *ngIf="showLogoutModal"

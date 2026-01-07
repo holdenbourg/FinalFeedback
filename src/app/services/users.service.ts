@@ -521,28 +521,7 @@ export class UsersService {
     }
   }
 
-  /**
-   * Delete user account
-   */
-  async deleteUserAccount(userId: string): Promise<{ success: boolean; error?: string }> {
-    try {
-      // Delete from Supabase Auth (also triggers cascade delete in public.users if configured)
-      const { error } = await supabase.auth.admin.deleteUser(userId);
-
-      if (error) {
-        console.error('Error deleting user account:', error.message);
-        return { success: false, error: error.message };
-      }
-
-      return { success: true };
-    } catch (err) {
-      console.error('deleteUserAccount exception:', err);
-      return { success: false, error: 'An unexpected error occurred' };
-    }
-  }
-
-  // ADD these methods to users.service.ts
-
+  
   /// -======================================-  Block/Unblock Users  -======================================- \\\
 
   /**
@@ -635,6 +614,36 @@ export class UsersService {
     } catch (err) {
       console.error('getBlockedUsers exception:', err);
       return [];
+    }
+  }
+
+  async deleteUserAccount(userId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user || user.id !== userId) {
+        return { 
+          success: false, 
+          error: 'You can only delete your own account' 
+        };
+      }
+
+      const { error } = await supabase.rpc('delete_user_account_cascade', {
+        p_user_id: userId
+      });
+
+      if (error) {
+        console.error('Error deleting user account:', error.message);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.error('deleteUserAccount exception:', err);
+      return { 
+        success: false, 
+        error: 'An unexpected error occurred while deleting account' 
+      };
     }
   }
 }

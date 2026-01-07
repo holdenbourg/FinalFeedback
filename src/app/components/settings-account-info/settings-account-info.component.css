@@ -1,5 +1,3 @@
-/* src/app/components/settings-account-info/settings-account-info.component.css */
-
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
 
 * {
@@ -382,6 +380,103 @@ margin-right: 2.5px;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Danger Zone Section */
+.danger-zone {
+  border-top: 2px solid rgba(244, 67, 54, 0.3);
+  padding-top: 40px;
+  margin-top: 40px;
+}
+
+.danger-title {
+  color: rgba(244, 67, 54, 1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.danger-title i {
+  font-size: 24px;
+}
+
+/* Danger Card */
+.danger-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+  background: rgba(244, 67, 54, 0.05);
+  border: 2px solid rgba(244, 67, 54, 0.3);
+  border-radius: 12px;
+}
+
+.danger-content {
+  flex: 1;
+}
+
+.danger-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 8px 0;
+}
+
+.danger-card-description {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Danger Button */
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: rgba(244, 67, 54, 0.2);
+  border: 2px solid rgba(244, 67, 54, 0.5);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-danger i {
+  font-size: 20px;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgba(244, 67, 54, 0.3);
+  border-color: rgba(244, 67, 54, 0.7);
+  transform: translateY(-2px);
+}
+
+.btn-danger:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .danger-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-danger {
+    width: 100%;
+  }
 }
 
 /* Profile Picture Drop Zone */

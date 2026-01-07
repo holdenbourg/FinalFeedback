@@ -10,11 +10,16 @@ import { UserModel } from '../../models/database-models/user.model';
 import { UsersService } from '../../services/users.service';
 import { LogoutModalComponent } from '../logout-modal/logout-modal.component';
 import { AuthService } from '../../core/auth.service';
+import { DeleteAccountModalComponent } from '../delete-account-modal/delete-account-modal.component';
 
 @Component({
   selector: 'app-settings-account-info',
   standalone: true,
-  imports: [CommonModule, FormsModule, LogoutModalComponent],
+  imports: [CommonModule, 
+            FormsModule, 
+            LogoutModalComponent, 
+            DeleteAccountModalComponent
+          ],
   templateUrl: './settings-account-info.component.html',
   styleUrl: './settings-account-info.component.css'
 })
@@ -65,6 +70,9 @@ export class SettingsAccountInfoComponent implements OnInit, OnDestroy {
   // Drag and drop state (FIXED)
   isDraggingOver = signal(false);
   private dragCounter = 0; // Prevents flickering from child elements
+
+  showDeleteAccountModal = false;
+  isDeletingAccount = signal(false);
   
   async ngOnInit() {
     this.addRandomStartPointForRows();
@@ -276,6 +284,33 @@ export class SettingsAccountInfoComponent implements OnInit, OnDestroy {
       console.error('Update password error:', err);
     } finally {
       this.isUpdatingPassword.set(false);
+    }
+  }
+
+
+    // ========== Delete Account ==========
+  async onDeleteAccount() {
+    const user = this.currentUser();
+    if (!user) return;
+    
+    this.showDeleteAccountModal = false;
+    this.clearMessages();
+    this.isDeletingAccount.set(true);
+    
+    try {
+      const result = await this.usersService.deleteUserAccount(user.id);
+      
+      if (result.success) {
+        await this.authService.signOut();
+        this.routingService.navigateToLogin();
+      } else {
+        this.showMessage('error', result.error || 'Failed to delete account');
+        this.isDeletingAccount.set(false);
+      }
+    } catch (err) {
+      console.error('Delete account error:', err);
+      this.showMessage('error', 'An unexpected error occurred');
+      this.isDeletingAccount.set(false);
     }
   }
   
