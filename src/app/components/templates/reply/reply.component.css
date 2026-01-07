@@ -3,6 +3,7 @@
   display: flex;
   font-size: 1.145vw;
   gap: 12px;
+  margin-top: 7.5px;
   color: #fff;
   align-items: flex-start;
 }
@@ -17,7 +18,7 @@
   transform: translateY(2px);
 }
 .reply-row .options {
-  font-size: 1vw;  /* Changed from 1rem to be responsive */
+  font-size: 1vw;
   color: #ccc;
   font-weight: 400;
   display: flex;

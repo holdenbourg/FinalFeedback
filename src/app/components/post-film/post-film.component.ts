@@ -271,11 +271,11 @@ export class PostFilmComponent implements OnInit, OnDestroy {
       });
       console.log('[PostFilm] Post created:', postId);
 
-      // Step 3: Create tags (if any)
+      // Step 3: Create tags (if any) with matching status
       const taggedUserIds = this.taggedUsers().map(u => u.id);
       if (taggedUserIds.length > 0) {
-        console.log('[PostFilm] Creating tags:', taggedUserIds);
-        await this.tagsService.createTags(postId, taggedUserIds);
+        console.log('[PostFilm] Creating tags with status:', visibility);
+        await this.tagsService.createTags(postId, taggedUserIds, visibility);
         console.log('[PostFilm] Tags created successfully');
       }
 

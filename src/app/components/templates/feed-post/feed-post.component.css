@@ -227,6 +227,7 @@
   overflow: hidden auto;
   padding-left: 12px;
   box-sizing: border-box;
+  margin-right: 2.5px;
 }
 .comment-scroll-box::-webkit-scrollbar {
   width: 0.5em; 
@@ -292,8 +293,7 @@
 }
 
 .caption-row { 
-  margin-bottom: 5px;
-  padding: 0 0 4px 4px;
+  padding-left: 5px;
   transform: translateY(-2px);
 }
 

@@ -1,0 +1,34 @@
+<div class="modal-backdrop" (click)="onBackdropClick($event)">
+  
+  <!-- Modal Container -->
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    
+    <!-- Close Button (Top Right) -->
+    <button class="btn-close" (click)="onClose()" aria-label="Close">
+      <i class='bx bx-x'></i>
+    </button>
+
+    <!-- Previous Arrow -->
+    <button 
+      *ngIf="canNavigatePrevious"
+      class="nav-arrow nav-arrow-left" 
+      (click)="onPrevious()"
+      aria-label="Previous post">
+      <i class='bx bx-chevron-left'></i>
+    </button>
+
+    <!-- Next Arrow -->
+    <button 
+      *ngIf="canNavigateNext"
+      class="nav-arrow nav-arrow-right" 
+      (click)="onNext()"
+      aria-label="Next post">
+      <i class='bx bx-chevron-right'></i>
+    </button>
+
+    <!-- Feed Post Component (exact same as home feed) -->
+    <div class="post-wrapper">
+      <app-feed-post [feedPost]="feedPost"></app-feed-post>
+    </div>
+  </div>
+</div>

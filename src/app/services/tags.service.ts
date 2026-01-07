@@ -5,6 +5,7 @@ export interface CreateTagData {
   tagged_id: string;  // User being tagged
   target_type: 'post' | 'comment' | 'reply';
   target_id: string;  // Post/comment/reply ID
+  status?: 'public' | 'archived';  // Tag visibility status (defaults to 'archived' in DB)
 }
 
 @Injectable({ providedIn: 'root' })
@@ -50,7 +51,8 @@ export class TagsService {
         tagger_id: user.id,
         tagged_id: data.tagged_id,
         target_type: data.target_type,
-        target_id: data.target_id
+        target_id: data.target_id,
+        status: data.status ?? 'archived'  // Default to 'archived' if not specified
       })
       .select('id')
       .single();
@@ -62,8 +64,9 @@ export class TagsService {
 
   /**
    * Create multiple tags at once (for post creation)
+   * Status should match the post's visibility: 'public' or 'archived'
    */
-  async createTags(postId: string, taggedUserIds: string[]): Promise<void> {
+  async createTags(postId: string, taggedUserIds: string[], status: 'public' | 'archived' = 'archived'): Promise<void> {
     const { data: { user }, error: uErr } = await supabase.auth.getUser();
     if (uErr || !user) throw uErr ?? new Error('Not signed in');
 
@@ -73,7 +76,8 @@ export class TagsService {
       tagger_id: user.id,
       tagged_id: taggedId,
       target_type: 'post' as const,
-      target_id: postId
+      target_id: postId,
+      status: status  // Match the post's visibility
     }));
 
     const { error } = await supabase
@@ -109,6 +113,24 @@ export class TagsService {
     const { error } = await supabase
       .from('tags')
       .delete()
+      .eq('target_type', 'post')
+      .eq('target_id', postId)
+      .eq('tagger_id', user.id);
+
+    if (error) throw error;
+  }
+
+  /**
+   * Update tag status when post visibility changes
+   * Use this when archiving/unarchiving a post to update all associated tags
+   */
+  async updateTagsStatus(postId: string, status: 'public' | 'archived'): Promise<void> {
+    const { data: { user }, error: uErr } = await supabase.auth.getUser();
+    if (uErr || !user) throw uErr ?? new Error('Not signed in');
+
+    const { error } = await supabase
+      .from('tags')
+      .update({ status })
       .eq('target_type', 'post')
       .eq('target_id', postId)
       .eq('tagger_id', user.id);

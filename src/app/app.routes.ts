@@ -9,6 +9,7 @@ import { FilmsLibraryComponent } from './components/films-library/films-library.
 import { FilmsSummaryComponent } from './components/films-summary/films-summary.component';
 import { AuthGuard } from './core/auth.guard';
 import { PostFilmComponent } from './components/post-film/post-film.component';
+import { AccountComponent } from './components/account/account.component';
 
 
 export const routes: Routes = [
@@ -33,6 +34,8 @@ export const routes: Routes = [
     { path: 'shows/summary', component: FilmsSummaryComponent, data: { kind: 'series' }, canActivate: [AuthGuard] },
 
     { path: 'edit/:type/:postId', component: EditFilmRatingComponent, canActivate: [AuthGuard] },
+
+    { path: 'account/:username', component: AccountComponent, canActivate: [AuthGuard] },
 
 
     // Fallback

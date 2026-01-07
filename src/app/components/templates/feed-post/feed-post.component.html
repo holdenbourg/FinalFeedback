@@ -36,7 +36,7 @@
            [src]="feedPost.author?.profile_picture_url"
            [attr.alt]="feedPost.author?.username" />
       <a class="user-username"
-         [href]="'/account/' + (feedPost.author?.username || '') + '/posts'">
+         [href]="'/account/' + (feedPost.author?.username || '')">
         {{ feedPost.author?.username }}
       </a>
     </div>
@@ -79,7 +79,7 @@
         <div class="post-info" *ngIf="hasVisibleTags" [class.visible]="showTags()">
           <p class="watched-with">Watched With:</p>
           
-          <a *ngFor="let name of taggedUsernames" class="tagged-name" [href]="'/account/' + name + '/posts'">
+          <a *ngFor="let name of taggedUsernames" class="tagged-name" [href]="'/account/' + name">
             {{ name }}
           </a>
         </div>
@@ -119,13 +119,13 @@
           <li *ngIf="(feedPost.caption || '').length !== 0" class="caption-row">
             <div class="caption">
               <a class="profile-username"
-                 [href]="'/account/' + (feedPost.author?.username || '') + '/posts'">
+                 [href]="'/account/' + (feedPost.author?.username || '')">
                 {{ feedPost.author?.username }}
               </a>
               <p class="actual-caption">
                 <ng-container *ngFor="let t of tokensOf(feedPost.caption || '')">
                   <ng-container *ngIf="t.handle; else plain">
-                    <a class="atted" [href]="'/account/' + t.handle + '/posts'">
+                    <a class="atted" [href]="'/account/' + t.handle">
                       &#64;{{ t.handle }}
                     </a>
                   </ng-container>
@@ -143,10 +143,7 @@
               </app-comment>
             </div>
 
-            <!-- ✅ TikTok-style: Only show replies if limit > 0 -->
             <ng-container *ngIf="getTotalReplies(c.commentId) > 0">
-              
-              <!-- Show visible replies -->
               <ul class="post-replies" *ngIf="areRepliesVisible(c.commentId)">
                 <li *ngFor="let r of getVisibleReplies(c.commentId)">
                   <div class="reply-row" [attr.id]="'r-' + r.replyId">
@@ -159,7 +156,6 @@
                 </li>
               </ul>
 
-              <!-- ✅ TikTok-style button logic -->
               <div class="replies-controls">
                 <!-- Show "View X Replies" when replies are hidden OR there are more to load -->
                 <button *ngIf="getRemainingReplies(c.commentId) > 0"

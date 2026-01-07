@@ -7,9 +7,6 @@ export interface UserModel {
   profile_picture_url: string | null;
   bio: string | null;
   private: boolean;
-  post_count: number;
-  follower_count: number;
-  following_count: number;
   created_at: string;
   updated_at: string;
 }

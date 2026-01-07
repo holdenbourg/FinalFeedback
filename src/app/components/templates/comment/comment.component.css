@@ -1,9 +1,9 @@
 .comment-row {
   display: flex;
   font-size: 1.145vw;
+  margin-top: 10px;
   gap: 12px;
   color: #fff;
-  margin-bottom: 16px;
   align-items: flex-start;
   margin-left: 4px;
 }

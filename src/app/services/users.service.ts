@@ -15,9 +15,6 @@ export class UsersService {
     bio,
     profile_picture_url,
     private,
-    post_count,
-    follower_count,
-    following_count,
     created_at,
     updated_at
   `;
@@ -181,13 +178,36 @@ export class UsersService {
     return blockedIds;
   }
 
-  ///  Check if there's a block relationship between two users (either direction)  \\\
-  async isBlockedRelationship(userId1: string, userId2: string): Promise<boolean> {
+  ///  Check if current user is blocked by a user  \\\
+  async isBlocked(currentUser: string, user: string): Promise<boolean> {
     try {
       const { data, error } = await supabase
         .from('user_blocks')
         .select('id')
-        .or(`and(blocker_id.eq.${userId1},blocked_id.eq.${userId2}),and(blocker_id.eq.${userId2},blocked_id.eq.${userId1})`)
+        .eq('blocker_id', user)
+        .eq('blocked_id', currentUser)
+        .limit(1);
+
+      if (error) {
+        console.error('isBlockedRelationship error:', error.message);
+        return false;
+      }
+
+      return !!data?.length;
+    } catch (err) {
+      console.error('isBlockedRelationship error:', err);
+      return false;
+    }
+  }
+
+  ///  Check if a user is blocked by current user  \\\
+  async isBlocker(currentUser: string, user: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('user_blocks')
+        .select('id')
+        .eq('blocker_id', currentUser)
+        .eq('blocked_id', user)
         .limit(1);
 
       if (error) {

@@ -70,14 +70,9 @@ export class RoutingService {
   }
 
   navigateToAccountsPosts(username: string) {
-    this.router.navigate(['/account', username, 'posts']);
+    this.router.navigate(['/account', username ]);
   }
-  navigateToAccountsTagged(username: string) {
-    this.router.navigate(['/account', username, 'tagged']);
-  }
-  navigateToAccountsArchived(username: string) {
-    this.router.navigate(['/account', username, 'archive']);
-  }
+  
   navigateToSettings() {
     this.router.navigate(['/settings', 'account-info']);
   }

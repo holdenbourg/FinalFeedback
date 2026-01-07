@@ -1,0 +1,346 @@
+<!-- src/app/components/account/account.component.html -->
+
+<div class="poster-rows" aria-hidden="true">
+  <div class="row r1"><div class="inner"></div></div>
+  <div class="row r2"><div class="inner"></div></div>
+  <div class="row r3"><div class="inner"></div></div>
+  <div class="row r4"><div class="inner"></div></div>
+  <div class="row r5"><div class="inner"></div></div>
+  <div class="row r6"><div class="inner"></div></div>
+  <div class="row r7"><div class="inner"></div></div>
+  <div class="row r8"><div class="inner"></div></div>
+  <div class="row r9"><div class="inner"></div></div>
+  <div class="row r10"><div class="inner"></div></div>
+</div>
+
+<nav class="sidebar" [class.active]="sidebarService.sidebarActive()" [class.no-anim]="sidebarService.suppressAnim()">
+  <div class="logo-menu">
+    <h2 class="logo">What2Watch</h2>
+    <i class="bx bx-menu toggle-button" (click)="sidebarService.toggle()"></i>
+  </div>
+
+  <ul class="list">
+    <li class="list-item">
+      <a (click)="routingService.navigateToHome()">
+        <i class="bx bx-home-alt"></i>
+        <span class="link-name" style="--i:5;">Home</span>
+      </a>
+    </li>
+    
+    <li class="list-item">
+      <a (click)="routingService.navigateToSearchMovies()">
+        <i class="bx bx-search"></i>
+        <span class="link-name" style="--i:4;">Search</span>
+      </a>
+    </li>
+
+    <li class="list-item">
+      <a (click)="routingService.navigateToMoviesLibrary()">
+        <i class="bx bx-camera-movie"></i>
+        <span class="link-name" style="--i:3;">Movies</span>
+      </a>
+    </li>
+
+    <li class="list-item">
+      <a (click)="routingService.navigateToShowsLibrary()">
+        <i class="bx bx-collection"></i>
+        <span class="link-name" style="--i:2;">Shows</span>
+      </a>
+    </li>
+
+    <li class="list-item active" *ngIf="currentUser() as cu">
+      <a (click)="routingService.navigateToAccountsPosts(cu.username)">
+        <i class="bx bx-user"></i>
+        <span class="link-name" style="--i:1;">Account</span>
+      </a>
+    </li>
+
+    <li class="list-item">
+      <a (click)="routingService.navigateToSettings()">
+        <i class="bx bx-cog"></i>
+        <span class="link-name" style="--i:2;">Settings</span>
+      </a>
+    </li>
+
+    <li class="username" *ngIf="currentUser() as cu">
+      <p class="link-name" style="--i:1">Signed in as:</p>
+      <p class="link-name" style="--i:1">{{ cu.username }}</p>
+    </li>
+  </ul>
+</nav>
+
+<div class="container" [class.active]="!sidebarService.sidebarActive()">
+  
+  <!-- Loading State -->
+  <div *ngIf="viewState() === AccountViewState.LOADING" class="loading-state">
+
+  </div>
+
+  <!-- Not Found State -->
+  <div *ngIf="viewState() === AccountViewState.NOT_FOUND || viewState() === AccountViewState.BLOCKED" class="not-found-state">
+    <i class='bx bx-user-x'></i>
+    <h2>User not found</h2>
+    <p>The user &#64;{{ username() }} doesn't exist.</p>
+    <button (click)="routingService.navigateToHome()">Go Home</button>
+  </div>
+
+  <!-- Blocker State -->
+  <div *ngIf="viewState() === AccountViewState.BLOCKER" class="blocker-state">
+    <i class='bx bx-block'></i>
+    <h2>Account unavailable</h2>
+    <p>You cannot view this profile since you have {{ username() }} blocked </p>
+    <button (click)="onUnblock()">Unblock</button>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="profileUser() as user" 
+       class="two-column-layout"
+       [class.hidden]="viewState() === AccountViewState.NOT_FOUND || 
+                       viewState() === AccountViewState.BLOCKED ||
+                       viewState() === AccountViewState.BLOCKER ||
+                       viewState() === AccountViewState.LOADING">
+    
+    <!-- LEFT: Profile & Posts -->
+    <div class="account-container">
+      <!-- Profile Header -->
+      <div class="profile-header">
+        <img [src]="user.profile_picture_url || 'assets/images/default-avatar.png'"
+             [attr.alt]="user.username"
+             class="profile-picture">
+
+        <div class="profile-info">
+          <div class="username-row">
+            <h1 class="profile-username">{{ user.username }}</h1>
+            
+            <!-- Edit Profile Button (Own Account) -->
+            <button *ngIf="canEditProfile()"
+                    class="btn-edit-profile"
+                    (click)="onEditProfile()">
+              Edit Profile
+            </button>
+
+            <!-- Follow Button -->
+            <button *ngIf="showFollowButton()"
+                    class="btn-follow"
+                    (click)="onFollow()">
+              {{ followButtonText() }}
+            </button>
+
+            <!-- Following Button -->
+            <button *ngIf="showUnfollowButton()"
+                    class="btn-following"
+                    (click)="onUnfollow()">
+              Following
+            </button>
+
+            <!-- Requested Button -->
+            <button *ngIf="showRequestedButton()"
+                    class="btn-requested"
+                    (click)="onCancelRequest()">
+              Requested
+            </button>
+          </div>
+
+          <!-- Stats Row -->
+          <div class="stats-row">
+            <span class="stat">
+                <strong>{{ postCount() }}</strong> posts
+            </span>
+            <span class="stat">
+                <strong>{{ followerCount() }}</strong> followers
+            </span>
+            <span class="stat">
+                <strong>{{ followingCount() }}</strong> following
+            </span>
+          </div>
+
+          <!-- Name -->
+          <p *ngIf="user.first_name || user.last_name" class="name">
+            {{ user.first_name }} {{ user.last_name }}
+          </p>
+
+          <!-- Bio -->
+          <p *ngIf="user.bio" class="bio">{{ user.bio }}</p>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div *ngIf="canViewPosts()" class="tabs">
+        <button [class.active]="activeTab() === 'posts'"
+                (click)="switchTab('posts')"
+                class="tab">
+          <i class='bx bx-grid-alt'></i>
+          Posts
+        </button>
+
+        <button [class.active]="activeTab() === 'tagged'"
+                (click)="switchTab('tagged')"
+                class="tab">
+          <i class='bx bx-purchase-tag'></i>
+          Tagged
+        </button>
+
+        <button *ngIf="isOwnAccount()"
+                [class.active]="activeTab() === 'archive'"
+                (click)="switchTab('archive')"
+                class="tab">
+          <i class='bx bx-archive'></i>
+          Archive
+        </button>
+      </div>
+
+      <!-- Posts Grid -->
+      <div class="posts-content">
+        <div *ngIf="canViewPosts() && !loading()" class="posts-grid">
+            <!-- Post Cards (2:3 aspect ratio for film posters) -->
+            <div *ngFor="let item of posts(); let i = index" class="post-card" (click)="openPostModal(i)">
+                <div class="post-poster">
+                    <img [src]="item.rating.poster_url" [attr.alt]="item.rating.title" class="poster-image">
+
+                    <div class="post-overlay">
+                        <div class="post-stats">
+                            <span><i class='bx bx-heart'></i> {{ item.post.like_count }}</span>
+                            <span><i class='bx bx-comment'></i> {{ item.post.comment_count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div *ngIf="posts().length === 0" class="empty-state">
+                <i class='bx bx-image-alt'></i>
+                <p *ngIf="activeTab() === 'posts'">No posts yet</p>
+                <p *ngIf="activeTab() === 'tagged'">No tagged posts</p>
+                <p *ngIf="activeTab() === 'archive'">No archived posts</p>
+            </div>
+        </div>
+
+        <!-- Private Account Message -->
+        <div *ngIf="viewState() === AccountViewState.NOT_FOLLOWING_PRIVATE" 
+             class="private-account-message">
+          <i class='bx bx-lock-alt'></i>
+          <h3>This account is private</h3>
+          <p>Follow &#64;{{ user.username }} to see their posts</p>
+          <button class="btn-follow-large" (click)="onFollow()">
+            Request to Follow
+          </button>
+        </div>
+
+        <!-- Pending Request Message -->
+        <div *ngIf="viewState() === AccountViewState.REQUESTED" 
+             class="pending-request-message">
+          <i class='bx bx-time-five'></i>
+          <h3>Request pending</h3>
+          <p>&#64;{{ user.username }} hasn't accepted your follow request yet</p>
+          <button class="btn-cancel" (click)="onCancelRequest()">
+            Cancel Request
+          </button>
+        </div>
+
+        <!-- Loading Posts -->
+        <div *ngIf="loading() && canViewPosts()" class="posts-grid">
+            <!-- Shimmer placeholders (same 2:3 ratio as real posts) -->
+            <div *ngFor="let i of [1,2,3,4,5,6,7,8,9]" class="post-card-shimmer">
+                <div class="shimmer-animation"></div>
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Followers/Following/Requests Panel -->
+    <div class="social-panel">
+      <!-- Social Tabs -->
+      <div class="social-tabs">
+        <button [class.active]="socialTab === 'followers'"
+                (click)="socialTab = 'followers'"
+                class="social-tab">
+          Followers
+        </button>
+        <button [class.active]="socialTab === 'following'"
+                (click)="socialTab = 'following'"
+                class="social-tab">
+          Following
+        </button>
+        <button *ngIf="isOwnAccount() && user.private"
+                [class.active]="socialTab === 'requests'"
+                (click)="socialTab = 'requests'"
+                class="social-tab">
+          Requests
+        </button>
+      </div>
+
+      <!-- Social Content -->
+      <div class="social-content">
+        <!-- Followers List -->
+        <div *ngIf="socialTab === 'followers'" class="social-list">
+          <div *ngIf="followers().length === 0" class="social-empty">
+            <i class='bx bx-user'></i>
+            <p>No followers yet</p>
+          </div>
+          <div *ngFor="let follower of followers()" 
+               class="social-item"
+               (click)="routingService.navigateToAccountsPosts(follower.username)">
+            <img [src]="follower.profile_picture_url || 'assets/images/default-avatar.png'"
+                 [attr.alt]="follower.username"
+                 class="social-avatar">
+            <span class="social-username">{{ follower.username }}</span>
+          </div>
+        </div>
+
+        <!-- Following List -->
+        <div *ngIf="socialTab === 'following'" class="social-list">
+          <div *ngIf="following().length === 0" class="social-empty">
+            <i class='bx bx-user'></i>
+            <p>Not following anyone yet</p>
+          </div>
+          <div *ngFor="let followed of following()" 
+               class="social-item"
+               (click)="routingService.navigateToAccountsPosts(followed.username)">
+            <img [src]="followed.profile_picture_url || 'assets/images/default-avatar.png'"
+                 [attr.alt]="followed.username"
+                 class="social-avatar">
+            <span class="social-username">{{ followed.username }}</span>
+          </div>
+        </div>
+
+        <!-- Requests List (Own Account + Private Only) -->
+        <div *ngIf="socialTab === 'requests' && isOwnAccount() && user.private" 
+             class="social-list">
+          <div *ngIf="requests().length === 0" class="social-empty">
+            <i class='bx bx-user-check'></i>
+            <p>No pending requests</p>
+          </div>
+          <div *ngFor="let request of requests()" class="social-item request-item">
+            <img [src]="request.profile_picture_url || 'assets/images/default-avatar.png'"
+                 [attr.alt]="request.username"
+                 class="social-avatar">
+            <div class="request-info">
+              <span class="social-username">{{ request.username }}</span>
+              <div class="request-actions">
+                <button class="btn-accept" (click)="onAcceptRequest(request.id)">
+                  <i class='bx bx-check'></i>
+                </button>
+                <button class="btn-reject" (click)="onRejectRequest(request.id)">
+                  <i class='bx bx-x'></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Post Detail Modal -->
+  <app-post-detail-modal
+    *ngIf="showPostModal() && selectedPost()"
+    [post]="selectedPost()!"
+    [currentIndex]="selectedPostIndex()!"
+    [totalPosts]="posts().length"
+    [canNavigatePrevious]="canNavigatePrevious()"
+    [canNavigateNext]="canNavigateNext()"
+    (close)="closePostModal()"
+    (navigatePrevious)="navigateToPreviousPost()"
+    (navigateNext)="navigateToNextPost()">
+  </app-post-detail-modal>
+</div>

@@ -186,6 +186,7 @@
 .edit-ratings p { transform: translateY(-5%); }
 .edit-ratings a {
   cursor: pointer;
+  transition: 0.2s;
 }
 .edit-ratings a:hover {
   transform: scale(1.1);
@@ -204,6 +205,7 @@
   color: #fff; 
   font-weight: 600; 
   margin: 0 auto;
+  transition: 0.2s;
 }
 .button:hover { 
   transform: scale(1.0125); 

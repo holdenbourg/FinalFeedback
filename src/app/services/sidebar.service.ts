@@ -60,5 +60,40 @@ export class SidebarService {
     if (this.sidebarActive() !== shouldOpen) this.sidebarActive.set(shouldOpen);
   }
 
-  navDelay(index: number, _kind: 'movie'|'series') { return `${index * 0.1}s`; }
+  navDelay(index: number, _kind: 'movie'|'series') { 
+    // 0
+    // 1
+    // 2 Movies
+    // 3 Series
+    // 4
+    // 5
+    // 6
+
+    switch(_kind) {
+      case 'movie':
+        switch(index) {
+          case 0: return 3;
+          case 1: return 2;
+          case 2: return 1;
+          case 3: return 2;
+          case 4: return 3;
+          case 5: return 4;
+          case 6: return 1;
+        }
+        break;
+      case 'series':
+        switch(index) {
+          case 0: return 4;
+          case 1: return 3;
+          case 2: return 2;
+          case 3: return 1;
+          case 4: return 2;
+          case 5: return 3;
+          case 6: return 1;
+        }
+        break;
+    }
+
+    return index 
+  }
 }

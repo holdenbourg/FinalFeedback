@@ -165,7 +165,7 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
 
   /// ---------------------------------------- Delete Functionality ----------------------------------------  \\\
   async onDelete(item: { postId?: string; id: string; media_type: 'movie'|'series' }) {
-
+    
   }
 
   openConfirm(item: RatedItem) {

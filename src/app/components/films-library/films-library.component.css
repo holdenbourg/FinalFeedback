@@ -289,6 +289,7 @@
   color: #fff; 
   font-weight: 500;
   margin-top: 10px;
+  transition: 0.2s;
 }
 .empty-button:hover { 
   transform: scale(1.0125); 
@@ -458,6 +459,7 @@
   font-size: 1.2vw; 
   color: #fff; 
   font-weight: 500;
+  transition: 0.2s;
 }
 .button:hover { 
   transform: scale(1.0125); 
