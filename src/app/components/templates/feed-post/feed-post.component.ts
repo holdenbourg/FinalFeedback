@@ -86,17 +86,51 @@ export class FeedPostComponent implements OnInit {
 
   postRating: PostRating | null = null;
   isLoadingData = true;
+  isLoadingComments = true;
 
   async ngOnInit() {
+    // Phase 1: Load poster & basic data immediately
+    this.isLoadingData = false;  // Show poster right away
+    this.changeDetectorRef.detectChanges();
+    
+    // Phase 2: Load everything else (keeps comments in shimmer)
     await Promise.all([
-      this.loadLikeState(),
+      this.loadLikeStatusAndCount(),
       this.loadRatingData(),
       this.loadThread(),
       this.loadTaggedUsers()
     ]);
 
-    this.isLoadingData = false;
+    // Phase 3: Show comments once likes are ready
+    this.isLoadingComments = false;
     this.changeDetectorRef.detectChanges();
+  }
+
+  private async loadLikeStatusAndCount() {
+    try {
+      const [liked, count] = await Promise.all([
+        this.likesService.isLiked('post', this.feedPost.id),
+        this.likesService.count('post', this.feedPost.id)
+      ]);
+      
+      this.liked = liked;
+      this.feedPost.like_count = count;
+      this.changeDetectorRef.markForCheck();
+    } catch (err) {
+      console.error('Error loading like data:', err);
+      this.liked = false;
+      this.feedPost.like_count = 0;
+    }
+  }
+
+  private async refreshPostCount() {
+    try {
+      const likeCount = await this.likesService.count('post', this.feedPost.id);
+      this.feedPost.like_count = likeCount;
+      this.changeDetectorRef.markForCheck();
+    } catch (err) {
+      console.error('Error refreshing post count:', err);
+    }
   }
 
   private async loadLikeState() {
@@ -384,16 +418,26 @@ export class FeedPostComponent implements OnInit {
   // ======================
   async togglePostLike() {
     const next = !this.liked;
-
-    this.feedPost.like_count += next ? 1 : -1;
+    const prevCount = this.feedPost.like_count ?? 0;  // ✅ Handle undefined
+    
+    // Optimistic update
     this.liked = next;
-
+    this.feedPost.like_count = prevCount + (next ? 1 : -1);
+    this.changeDetectorRef.detectChanges();
+    
     try {
       await this.likesService.toggleLike('post', this.feedPost.id, next);
-
-    } catch {
-      this.feedPost.like_count += next ? -1 : 1;
+      
+      // Refresh count from database for accuracy
+      await this.refreshPostCount();
+      
+    } catch (err) {
+      console.error('Error toggling post like:', err);
+      
+      // Revert on error
       this.liked = !next;
+      this.feedPost.like_count = prevCount;
+      this.changeDetectorRef.detectChanges();
     }
   }
 

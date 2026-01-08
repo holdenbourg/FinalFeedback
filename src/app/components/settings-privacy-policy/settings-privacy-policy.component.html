@@ -95,7 +95,12 @@
   </ul>
 </nav>
 
-<app-privacy-policy [class.active]="!sidebarService.sidebarActive()"></app-privacy-policy>
+<div class="container" [class.active]="!sidebarService.sidebarActive()">
+  <div class="policy-container">
+    <!-- USE SHARED CONTENT COMPONENT -->
+    <app-privacy-policy-content></app-privacy-policy-content>
+  </div>
+</div>
 
 <app-logout-modal 
   *ngIf="showLogoutModal"

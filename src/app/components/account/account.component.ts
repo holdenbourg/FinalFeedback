@@ -3,9 +3,6 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { combineLatest } from 'rxjs';
 import { UsersService } from '../../services/users.service';
-import { PostsService } from '../../services/posts.service';
-import { RatingsService } from '../../services/ratings.service';
-import { TagsService } from '../../services/tags.service';
 import { supabase } from '../../core/supabase.client';
 import { UserModel } from '../../models/database-models/user.model';
 import { AccountViewState } from '../../models/helper-models/account-view-state.enum';
@@ -15,6 +12,7 @@ import { RoutingService } from '../../services/routing.service';
 import { SidebarService } from '../../services/sidebar.service';
 import { PostDetailModalComponent } from '../post-detail-modal/post-detail-modal.component';
 import { BlocksService } from '../../services/blocks.service';
+import { LikesService } from '../../services/likes.service';
 
 type TabType = 'posts' | 'tagged' | 'archive';
 
@@ -30,13 +28,11 @@ export class AccountComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private usersService = inject(UsersService);
-  private postsService = inject(PostsService);
-  private ratingsService = inject(RatingsService);
-  private tagsService = inject(TagsService);
   private followsService = inject(FollowsService);
   public routingService = inject(RoutingService);
   public sidebarService = inject(SidebarService);
   private blocksService = inject(BlocksService);
+  private likesService = inject(LikesService);
 
   // State signals
   currentUser = signal<UserModel | null>(null);
@@ -256,6 +252,8 @@ export class AccountComponent implements OnInit {
       : AccountViewState.NOT_FOLLOWING_PUBLIC;
   }
 
+
+  ///  -======================================-  Load Posts Logic (Posts, Tagged, and Archived)  -======================================- \\\
   /**
    * Load posts based on active tab and permissions
    */
@@ -390,7 +388,7 @@ export class AccountComponent implements OnInit {
   }
 
   /**
-   * Load complete post data with ratings, authors, and tags
+   * Load complete post data with ratings, authors, tags, AND COUNTS
    */
   private async loadPostsWithRatings(postIds: string[]): Promise<PostWithRating[]> {
     if (postIds.length === 0) return [];
@@ -411,8 +409,8 @@ export class AccountComponent implements OnInit {
       const ratingIds = [...new Set(posts.map(p => p.rating_id).filter(Boolean))];
       const authorIds = [...new Set(posts.map(p => p.author_id).filter(Boolean))];
 
-      // Batch queries in parallel
-      const [ratingsRes, authorsRes, tagsRes] = await Promise.all([
+      // Batch queries in parallel (including counts)
+      const [ratingsRes, authorsRes, tagsRes, likeCounts, commentCounts] = await Promise.all([
         // Get all ratings
         supabase
           .from('ratings')
@@ -422,7 +420,7 @@ export class AccountComponent implements OnInit {
         // Get all authors
         supabase
           .from('users')
-          .select('*') // ✅ Get all fields to match UserModel
+          .select('*')
           .in('id', authorIds),
         
         // Get all tags
@@ -431,7 +429,13 @@ export class AccountComponent implements OnInit {
           .select('target_id, tagged_id')
           .eq('target_type', 'post')
           .eq('status', 'public')
-          .in('target_id', postIds)
+          .in('target_id', postIds),
+        
+        // Get like counts for all posts
+        this.getLikeCountsForPosts(postIds),
+        
+        // Get comment counts for all posts
+        this.getCommentCountsForPosts(postIds)
       ]);
 
       if (ratingsRes.error || authorsRes.error) {
@@ -464,7 +468,7 @@ export class AccountComponent implements OnInit {
         taggedUsersMap = new Map(taggedUsers?.map(u => [u.id, u]) || []);
       }
 
-      // Assemble results
+      // Assemble results with counts
       const results: PostWithRating[] = [];
 
       for (const postId of postIds) {
@@ -482,6 +486,10 @@ export class AccountComponent implements OnInit {
           .map(id => taggedUsersMap.get(id))
           .filter(u => u !== undefined) as any[];
 
+        // Add counts to post object
+        post.like_count = likeCounts.get(postId) || 0;
+        post.comment_count = commentCounts.get(postId) || 0;
+
         results.push({
           post,
           rating,
@@ -495,6 +503,67 @@ export class AccountComponent implements OnInit {
     } catch (err) {
       console.error('[Account] Exception in loadPostsWithRatings:', err);
       return [];
+    }
+  }
+
+  /**
+   * Get like counts for multiple posts (efficient batch query)
+   */
+  private async getLikeCountsForPosts(postIds: string[]): Promise<Map<string, number>> {
+    if (postIds.length === 0) return new Map();
+
+    try {
+      const { data, error } = await supabase
+        .from('likes')
+        .select('target_id')
+        .eq('target_type', 'post')
+        .in('target_id', postIds);
+
+      if (error) {
+        console.error('Error fetching like counts:', error);
+        return new Map();
+      }
+
+      // Count occurrences of each post ID
+      const counts = new Map<string, number>();
+      (data || []).forEach((like: any) => {
+        counts.set(like.target_id, (counts.get(like.target_id) || 0) + 1);
+      });
+
+      return counts;
+    } catch (err) {
+      console.error('Exception fetching like counts:', err);
+      return new Map();
+    }
+  }
+
+  /**
+   * Get comment counts for multiple posts (efficient batch query)
+   */
+  private async getCommentCountsForPosts(postIds: string[]): Promise<Map<string, number>> {
+    if (postIds.length === 0) return new Map();
+
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .select('post_id')
+        .in('post_id', postIds);
+
+      if (error) {
+        console.error('Error fetching comment counts:', error);
+        return new Map();
+      }
+
+      // Count occurrences of each post ID
+      const counts = new Map<string, number>();
+      (data || []).forEach((comment: any) => {
+        counts.set(comment.post_id, (counts.get(comment.post_id) || 0) + 1);
+      });
+
+      return counts;
+    } catch (err) {
+      console.error('Exception fetching comment counts:', err);
+      return new Map();
     }
   }
 

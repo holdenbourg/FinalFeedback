@@ -42,12 +42,24 @@ export class CommentComponent implements OnInit {
   submittingLike = false;
 
   async ngOnInit() {
+    // Load like status
     try {
       this.meLiked = await this.likes.isLiked('comment', this.comment.commentId);
-
     } catch { }
 
+    // Load like count
+    await this.refreshLikeCount();
+
     this.likeChanged.subscribe(e => this.likeToggled.emit(e));
+  }
+
+  private async refreshLikeCount() {
+    try {
+      this.comment.likeCount = await this.likes.count('comment', this.comment.commentId);
+      this.cdr.markForCheck();
+    } catch (err) {
+      console.error('Error refreshing like count:', err);
+    }
   }
 
   async toggleLike() {
@@ -57,14 +69,24 @@ export class CommentComponent implements OnInit {
     const next = !this.meLiked;
     const prev = this.comment.likeCount ?? 0;
 
+    // Optimistic update
     this.meLiked = next;
     this.comment.likeCount = prev + (next ? 1 : -1);
 
     try {
       await this.likes.toggleLike('comment', this.comment.commentId, next);
-      this.likeChanged.emit({ commentId: this.comment.commentId, liked: next, likeCount: this.comment.likeCount ?? 0 });
+      
+      // Refresh from database to ensure accuracy
+      await this.refreshLikeCount();
+      
+      this.likeChanged.emit({ 
+        commentId: this.comment.commentId, 
+        liked: next, 
+        likeCount: this.comment.likeCount ?? 0 
+      });
 
     } catch {
+      // Revert on error
       this.meLiked = !next;
       this.comment.likeCount = prev;
 

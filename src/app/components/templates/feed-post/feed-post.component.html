@@ -1,4 +1,3 @@
-<!-- Loading skeleton -->
 <div class="container loading-skeleton" *ngIf="isLoadingData">
   <div class="current-user-info" style="margin-top: 12px; margin-bottom: 12px;">
     <div class="profile-picture-username">
@@ -45,6 +44,7 @@
   </div>
 
   <div class="bottom">
+    <!-- POSTER SECTION (always visible) -->
     <div class="user-post"
          (click)="onPosterClick()"
          (mouseleave)="onPosterMouseleave()"
@@ -86,95 +86,112 @@
       </div>
     </div>
 
+    <!-- COMMENTS SECTION (with separate shimmer state) -->
     <div class="right-side">
-      <div class="comment-scroll-box" #scrollBox>
-        <!-- Rating Criteria Box -->
-        <div *ngIf="postRating" [ngClass]="postRating.media_type === 'movie' ? 'movie-rating-info' : 'series-rating-info'">
-          <p class="rating-information">{{ postRating.title }}</p>
-          
-          <!-- Movie Criteria -->
-          <div *ngIf="postRating.media_type === 'movie'" class="movie-criteria">
-            <p>Acting: {{ postRating.criteria.acting }}</p>
-            <p>Visuals: {{ postRating.criteria.visuals }}</p>
-            <p>Story: {{ postRating.criteria.story }}</p>
-            <p>Pacing: {{ postRating.criteria.pacing }}</p>
-            <p>Climax: {{ getMovieCriteria(postRating.criteria).climax }}</p>
-            <p>Ending: {{ postRating.criteria.ending }}</p>
-          </div>
-          
-          <!-- Series Criteria -->
-          <div *ngIf="postRating.media_type === 'series'" class="series-criteria">
-            <p>Acting: {{ postRating.criteria.acting }}</p>
-            <p>Visuals: {{ postRating.criteria.visuals }}</p>
-            <p>Story: {{ postRating.criteria.story }}</p>
-            <p>Pacing: {{ postRating.criteria.pacing }}</p>
-            <p>Length: {{ getSeriesCriteria(postRating.criteria).length }}</p>
-            <p>Ending: {{ postRating.criteria.ending }}</p>
-          </div>
-          
-          <p class="overall-rating">Overall Rating: {{ postRating.rating }}</p>
+      <!-- Show shimmer while comments/likes are loading -->
+      <ng-container *ngIf="isLoadingComments">
+        <div class="comment-scroll-box">
+          <div class="skeleton-text" style="width: 80%; height: 20px; margin: 10px;"></div>
+          <div class="skeleton-text" style="width: 60%; height: 20px; margin: 10px;"></div>
+          <div class="skeleton-text" style="width: 70%; height: 20px; margin: 10px;"></div>
         </div>
+        
+        <div class="commenting-area">
+          <div class="skeleton-text" style="width: 100%; height: 32px;"></div>
+        </div>
+      </ng-container>
 
-        <ul class="post-comments">
-          <li *ngIf="(feedPost.caption || '').length !== 0" class="caption-row">
-            <div class="caption">
-              <a class="profile-username"
-                 [href]="'/account/' + (feedPost.author?.username || '')">
-                {{ feedPost.author?.username }}
-              </a>
-              <p class="actual-caption">
-                <ng-container *ngFor="let t of tokensOf(feedPost.caption || '')">
-                  <ng-container *ngIf="t.handle; else plain">
-                    <a class="atted" [href]="'/account/' + t.handle">
-                      &#64;{{ t.handle }}
-                    </a>
+      <!-- Show actual comments once ready -->
+      <ng-container *ngIf="!isLoadingComments">
+        <div class="comment-scroll-box" #scrollBox>
+          <!-- Rating Criteria Box -->
+          <div *ngIf="postRating" [ngClass]="postRating.media_type === 'movie' ? 'movie-rating-info' : 'series-rating-info'">
+            <p class="rating-information">{{ postRating.title }}</p>
+            
+            <!-- Movie Criteria -->
+            <div *ngIf="postRating.media_type === 'movie'" class="movie-criteria">
+              <p>Acting: {{ postRating.criteria.acting }}</p>
+              <p>Visuals: {{ postRating.criteria.visuals }}</p>
+              <p>Story: {{ postRating.criteria.story }}</p>
+              <p>Pacing: {{ postRating.criteria.pacing }}</p>
+              <p>Climax: {{ getMovieCriteria(postRating.criteria).climax }}</p>
+              <p>Ending: {{ postRating.criteria.ending }}</p>
+            </div>
+            
+            <!-- Series Criteria -->
+            <div *ngIf="postRating.media_type === 'series'" class="series-criteria">
+              <p>Acting: {{ postRating.criteria.acting }}</p>
+              <p>Visuals: {{ postRating.criteria.visuals }}</p>
+              <p>Story: {{ postRating.criteria.story }}</p>
+              <p>Pacing: {{ postRating.criteria.pacing }}</p>
+              <p>Length: {{ getSeriesCriteria(postRating.criteria).length }}</p>
+              <p>Ending: {{ postRating.criteria.ending }}</p>
+            </div>
+            
+            <p class="overall-rating">Overall Rating: {{ postRating.rating }}</p>
+          </div>
+
+          <ul class="post-comments">
+            <li *ngIf="(feedPost.caption || '').length !== 0" class="caption-row">
+              <div class="caption">
+                <a class="profile-username"
+                  [href]="'/account/' + (feedPost.author?.username || '')">
+                  {{ feedPost.author?.username }}
+                </a>
+                <p class="actual-caption">
+                  <ng-container *ngFor="let t of tokensOf(feedPost.caption || '')">
+                    <ng-container *ngIf="t.handle; else plain">
+                      <a class="atted" [href]="'/account/' + t.handle">
+                        &#64;{{ t.handle }}
+                      </a>
+                    </ng-container>
+                    <ng-template #plain>{{ t.text }}</ng-template>
                   </ng-container>
-                  <ng-template #plain>{{ t.text }}</ng-template>
-                </ng-container>
-              </p>
-            </div>
-          </li>
-
-          <li *ngFor="let c of reversedComments">
-            <div class="comment-row" [attr.id]="'c-' + c.commentId">
-              <app-comment
-                [comment]="c"
-                (replyRequested)="startReplyTo($event.commentId, $event.replyingToUsername)">
-              </app-comment>
-            </div>
-
-            <ng-container *ngIf="getTotalReplies(c.commentId) > 0">
-              <ul class="post-replies" *ngIf="areRepliesVisible(c.commentId)">
-                <li *ngFor="let r of getVisibleReplies(c.commentId)">
-                  <div class="reply-row" [attr.id]="'r-' + r.replyId">
-                    <app-reply
-                      [reply]="r"
-                      [parentCommentId]="c.commentId"
-                      (replyRequested)="startReplyTo($event.commentId, $event.replyingToUsername)">
-                    </app-reply>
-                  </div>
-                </li>
-              </ul>
-
-              <div class="replies-controls">
-                <!-- Show "View X Replies" when replies are hidden OR there are more to load -->
-                <button *ngIf="getRemainingReplies(c.commentId) > 0"
-                        type="button"
-                        (click)="onViewMoreReplies(c.commentId)">
-                  - View {{ getRemainingReplies(c.commentId) }} {{ getRemainingReplies(c.commentId) === 1 ? 'Reply' : 'Replies' }} -
-                </button>
-
-                <!-- Show "Hide Replies" when replies are visible AND all are shown -->
-                <button *ngIf="areRepliesVisible(c.commentId) && getRemainingReplies(c.commentId) === 0"
-                        type="button"
-                        (click)="onHideReplies(c.commentId)">
-                  - Hide Replies -
-                </button>
+                </p>
               </div>
-            </ng-container>
-          </li>
-        </ul>
-      </div>
+            </li>
+
+            <li *ngFor="let c of reversedComments">
+              <div class="comment-row" [attr.id]="'c-' + c.commentId">
+                <app-comment
+                  [comment]="c"
+                  (replyRequested)="startReplyTo($event.commentId, $event.replyingToUsername)">
+                </app-comment>
+              </div>
+
+              <ng-container *ngIf="getTotalReplies(c.commentId) > 0">
+                <ul class="post-replies" *ngIf="areRepliesVisible(c.commentId)">
+                  <li *ngFor="let r of getVisibleReplies(c.commentId)">
+                    <div class="reply-row" [attr.id]="'r-' + r.replyId">
+                      <app-reply
+                        [reply]="r"
+                        [parentCommentId]="c.commentId"
+                        (replyRequested)="startReplyTo($event.commentId, $event.replyingToUsername)">
+                      </app-reply>
+                    </div>
+                  </li>
+                </ul>
+
+                <div class="replies-controls">
+                  <!-- Show "View X Replies" when replies are hidden OR there are more to load -->
+                  <button *ngIf="getRemainingReplies(c.commentId) > 0"
+                          type="button"
+                          (click)="onViewMoreReplies(c.commentId)">
+                    - View {{ getRemainingReplies(c.commentId) }} {{ getRemainingReplies(c.commentId) === 1 ? 'Reply' : 'Replies' }} -
+                  </button>
+
+                  <!-- Show "Hide Replies" when replies are visible AND all are shown -->
+                  <button *ngIf="areRepliesVisible(c.commentId) && getRemainingReplies(c.commentId) === 0"
+                          type="button"
+                          (click)="onHideReplies(c.commentId)">
+                    - Hide Replies -
+                  </button>
+                </div>
+              </ng-container>
+            </li>
+          </ul>
+        </div>
+      </ng-container>
 
       <div class="commenting-area">
         <div class="left-buttons">
@@ -220,7 +237,6 @@
         </div>
 
       </div>
-
     </div>
   </div>
 </div>

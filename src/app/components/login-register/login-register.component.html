@@ -113,7 +113,7 @@
             <div class="agree-to-terms">
                 <label><input type="checkbox" class="w2w-checkbox" [(ngModel)]="termsChecked" name="terms"/>I agree to the terms &amp; conditions</label>
 
-                <a (click)="$event.preventDefault()">terms</a>
+                <a routerLink="/privacy-policy">terms</a>
             </div>
 
             <button type="submit" class="button">Register</button>
@@ -124,3 +124,12 @@
         </form>
     </div>
 </div>
+
+<footer class="login-footer">
+  <div class="footer-content">
+    <p class="app-name">What2Watch</p>
+    <div class="footer-links">
+      <a routerLink="/privacy-policy" class="footer-link">Privacy Policy</a>
+    </div>
+  </div>
+</footer>

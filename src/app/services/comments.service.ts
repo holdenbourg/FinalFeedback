@@ -1,3 +1,6 @@
+// src/app/services/comments.service.ts
+// FIXED: Removed like_count from SELECT queries
+
 import { Injectable } from '@angular/core';
 import { supabase } from '../core/supabase.client';
 import { CommentModel } from '../models/database-models/comment.model';
@@ -11,7 +14,7 @@ export class CommentsService {
     const { data, error } = await supabase
       .from('comments')
       .select(`
-        id, post_id, author_id, parent_comment_id, text, like_count, created_at,
+        id, post_id, author_id, parent_comment_id, text, created_at,
         author:users!comments_author_id_fkey ( username, profile_picture_url )
       `)
       .eq('post_id', postId)
@@ -45,7 +48,6 @@ export class CommentsService {
 
   ///  Add a new comment to a post  \\\
   async addComment(postId: string, text: string): Promise<CommentModel> {
-    // ✅ FIX: Get current user
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -57,10 +59,10 @@ export class CommentsService {
       .insert({ 
         post_id: postId, 
         text,
-        author_id: user.id  // ✅ FIX: Add author_id
+        author_id: user.id
       })
       .select(`
-        id, post_id, author_id, parent_comment_id, text, like_count, created_at,
+        id, post_id, author_id, parent_comment_id, text, created_at,
         author:users!comments_author_id_fkey ( username, profile_picture_url )
       `)
       .single();
@@ -72,7 +74,6 @@ export class CommentsService {
 
   ///  Add a reply to a comment/reply  \\\
   async addReply(parentCommentId: string, text: string): Promise<CommentModel> {
-    // ✅ FIX: Get current user
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -93,10 +94,10 @@ export class CommentsService {
         post_id: parent.post_id,
         parent_comment_id: parentCommentId,
         text,
-        author_id: user.id  // ✅ FIX: Add author_id
+        author_id: user.id
       })
       .select(`
-        id, post_id, author_id, parent_comment_id, text, like_count, created_at,
+        id, post_id, author_id, parent_comment_id, text, created_at,
         author:users!comments_author_id_fkey ( username, profile_picture_url )
       `)
       .single();

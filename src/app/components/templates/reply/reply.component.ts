@@ -51,23 +51,33 @@ export class ReplyComponent implements OnInit {
   private changeDetectorRef = inject(ChangeDetectorRef);
 
   private commentModerationService = inject(CommentModerationService);
-  private usersService = inject(UsersService);
 
   meLiked = false;
   submittingLike = false;
 
   async ngOnInit() {
+    // Load like status
     if (typeof this.initiallyLiked === 'boolean') {
       this.meLiked = this.initiallyLiked;
-
     } else {
       try {
         this.meLiked = await this.likesService.isLiked('reply', this.reply.replyId);
-
       } catch { }
     }
 
+    // Load like count
+    await this.refreshLikeCount();
+
     this.likeChanged.subscribe((e) => this.likeToggled.emit(e));
+  }
+
+  private async refreshLikeCount() {
+    try {
+      this.reply.likeCount = await this.likesService.count('reply', this.reply.replyId);
+      this.changeDetectorRef.markForCheck();
+    } catch (err) {
+      console.error('Error refreshing like count:', err);
+    }
   }
 
   async toggleLike() {
@@ -77,11 +87,15 @@ export class ReplyComponent implements OnInit {
     const next = !this.meLiked;
     const prevCount = this.reply.likeCount ?? 0;
 
+    // Optimistic update
     this.meLiked = next;
     this.reply.likeCount = prevCount + (next ? 1 : -1);
 
     try {
       await this.likesService.toggleLike('reply', this.reply.replyId, next);
+      
+      // Refresh from database
+      await this.refreshLikeCount();
 
       this.likeChanged.emit({
         replyId: this.reply.replyId,
@@ -91,6 +105,7 @@ export class ReplyComponent implements OnInit {
       });
 
     } catch {
+      // Revert on error
       this.meLiked = !next;
       this.reply.likeCount = prevCount;
 

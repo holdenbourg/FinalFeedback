@@ -13,6 +13,7 @@
 }
 
 .current-user-info {
+  border-bottom: 2px solid #fff;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -74,8 +75,6 @@
 .poster-frame {
   position: relative;
   height: 100%;
-  border-top: 2px solid #fff;
-  border-left: 2px solid #fff;
   border-right: 2px solid #fff;
   box-sizing: border-box;
   overflow: hidden;
@@ -222,12 +221,10 @@
 .comment-scroll-box {
   flex: 1 1 auto;
   min-height: 0;
-  border-top: 2px solid #fff;
   border-bottom: 2px solid #fff;
   overflow: hidden auto;
   padding-left: 12px;
   box-sizing: border-box;
-  margin-right: 2.5px;
 }
 .comment-scroll-box::-webkit-scrollbar {
   width: 0.5em; 
@@ -236,6 +233,9 @@
   background: #fff; 
   border-radius: 0.25em; 
   cursor: pointer;
+}
+.comment-scroll-box::-webkit-scrollbar-track {
+  margin: 6.5px 0;
 }
 
 .movie-rating-info, .series-rating-info {
@@ -494,6 +494,7 @@
   justify-content: center;
   width: 32px; 
   height: 32px;
+  margin-right: 10px;
 }
 .post-comment a {
   font-size: 1.6rem; 

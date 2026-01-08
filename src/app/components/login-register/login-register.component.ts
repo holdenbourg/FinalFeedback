@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { LoginModel } from '../../models/login-register-models/login.model';
 import { RegisterModel } from '../../models/login-register-models/register.model';
@@ -11,7 +11,7 @@ import { UsersService } from '../../services/users.service';
 @Component({
   selector: 'app-login-register',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './login-register.component.html',
   styleUrls: ['./login-register.component.css']
 })
