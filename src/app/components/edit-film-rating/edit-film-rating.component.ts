@@ -67,7 +67,7 @@ export class EditFilmRatingComponent implements OnInit {
 
     if (!postIdParam) { this.router.navigate(['/movies']); return; }
 
-    from(this.filmCache.getDraft(postIdParam)).subscribe(editDraft => {
+    from(Promise.all([this.filmCache.getDraft(postIdParam), this.filmCache.getOriginal(postIdParam)])).subscribe(([editDraft, originalSnapshot]) => {
       if (!editDraft) { this.router.navigate(['/movies']); return; }
 
       if ((editDraft.media_type as FilmKind) !== typeParam) {
@@ -77,11 +77,19 @@ export class EditFilmRatingComponent implements OnInit {
 
       this.draft.set(editDraft);
 
+      // Use an "original snapshot" (stored when the user first clicked Edit) to compute deltas,
+      // so a refresh doesn't erase the pending-change confirmation.
+      const original = originalSnapshot ?? editDraft;
+      if (!originalSnapshot) {
+        // Seed baseline for older sessions that didn't store originals.
+        this.filmCache.setOriginal(postIdParam, original);
+      }
+
       if (this.initialCriteria() == null) {
-        this.initialCriteria.set(this.getCriteria(editDraft));
+        this.initialCriteria.set(this.getCriteria(original));
       }
       if (this.initialRating() == null) {
-        this.initialRating.set(editDraft.rating ?? 0);
+        this.initialRating.set(original.rating ?? 0);
       }
     });
   }
@@ -101,6 +109,7 @@ export class EditFilmRatingComponent implements OnInit {
       });
 
       this.filmCache.clearDraft(this.postId());
+      this.filmCache.clearOriginal(this.postId());
       this.navigateBackByKind();
     } catch (e) {
       console.error('Failed to update rating', e);

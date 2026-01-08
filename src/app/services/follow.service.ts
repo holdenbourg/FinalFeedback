@@ -16,7 +16,7 @@ export class FollowsService {
         .eq('follower_id', followerId)
         .eq('followee_id', followeeId)
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('isFollowing error:', error);
@@ -41,7 +41,7 @@ export class FollowsService {
         .eq('requester_id', requesterId)
         .eq('target_id', targetId)
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('hasRequestedToFollow error:', error);
@@ -69,7 +69,7 @@ export class FollowsService {
       .from('users')
       .select('private')
       .eq('id', targetId)
-      .single();
+      .maybeSingle();
 
     if (userErr) throw userErr;
 

@@ -8,6 +8,34 @@
       <i class='bx bx-x'></i>
     </button>
 
+    <!-- 3-dot Menu (Top Right, left of close) -->
+    <div class="menu-wrap" (click)="$event.stopPropagation()">
+      <button
+        class="btn-menu"
+        (click)="toggleMenu($event)"
+        aria-label="Post options"
+        aria-haspopup="true"
+        [attr.aria-expanded]="menuOpen"
+        title="Options"
+      >
+        <i class='bx bx-dots-vertical-rounded'></i>
+      </button>
+
+      <div class="menu" *ngIf="menuOpen">
+        <button type="button" class="menu-item" (click)="openConfirm(isArchived ? 'unarchive' : 'archive')">
+          <i class='bx' [ngClass]="isArchived ? 'bx-upload' : 'bx-archive-in'"></i>
+          <span>{{ isArchived ? 'Unarchive post' : 'Archive post' }}</span>
+        </button>
+
+        <div class="menu-sep"></div>
+
+        <button type="button" class="menu-item danger" (click)="openConfirm('delete')">
+          <i class='bx bx-trash'></i>
+          <span>Delete post</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Previous Arrow -->
     <button 
       *ngIf="canNavigatePrevious"
@@ -28,7 +56,78 @@
 
     <!-- Feed Post Component (exact same as home feed) -->
     <div class="post-wrapper">
-      <app-feed-post [feedPost]="feedPost"></app-feed-post>
+      <app-feed-post 
+        [feedPost]="feedPost"
+        (postLikeChanged)="onPostLikeChanged($event)">
+      </app-feed-post>
+    </div>
+
+    <!-- Confirm Modal (Archive / Unarchive / Delete) -->
+    <div
+      class="confirm-backdrop"
+      *ngIf="confirmOpen"
+      (click)="closeConfirm()"
+      aria-hidden="true">
+    </div>
+
+    <div
+      class="confirm-modal"
+      *ngIf="confirmOpen"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()">
+
+      <h3 class="confirm-title" *ngIf="confirmMode==='delete'">
+        Are you sure you want to delete this post?
+      </h3>
+      <h3 class="confirm-title" *ngIf="confirmMode==='archive'">
+        Are you sure you want to archive this post?
+      </h3>
+      <h3 class="confirm-title" *ngIf="confirmMode==='unarchive'">
+        Are you sure you want to unarchive this post?
+      </h3>
+
+      <p class="confirm-body" *ngIf="confirmMode==='delete'">
+        It will delete the rating as well.
+        <ng-container *ngIf="!isArchived">
+          If you want to keep the rating but not the post, archive it.
+        </ng-container>
+      </p>
+      <p class="confirm-body" *ngIf="confirmMode==='archive'">
+        None of your followers will be able to see it.
+      </p>
+      <p class="confirm-body" *ngIf="confirmMode==='unarchive'">
+        It will make the post public on your account.
+      </p>
+
+      <div class="confirm-actions">
+        <button
+          type="button"
+          class="btn btn-danger"
+          *ngIf="confirmMode==='delete'"
+          (click)="confirmAction()"
+        >
+          Delete
+        </button>
+        <button
+          type="button"
+          class="btn"
+          *ngIf="confirmMode==='archive'"
+          (click)="confirmAction()"
+        >
+          Archive
+        </button>
+        <button
+          type="button"
+          class="btn"
+          *ngIf="confirmMode==='unarchive'"
+          (click)="confirmAction()"
+        >
+          Unarchive
+        </button>
+
+        <button type="button" class="btn btn-ghost" (click)="closeConfirm()">Cancel</button>
+      </div>
     </div>
   </div>
 </div>

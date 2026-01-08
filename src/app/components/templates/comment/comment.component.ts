@@ -13,6 +13,7 @@ export type FeedUiComment = {
   likeCount?: number;
   commentDate: string;
   author_id?: string;
+  isLikedByCurrentUser?: boolean;
 };
 
 @Component({
@@ -36,20 +37,25 @@ export class CommentComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
 
   private commentModerationService = inject(CommentModerationService);
-  private usersService = inject(UsersService);
 
   meLiked = false;
   submittingLike = false;
 
   async ngOnInit() {
-    // Load like status
-    try {
-      this.meLiked = await this.likes.isLiked('comment', this.comment.commentId);
-    } catch { }
-
-    // Load like count
-    await this.refreshLikeCount();
-
+    // If likeCount already set by parent, skip loading
+    if (this.comment.likeCount === undefined) {
+      await this.refreshLikeCount();
+    }
+    
+    // If liked status already set by parent, use it; otherwise load
+    if (this.comment.isLikedByCurrentUser !== undefined) {
+      this.meLiked = this.comment.isLikedByCurrentUser;
+    } else {
+      try {
+        this.meLiked = await this.likes.isLiked('comment', this.comment.commentId);
+      } catch { }
+    }
+    
     this.likeChanged.subscribe(e => this.likeToggled.emit(e));
   }
 

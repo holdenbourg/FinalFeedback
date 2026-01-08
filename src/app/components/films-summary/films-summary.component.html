@@ -76,11 +76,11 @@
       </li>
     </ng-container>
 
-    <li class="list-item" *ngIf="currentUser() as cu">
-      <a (click)="routingService.navigateToAccountsPosts(cu.username)">
-        <i class="bx bx-user"></i>
-        <span class="link-name" [style.--i]="sidebarService.navDelay(4, filmKind())">Account</span>
-      </a>
+    <li class="list-item">
+        <a (click)="routingService.navigateToAccountsPosts(currentUser()!.username)">
+            <i class="bx bx-user"></i>
+            <span class="link-name" style="--i:6;">Account</span>
+        </a>
     </li>
 
     <li class="list-item">

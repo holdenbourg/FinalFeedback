@@ -165,7 +165,28 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
 
   /// ---------------------------------------- Delete Functionality ----------------------------------------  \\\
   async onDelete(item: { postId?: string; id: string; media_type: 'movie'|'series' }) {
-    
+    try {
+      // Uses the database RPC (delete_rating_cascade) via RatingsService.deleteRating().
+      await this.ratingsService.deleteRating(item.id);
+
+      // Remove from local state so the UI updates immediately.
+      if (item.media_type === 'movie') {
+        this.allRatedMovies.update(list => list.filter(r => r.id !== item.id));
+      } else {
+        this.allRatedSeries.update(list => list.filter(r => r.id !== item.id));
+      }
+
+      // If the deleted film was active, pick a new active film (or null).
+      if (this.activeFilm?.id === item.id) {
+        const next = this.filteredRatedFilms()[0] ?? null;
+        this.activeFilm = next;
+        this.saveActive(next?.id);
+        this.afterRender(() => this.scrollActiveIntoViewIfNeeded(true));
+      }
+    } catch (err) {
+      console.error('Failed to delete rating', err);
+      alert('Could not delete this rating. Please try again.');
+    }
   }
 
   openConfirm(item: RatedItem) {
@@ -177,13 +198,12 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
     this.confirmTarget.set(null);
   }
 
-  confirmDelete() {
+  async confirmDelete() {
     const item = this.confirmTarget();
     if (!item) return;
 
     this.closeConfirm();
-
-    this.onDelete(item);
+    await this.onDelete(item);
   }
 
 
@@ -302,6 +322,7 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
     this.saveActive(film.id);
     this.saveScrollTop();
 
+    this.filmCache.setOriginal(film.id, film); // baseline snapshot
     this.filmCache.setDraft(film.id, film);
     this.routingService.navigateToEditFilm(film.media_type, film.id);
   }

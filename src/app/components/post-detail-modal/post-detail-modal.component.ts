@@ -1,8 +1,10 @@
-import { Component, Input, Output, EventEmitter, inject, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, HostListener, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PostModelWithAuthor } from '../../models/database-models/post.model';
 import { FeedPostComponent } from '../templates/feed-post/feed-post.component';
 import { PostWithRating } from '../../models/helper-models/post-with-ratings.interface';
+import { RatingsService } from '../../services/ratings.service';
+import { supabase } from '../../core/supabase.client';
 
 @Component({
   selector: 'app-post-detail-modal',
@@ -11,7 +13,10 @@ import { PostWithRating } from '../../models/helper-models/post-with-ratings.int
   templateUrl: './post-detail-modal.component.html',
   styleUrl: './post-detail-modal.component.css'
 })
-export class PostDetailModalComponent {
+export class PostDetailModalComponent implements OnInit {
+  private changeDetectorRef = inject(ChangeDetectorRef);
+  private ratingsService = inject(RatingsService);
+  
   @Input() post!: PostWithRating;
   @Input() currentIndex: number = 0;
   @Input() totalPosts: number = 0;
@@ -21,10 +26,20 @@ export class PostDetailModalComponent {
   @Output() close = new EventEmitter<void>();
   @Output() navigatePrevious = new EventEmitter<void>();
   @Output() navigateNext = new EventEmitter<void>();
+  @Output() postUpdated = new EventEmitter<{ index: number; likeCount: number }>();
+  @Output() postDeleted = new EventEmitter<{ postId: string; ratingId: string }>();
+  @Output() postVisibilityChanged = new EventEmitter<{ postId: string; visibility: 'public' | 'archived' }>();
 
-  // Convert PostWithRating to PostModelWithAuthor for feed-post component
-  get feedPost(): PostModelWithAuthor {
-    return {
+
+  feedPost!: PostModelWithAuthor;
+
+  // ========== Menu / Confirm UI state ==========
+  menuOpen = false;
+  confirmOpen = false;
+  confirmMode: 'delete' | 'archive' | 'unarchive' | null = null;
+
+  ngOnInit() {
+    this.feedPost = {
       id: this.post.post.id,
       author_id: this.post.post.author_id,
       poster_url: this.post.rating.poster_url,
@@ -38,9 +53,88 @@ export class PostDetailModalComponent {
       rating_id: this.post.rating.id,
       author: {
         username: this.post.author.username,
-        profile_picture_url: this.post.author.profile_picture_url || 'assets/images/default-avatar.png'
+        profile_picture_url:
+          this.post.author.profile_picture_url || 'assets/images/default-avatar.png'
       }
     };
+  }
+
+  // ========== Menu ==========
+  toggleMenu(event?: MouseEvent) {
+    event?.stopPropagation();
+    this.menuOpen = !this.menuOpen;
+  }
+
+  closeMenu() {
+    this.menuOpen = false;
+  }
+
+  openConfirm(mode: 'delete' | 'archive' | 'unarchive') {
+    this.closeMenu();
+    this.confirmMode = mode;
+    this.confirmOpen = true;
+  }
+
+  closeConfirm() {
+    this.confirmOpen = false;
+    this.confirmMode = null;
+  }
+
+  get isArchived(): boolean {
+    return this.feedPost?.visibility === 'archived';
+  }
+
+  // ========== Actions ==========
+  async confirmAction() {
+    if (!this.confirmMode) return;
+
+    try {
+      if (this.confirmMode === 'delete') {
+        // Deleting the rating cascades the post + all post footprints.
+        await this.ratingsService.deleteRating(this.feedPost.rating_id);
+        this.postDeleted.emit({ postId: this.feedPost.id, ratingId: this.feedPost.rating_id });
+        this.closeConfirm();
+        this.onClose();
+        return;
+      }
+
+      const newVisibility: 'public' | 'archived' = this.confirmMode === 'archive' ? 'archived' : 'public';
+
+      const { error } = await supabase
+        .from('posts')
+        .update({ visibility: newVisibility })
+        .eq('id', this.feedPost.id);
+
+      if (error) throw error;
+
+      // Update local state so UI updates instantly
+      this.feedPost.visibility = newVisibility;
+      this.post.post.visibility = newVisibility;
+      this.postVisibilityChanged.emit({ postId: this.feedPost.id, visibility: newVisibility });
+
+      this.closeConfirm();
+      this.changeDetectorRef.markForCheck();
+      this.changeDetectorRef.detectChanges();
+    } catch (err) {
+      console.error('Post action failed', err);
+      alert('Something went wrong. Please try again.');
+    }
+  }
+
+  onPostLikeChanged(newCount: number) {
+    // Update the underlying post data
+    this.post.post.like_count = newCount;
+    this.feedPost.like_count = newCount;
+    
+    // Emit to parent (account component)
+    this.postUpdated.emit({
+      index: this.currentIndex,
+      likeCount: newCount
+    });
+    
+    // Trigger detection
+    this.changeDetectorRef.markForCheck();
+    this.changeDetectorRef.detectChanges();
   }
 
   // ========== Navigation ==========
@@ -65,7 +159,13 @@ export class PostDetailModalComponent {
   handleKeyboardEvent(event: KeyboardEvent) {
     switch (event.key) {
       case 'Escape':
-        this.onClose();
+        if (this.confirmOpen) {
+          this.closeConfirm();
+        } else if (this.menuOpen) {
+          this.closeMenu();
+        } else {
+          this.onClose();
+        }
         break;
       case 'ArrowLeft':
         this.onPrevious();
@@ -74,6 +174,12 @@ export class PostDetailModalComponent {
         this.onNext();
         break;
     }
+  }
+
+  @HostListener('document:click')
+  onDocumentClick() {
+    // Clicking anywhere outside closes the menu
+    if (this.menuOpen) this.closeMenu();
   }
 
   onBackdropClick(event: MouseEvent) {

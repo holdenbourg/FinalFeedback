@@ -1,4 +1,4 @@
-import { Component, Input, ViewChild, ElementRef, ChangeDetectorRef, inject, OnInit, signal } from '@angular/core';
+import { Component, Input, ViewChild, ElementRef, ChangeDetectorRef, inject, OnInit, signal, EventEmitter, Output, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CommentComponent } from '../comment/comment.component';
@@ -21,6 +21,7 @@ type UiComment = {
   likeCount?: number;
   commentDate: string;
   author_id?: string;
+  isLikedByCurrentUser?: boolean;
 };
 
 type UiReply = {
@@ -33,6 +34,7 @@ type UiReply = {
   likeCount?: number;
   commentDate: string;
   author_id?: string;
+  isLikedByCurrentUser?: boolean;
 };
 
 @Component({
@@ -43,8 +45,9 @@ type UiReply = {
   styleUrls: ['./feed-post.component.css'],
 })
 
-export class FeedPostComponent implements OnInit {
+export class FeedPostComponent implements OnInit, OnChanges {
   @Input() feedPost!: PostModelWithAuthor;
+  @Output() postLikeChanged = new EventEmitter<number>();
 
   @ViewChild('scrollBox') scrollBoxRef!: ElementRef<HTMLDivElement>;
   @ViewChild('commentInputReference') commentInputReference?: ElementRef<HTMLInputElement>;
@@ -89,21 +92,35 @@ export class FeedPostComponent implements OnInit {
   isLoadingComments = true;
 
   async ngOnInit() {
-    // Phase 1: Load poster & basic data immediately
-    this.isLoadingData = false;  // Show poster right away
+    // Phase 1: Show poster immediately
+    this.isLoadingData = false;
     this.changeDetectorRef.detectChanges();
     
-    // Phase 2: Load everything else (keeps comments in shimmer)
+    // Phase 2: Load data (but keep comments hidden)
     await Promise.all([
       this.loadLikeStatusAndCount(),
       this.loadRatingData(),
       this.loadThread(),
       this.loadTaggedUsers()
     ]);
+    
+    // Phase 3: Load comment/reply counts AND liked status
+    await Promise.all([
+      this.loadCommentLikeCounts(),
+      this.loadCommentLikedStatus()  // ← ADD THIS
+    ]);
 
-    // Phase 3: Show comments once likes are ready
+    // Phase 4: Now show comments with likes ready
     this.isLoadingComments = false;
     this.changeDetectorRef.detectChanges();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    // Whenever post input changes, trigger detection
+    if (changes['post']) {
+      this.changeDetectorRef.markForCheck();
+      this.changeDetectorRef.detectChanges();
+    }
   }
 
   private async loadLikeStatusAndCount() {
@@ -210,6 +227,88 @@ export class FeedPostComponent implements OnInit {
       
       // ✅ TikTok-style: Start with all replies hidden (limit = 0)
       this.replyDisplayLimit.set(parentId, 0);
+    }
+  }
+
+  /**
+   * Batch load like counts for all comments and replies
+   */
+  private async loadCommentLikeCounts() {
+    try {
+      // Get all comment IDs
+      const commentIds = this.reversedComments.map(c => c.commentId);
+      
+      // Get all reply IDs
+      const replyIds: string[] = [];
+      for (const replies of this.repliesByComment.values()) {
+        replyIds.push(...replies.map(r => r.replyId));
+      }
+      
+      // Batch load counts in parallel
+      const [commentCounts, replyCounts] = await Promise.all([
+        commentIds.length > 0 
+          ? this.likesService.countMultiple('comment', commentIds)
+          : Promise.resolve(new Map<string, number>()),
+        replyIds.length > 0
+          ? this.likesService.countMultiple('comment', replyIds)  // replies are also 'comment' type
+          : Promise.resolve(new Map<string, number>())
+      ]);
+      
+      // Apply counts to comments
+      this.reversedComments.forEach(comment => {
+        comment.likeCount = commentCounts.get(comment.commentId) ?? 0;
+      });
+      
+      // Apply counts to replies
+      for (const replies of this.repliesByComment.values()) {
+        replies.forEach(reply => {
+          reply.likeCount = replyCounts.get(reply.replyId) ?? 0;
+        });
+      }
+      
+    } catch (err) {
+      console.error('Error loading comment like counts:', err);
+    }
+  }
+
+  /**
+   * Batch load liked status for all comments and replies
+   */
+  private async loadCommentLikedStatus() {
+    try {
+      // Get all comment IDs
+      const commentIds = this.reversedComments.map(c => c.commentId);
+      
+      // Get all reply IDs
+      const replyIds: string[] = [];
+      for (const replies of this.repliesByComment.values()) {
+        replyIds.push(...replies.map(r => r.replyId));
+      }
+      
+      // Batch check liked status in parallel
+      const [likedComments, likedReplies] = await Promise.all([
+        commentIds.length > 0 
+          ? this.likesService.checkMultipleLiked('comment', commentIds)
+          : Promise.resolve(new Set<string>()),
+        replyIds.length > 0
+          ? this.likesService.checkMultipleLiked('comment', replyIds)  // replies are also 'comment' type
+          : Promise.resolve(new Set<string>())
+      ]);
+      
+      // Apply liked status to comments
+      this.reversedComments.forEach(comment => {
+        comment.isLikedByCurrentUser = likedComments.has(comment.commentId);
+      });
+      
+      // Apply liked status to replies
+      for (const replies of this.repliesByComment.values()) {
+        replies.forEach(reply => {
+          reply.isLikedByCurrentUser = likedReplies.has(reply.replyId);
+        });
+      }
+      
+    } catch (err) {
+      console.error('Error loading comment liked status:', err);
     }
   }
 
@@ -363,7 +462,6 @@ export class FeedPostComponent implements OnInit {
         const bucket = this.repliesByComment.get(parentId) ?? [];
         const replyingToUsername = this.pendingReplyToUsername ?? '';
 
-        // ✅ TikTok-style: Add new reply to the TOP of the list (unshift instead of push)
         bucket.unshift({
           replyId: v.id,
           username: v.authorUsername,
@@ -418,18 +516,26 @@ export class FeedPostComponent implements OnInit {
   // ======================
   async togglePostLike() {
     const next = !this.liked;
-    const prevCount = this.feedPost.like_count ?? 0;  // ✅ Handle undefined
+    const prevCount = this.feedPost.like_count ?? 0;
     
     // Optimistic update
     this.liked = next;
     this.feedPost.like_count = prevCount + (next ? 1 : -1);
+    
+    // FORCE DETECTION - Try both methods
+    this.changeDetectorRef.markForCheck();
     this.changeDetectorRef.detectChanges();
+    
+    // Also force Angular to re-evaluate bindings
+    setTimeout(() => {
+      this.changeDetectorRef.detectChanges();
+    }, 0);
     
     try {
       await this.likesService.toggleLike('post', this.feedPost.id, next);
-      
-      // Refresh count from database for accuracy
       await this.refreshPostCount();
+
+      this.postLikeChanged.emit(this.feedPost.like_count);
       
     } catch (err) {
       console.error('Error toggling post like:', err);
@@ -437,6 +543,8 @@ export class FeedPostComponent implements OnInit {
       // Revert on error
       this.liked = !next;
       this.feedPost.like_count = prevCount;
+      
+      this.changeDetectorRef.markForCheck();
       this.changeDetectorRef.detectChanges();
     }
   }

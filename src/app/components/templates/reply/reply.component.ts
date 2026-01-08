@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
 import { LikesService } from '../../../services/likes.service';
 import { CommentModerationService, MentionToken } from '../../../services/comment-moderation.service';
-import { UsersService } from '../../../services/users.service';
 
 export type FeedUiReply = {
   replyId: string;
@@ -14,6 +13,7 @@ export type FeedUiReply = {
   likeCount?: number;
   commentDate: string;
   author_id?: string;
+  isLikedByCurrentUser?: boolean;  // ← ADD THIS
 };
 
 @Component({
@@ -56,19 +56,21 @@ export class ReplyComponent implements OnInit {
   submittingLike = false;
 
   async ngOnInit() {
-    // Load like status
-    if (typeof this.initiallyLiked === 'boolean') {
-      this.meLiked = this.initiallyLiked;
+    // If likeCount already set by parent, skip loading
+    if (this.reply.likeCount === undefined) {
+      await this.refreshLikeCount();
+    }
+    
+    // If liked status already set by parent, use it; otherwise load
+    if (this.reply.isLikedByCurrentUser !== undefined) {
+      this.meLiked = this.reply.isLikedByCurrentUser;
     } else {
       try {
-        this.meLiked = await this.likesService.isLiked('reply', this.reply.replyId);
+        this.meLiked = await this.likesService.isLiked('comment', this.reply.replyId);
       } catch { }
     }
-
-    // Load like count
-    await this.refreshLikeCount();
-
-    this.likeChanged.subscribe((e) => this.likeToggled.emit(e));
+    
+    this.likeChanged.subscribe(e => this.likeToggled.emit(e));
   }
 
   private async refreshLikeCount() {

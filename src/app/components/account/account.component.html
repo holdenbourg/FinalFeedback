@@ -46,11 +46,11 @@
       </a>
     </li>
 
-    <li class="list-item active" *ngIf="currentUser() as cu">
-      <a (click)="routingService.navigateToAccountsPosts(cu.username)">
-        <i class="bx bx-user"></i>
-        <span class="link-name" style="--i:1;">Account</span>
-      </a>
+    <li class="list-item active">
+        <a (click)="routingService.navigateToAccountsPosts(currentUser()!.username)">
+            <i class="bx bx-user"></i>
+            <span class="link-name" style="--i:6;">Account</span>
+        </a>
     </li>
 
     <li class="list-item">
@@ -339,6 +339,9 @@
     [canNavigateNext]="canNavigateNext()"
     (close)="closePostModal()"
     (navigatePrevious)="navigateToPreviousPost()"
-    (navigateNext)="navigateToNextPost()">
-  </app-post-detail-modal>
+    (navigateNext)="navigateToNextPost()"
+    (postUpdated)="onPostUpdated($event)"
+    (postDeleted)="onModalPostDeleted($event)"
+    (postVisibilityChanged)="onModalVisibilityChanged($event)"
+  ></app-post-detail-modal>
 </div>

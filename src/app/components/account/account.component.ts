@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectorRef, WritableSignal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { combineLatest } from 'rxjs';
 import { UsersService } from '../../services/users.service';
@@ -32,16 +32,34 @@ export class AccountComponent implements OnInit {
   public routingService = inject(RoutingService);
   public sidebarService = inject(SidebarService);
   private blocksService = inject(BlocksService);
-  private likesService = inject(LikesService);
 
   // State signals
   currentUser = signal<UserModel | null>(null);
   profileUser = signal<UserModel | null>(null);
   viewState = signal<AccountViewState>(AccountViewState.LOADING);
   activeTab = signal<TabType>('posts');
-  
-  posts = signal<PostWithRating[]>([]);
-  loading = signal(true);
+
+  postsTab = signal<any[]>([]);
+  taggedTab = signal<any[]>([]);
+  archiveTab = signal<any[]>([]);
+
+  loadingPosts = signal(false);
+  loadingTagged = signal(false);
+  loadingArchive = signal(false);
+
+  private tabCache: Record<TabType, PostWithRating[] | null> = {
+    posts: null,
+    tagged: null,
+    archive: null,
+  };
+
+  private cachedProfileUserId: string | null = null;
+  private cachedViewState: AccountViewState | null = null;
+
+  posts: WritableSignal<PostWithRating[]> = signal<PostWithRating[]>([]);
+  initialLoading = signal(true);
+  loading: WritableSignal<boolean> = signal(true);
+
   username = signal('');
 
   postCount = signal<number>(0);
@@ -167,7 +185,7 @@ export class AccountComponent implements OnInit {
 
       // Load posts based on tab and permissions
       this.activeTab.set(tab);
-      await this.loadPostsForTab(tab, profile.id, state);
+      await this.preloadAllTabs(profile.id, state);
 
       // Load social data (followers/following/requests)
       await this.loadSocialData(profile.id);
@@ -506,6 +524,37 @@ export class AccountComponent implements OnInit {
     }
   }
 
+  private async preloadAllTabs(userId: string, state: AccountViewState) {
+    this.cachedProfileUserId = userId;
+    this.cachedViewState = state;
+
+    this.loading.set(true);
+
+    try {
+      // POSTS
+      await this.loadUserPosts(userId, state);
+      this.tabCache.posts = this.posts();
+
+      // TAGGED
+      await this.loadTaggedPosts(userId, state);
+      this.tabCache.tagged = this.posts();
+
+      // ARCHIVE (only if own account)
+      if (state === AccountViewState.OWN_ACCOUNT) {
+        await this.loadArchivedPosts(userId);
+        this.tabCache.archive = this.posts();
+      } else {
+        this.tabCache.archive = [];
+      }
+
+      // Put UI back onto currently selected tab dataset
+      const tab = this.activeTab();
+      this.posts.set(this.tabCache[tab] ?? []);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
   /**
    * Get like counts for multiple posts (efficient batch query)
    */
@@ -594,16 +643,165 @@ export class AccountComponent implements OnInit {
     }
   }
 
-
-  ///  -======================================-  Tab Navigation Logic  -======================================- \\\
-  switchTab(tab: TabType) {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { tab },
-      queryParamsHandling: 'merge'
-    });
+  // ← ADD THIS METHOD
+  onPostUpdated(event: { index: number; likeCount: number }) {
+    const currentPosts = this.posts();
+    if (event.index >= 0 && event.index < currentPosts.length) {
+      // Create a new array with updated post
+      const updatedPosts = currentPosts.map((item, idx) => {
+        if (idx === event.index) {
+          return {
+            ...item,
+            post: {
+              ...item.post,
+              like_count: event.likeCount
+            }
+          };
+        }
+        return item;
+      });
+      
+      this.posts.set(updatedPosts);
+    }
   }
 
+  onModalPostDeleted(event: { postId: string; ratingId: string }) {
+    const tab = this.activeTab();
+
+    // --- 1) Remove from ALL caches ---
+    (['posts', 'tagged', 'archive'] as const).forEach(t => {
+      const list = this.tabCache[t];
+      if (!list) return;
+      this.tabCache[t] = list.filter(x => x.post.id !== event.postId);
+    });
+
+    // --- 2) Update the currently shown list from its cache (source of truth) ---
+    const after = this.tabCache[tab] ?? [];
+    this.posts.set(after);
+
+    // Optional: keep the count visually in sync (depends on how you define postCount)
+    this.postCount.update(n => Math.max(0, n - 1));
+
+    // --- 3) Keep modal navigation sane ---
+    const currentIndex = this.selectedPostIndex();
+    if (currentIndex === null) return;
+
+    if (after.length === 0) {
+      this.closePostModal();
+      return;
+    }
+
+    // If we deleted the last item, clamp index
+    const nextIndex = Math.min(currentIndex, after.length - 1);
+    this.selectedPostIndex.set(nextIndex);
+  }
+
+  onModalVisibilityChanged(event: { postId: string; visibility: 'public' | 'archived' }) {
+    const tab = this.activeTab();
+
+    const moveBetweenPublicAndArchive = (item: any) => {
+      // Posts tab holds PUBLIC posts, Archive tab holds ARCHIVED posts
+      const isNowPublic = event.visibility === 'public';
+      const isNowArchived = event.visibility === 'archived';
+
+      // Remove from both lists first (prevents duplicates)
+      this.tabCache.posts = (this.tabCache.posts ?? []).filter(x => x.post.id !== event.postId);
+      this.tabCache.archive = (this.tabCache.archive ?? []).filter(x => x.post.id !== event.postId);
+
+      if (isNowPublic) {
+        this.tabCache.posts = [item, ...(this.tabCache.posts ?? [])];
+      } else if (isNowArchived) {
+        this.tabCache.archive = [item, ...(this.tabCache.archive ?? [])];
+      }
+    };
+
+    // Find the item in ANY cache first (not just current tab)
+    const allTabs = ['posts', 'tagged', 'archive'] as const;
+    let found: any | null = null;
+
+    for (const t of allTabs) {
+      const list = this.tabCache[t];
+      const idx = list?.findIndex(x => x.post.id === event.postId) ?? -1;
+      if (idx !== -1 && list) {
+        found = {
+          ...list[idx],
+          post: { ...list[idx].post, visibility: event.visibility }
+        };
+        // Update in-place in that cache
+        this.tabCache[t] = list.map((x, i) => (i === idx ? found! : x));
+        break;
+      }
+    }
+
+    // Fallback: if not found in cache for some reason, use current visible list
+    if (!found) {
+      const before = this.posts();
+      const idx = before.findIndex(x => x.post.id === event.postId);
+      if (idx === -1) return;
+
+      found = {
+        ...before[idx],
+        post: { ...before[idx].post, visibility: event.visibility }
+      };
+    }
+
+    // If the action is archive/unarchive, move between posts<->archive caches
+    moveBetweenPublicAndArchive(found);
+
+    // Tagged tab: keep it there too (unless you specifically want to hide archived tagged posts)
+    if (this.tabCache.tagged) {
+      const taggedIdx = this.tabCache.tagged.findIndex(x => x.post.id === event.postId);
+      if (taggedIdx !== -1) {
+        this.tabCache.tagged = this.tabCache.tagged.map((x, i) => (i === taggedIdx ? found! : x));
+      }
+    }
+
+    // --- Update current visible list from its cache ---
+    const after = this.tabCache[tab] ?? [];
+    this.posts.set(after);
+
+    // --- Keep modal navigation sane ---
+    const currentIndex = this.selectedPostIndex();
+    if (currentIndex === null) return;
+
+    if (after.length === 0) {
+      this.closePostModal();
+      return;
+    }
+
+    if (currentIndex >= after.length) {
+      this.selectedPostIndex.set(after.length - 1);
+    }
+  }
+
+  ///  -======================================-  Tab Navigation Logic  -======================================- \\\
+  async switchTab(tab: TabType) {
+    this.activeTab.set(tab);
+
+    // If we already preloaded and cached it, just swap the list
+    const cached = this.tabCache[tab];
+    if (cached) {
+      this.posts.set(cached);
+      return;
+    }
+
+    // If not cached yet (edge case), load just once and cache it
+    const userId = this.cachedProfileUserId;
+    const state = this.cachedViewState;
+
+    if (!userId || state === null) return;
+
+    this.loading.set(true);
+    try {
+      if (tab === 'posts') await this.loadUserPosts(userId, state);
+      if (tab === 'tagged') await this.loadTaggedPosts(userId, state);
+      if (tab === 'archive') await this.loadArchivedPosts(userId);
+
+      this.tabCache[tab] = this.posts();
+    } finally {
+      this.loading.set(false);
+    }
+  }
 
   ///  -======================================-  Follow Logic  -======================================- \\\
   async onFollow() {
@@ -612,9 +810,7 @@ export class AccountComponent implements OnInit {
 
     try {
       await this.followsService.follow(profile.id);
-      
-      // Reload account to update state
-      await this.loadAccount(this.username(), this.activeTab());
+      await this.refreshFollowUiAfterAction('follow');
     } catch (err) {
       console.error('[Account] Failed to follow:', err);
     }
@@ -626,9 +822,7 @@ export class AccountComponent implements OnInit {
 
     try {
       await this.followsService.unfollow(profile.id);
-      
-      // Reload account to update state
-      await this.loadAccount(this.username(), this.activeTab());
+      await this.refreshFollowUiAfterAction('unfollow');
     } catch (err) {
       console.error('[Account] Failed to unfollow:', err);
     }
@@ -640,12 +834,39 @@ export class AccountComponent implements OnInit {
 
     try {
       await this.followsService.cancelRequest(profile.id);
-      
-      // Reload account to update state
-      await this.loadAccount(this.username(), this.activeTab());
+      await this.refreshFollowUiAfterAction('cancel');
     } catch (err) {
       console.error('[Account] Failed to cancel request:', err);
     }
+  }
+
+  private async refreshFollowUiAfterAction(kind: 'follow' | 'unfollow' | 'cancel') {
+    const profile = this.profileUser();
+    if (!profile) return;
+
+    // Update viewState + counts optimistically
+    if (kind === 'follow') {
+      if (profile.private) {
+        // Private accounts -> request pending
+        this.viewState.set(AccountViewState.REQUESTED);
+        // followerCount should NOT change until they accept
+      } else {
+        this.viewState.set(AccountViewState.FOLLOWING_PUBLIC);
+        this.followerCount.update(n => n + 1);
+      }
+    }
+
+    if (kind === 'unfollow') {
+      this.viewState.set(profile.private ? AccountViewState.NOT_FOLLOWING_PRIVATE : AccountViewState.NOT_FOLLOWING_PUBLIC);
+      this.followerCount.update(n => Math.max(0, n - 1));
+    }
+
+    if (kind === 'cancel') {
+      this.viewState.set(AccountViewState.NOT_FOLLOWING_PRIVATE);
+    }
+
+    // Refresh the right-side social panel lists (cheap compared to reloadAccount)
+    await this.loadSocialData(profile.id);
   }
 
 
