@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { UserModel } from '../../models/database-models/user.model';
 
 @Component({
   selector: 'app-delete-account-modal',
@@ -13,12 +14,14 @@ export class DeleteAccountModalComponent {
   @Output() confirm = new EventEmitter<void>();
   @Output() cancel = new EventEmitter<void>();
 
+  @Input() user!: UserModel;
+
   confirmationText = signal('');
   isValid = signal(false);
 
   onTextChange(value: string) {
     this.confirmationText.set(value);
-    this.isValid.set(value === 'DELETE MY ACCOUNT');
+    this.isValid.set(value === this.user.username);
   }
 
   onConfirm() {

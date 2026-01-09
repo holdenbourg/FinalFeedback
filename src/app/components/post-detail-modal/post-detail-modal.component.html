@@ -9,7 +9,7 @@
     </button>
 
     <!-- 3-dot Menu (Top Right, left of close) -->
-    <div class="menu-wrap" (click)="$event.stopPropagation()">
+    <div class="menu-wrap" (click)="$event.stopPropagation()" *ngIf="feedPost.author_id === currentUser()?.id">
       <button
         class="btn-menu"
         (click)="toggleMenu($event)"

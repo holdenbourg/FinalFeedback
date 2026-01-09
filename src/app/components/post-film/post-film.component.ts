@@ -281,11 +281,9 @@ export class PostFilmComponent implements OnInit, OnDestroy {
 
       // Success! Navigate to appropriate page
       if (visibility === 'public') {
-        //this.routingService.navigateToAccountsPosts(user.username);
-        this.routingService.navigateToHome();
+        this.routingService.navigateToAccountsPosts(user.username);
       } else {
-        //this.routingService.navigateToAccountsArchived(user.username);
-        this.routingService.navigateToSearchMovies();
+        this.routingService.navigateToAccountsArchive(user.username);
       }
 
 

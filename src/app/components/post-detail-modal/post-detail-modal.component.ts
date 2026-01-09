@@ -1,10 +1,12 @@
-import { Component, Input, Output, EventEmitter, inject, HostListener, ChangeDetectorRef, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, HostListener, ChangeDetectorRef, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PostModelWithAuthor } from '../../models/database-models/post.model';
 import { FeedPostComponent } from '../templates/feed-post/feed-post.component';
 import { PostWithRating } from '../../models/helper-models/post-with-ratings.interface';
 import { RatingsService } from '../../services/ratings.service';
 import { supabase } from '../../core/supabase.client';
+import { UserModel } from '../../models/database-models/user.model';
+import { UsersService } from '../../services/users.service';
 
 @Component({
   selector: 'app-post-detail-modal',
@@ -16,6 +18,7 @@ import { supabase } from '../../core/supabase.client';
 export class PostDetailModalComponent implements OnInit {
   private changeDetectorRef = inject(ChangeDetectorRef);
   private ratingsService = inject(RatingsService);
+  private usersService = inject(UsersService);
   
   @Input() post!: PostWithRating;
   @Input() currentIndex: number = 0;
@@ -30,6 +33,7 @@ export class PostDetailModalComponent implements OnInit {
   @Output() postDeleted = new EventEmitter<{ postId: string; ratingId: string }>();
   @Output() postVisibilityChanged = new EventEmitter<{ postId: string; visibility: 'public' | 'archived' }>();
 
+  currentUser = signal<UserModel | null>(null);
 
   feedPost!: PostModelWithAuthor;
 
@@ -38,7 +42,11 @@ export class PostDetailModalComponent implements OnInit {
   confirmOpen = false;
   confirmMode: 'delete' | 'archive' | 'unarchive' | null = null;
 
-  ngOnInit() {
+  async ngOnInit() {
+    // Load current user
+    const current = await this.usersService.getCurrentUserProfile();
+    this.currentUser.set(current);
+
     this.feedPost = {
       id: this.post.post.id,
       author_id: this.post.post.author_id,

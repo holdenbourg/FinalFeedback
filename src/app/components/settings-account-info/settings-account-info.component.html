@@ -381,7 +381,8 @@
 <app-delete-account-modal 
   *ngIf="showDeleteAccountModal"
   (confirm)="onDeleteAccount()"
-  (cancel)="showDeleteAccountModal = false">
+  (cancel)="showDeleteAccountModal = false"
+  [user]="currentUser()!">
 </app-delete-account-modal>
 
 <app-logout-modal 

@@ -12,7 +12,6 @@ import { RoutingService } from '../../services/routing.service';
 import { SidebarService } from '../../services/sidebar.service';
 import { PostDetailModalComponent } from '../post-detail-modal/post-detail-modal.component';
 import { BlocksService } from '../../services/blocks.service';
-import { LikesService } from '../../services/likes.service';
 
 type TabType = 'posts' | 'tagged' | 'archive';
 
@@ -26,7 +25,6 @@ type TabType = 'posts' | 'tagged' | 'archive';
 export class AccountComponent implements OnInit {
   // Services
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
   private usersService = inject(UsersService);
   private followsService = inject(FollowsService);
   public routingService = inject(RoutingService);

@@ -246,7 +246,7 @@
     </div>
 
     <!-- RIGHT: Followers/Following/Requests Panel -->
-    <div class="social-panel">
+    <div class="social-panel" *ngIf="canViewPosts()">
       <!-- Social Tabs -->
       <div class="social-tabs">
         <button [class.active]="socialTab === 'followers'"

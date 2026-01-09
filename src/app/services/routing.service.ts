@@ -69,8 +69,17 @@ export class RoutingService {
     this.router.navigate(['/summary']);
   }
 
+  navigateToAccount(username: string, tab: 'posts' | 'tagged' | 'archive' = 'posts') {
+    this.router.navigate(['/account', username], { queryParams: { tab } });
+  }
   navigateToAccountsPosts(username: string) {
-    this.router.navigate(['/account', username ]);
+    this.navigateToAccount(username, 'posts');
+  }
+  navigateToAccountsTags(username: string) {
+    this.navigateToAccount(username, 'tagged');
+  }
+  navigateToAccountsArchive(username: string) {
+    this.navigateToAccount(username, 'archive');
   }
   
   navigateToSettings() {
