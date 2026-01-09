@@ -11,6 +11,9 @@ import { LikesService } from '../../../services/likes.service';
 import { ViewsService } from '../../../services/views.service';
 import { TagsService } from '../../../services/tags.service';
 import { RatingsService, PostRating, MovieCriteria, SeriesCriteria } from '../../../services/ratings.service';
+import { AuthService } from '../../../core/auth.service';
+import { UserModel } from '../../../models/database-models/user.model';
+import { UsersService } from '../../../services/users.service';
 
 type UiComment = {
   commentId: string;
@@ -53,6 +56,7 @@ export class FeedPostComponent implements OnInit, OnChanges {
   @ViewChild('commentInputReference') commentInputReference?: ElementRef<HTMLInputElement>;
 
   private commentsService = inject(CommentsService);
+  private usersService = inject(UsersService);
   private likesService = inject(LikesService);
   private viewsService = inject(ViewsService);
   private commentModerationService = inject(CommentModerationService);
@@ -76,7 +80,6 @@ export class FeedPostComponent implements OnInit, OnChanges {
   reversedComments: UiComment[] = [];
   repliesByComment = new Map<string, UiReply[]>();
 
-  // ✅ TikTok-style: Start hidden (0), first click shows 3, subsequent clicks add 5
   replyDisplayLimit = new Map<string, number>();
 
   private seenOnce = false;
@@ -91,7 +94,13 @@ export class FeedPostComponent implements OnInit, OnChanges {
   isLoadingData = true;
   isLoadingComments = true;
 
+  currentUser = signal<UserModel | null>(null);
+
   async ngOnInit() {
+    // Load current user
+    const current = await this.usersService.getCurrentUserProfile();
+    this.currentUser.set(current);
+
     // Phase 1: Show poster immediately
     this.isLoadingData = false;
     this.changeDetectorRef.detectChanges();
@@ -494,6 +503,67 @@ export class FeedPostComponent implements OnInit, OnChanges {
     } finally {
       this.submitting = false;
       this.changeDetectorRef.markForCheck();
+    }
+  }
+
+  async onDeleteComment(commentId: string) {
+    try {
+      // Optimistic UI update
+      this.reversedComments = this.reversedComments.filter(c => c.commentId !== commentId);
+      
+      // Also remove its replies from the map
+      this.repliesByComment.delete(commentId);
+      this.replyDisplayLimit.delete(commentId);
+      
+      // Update comment count
+      if (this.feedPost.comment_count !== undefined) {
+        // Count how many replies were deleted
+        const replyCount = this.repliesByComment.get(commentId)?.length || 0;
+        this.feedPost.comment_count -= (1 + replyCount);
+      }
+      
+      // Force UI update
+      this.changeDetectorRef.detectChanges();
+      
+      // Delete from database
+      await this.commentsService.deleteComment(commentId);
+      
+    } catch (err) {
+      console.error('Error deleting comment:', err);
+      
+      // Reload thread on error
+      await this.loadThread();
+      this.changeDetectorRef.detectChanges();
+    }
+  }
+
+  async onDeleteReply(event: { replyId: string; parentCommentId: string }) {
+    try {
+      // Get replies array for this comment
+      const replies = this.repliesByComment.get(event.parentCommentId);
+      if (!replies) return;
+      
+      // Optimistic UI update
+      const updatedReplies = replies.filter(r => r.replyId !== event.replyId);
+      this.repliesByComment.set(event.parentCommentId, updatedReplies);
+      
+      // Update comment count
+      if (this.feedPost.comment_count !== undefined) {
+        this.feedPost.comment_count -= 1;
+      }
+      
+      // Force UI update
+      this.changeDetectorRef.detectChanges();
+      
+      // Delete from database
+      await this.commentsService.deleteComment(event.replyId);
+      
+    } catch (err) {
+      console.error('Error deleting reply:', err);
+      
+      // Reload thread on error
+      await this.loadThread();
+      this.changeDetectorRef.detectChanges();
     }
   }
 

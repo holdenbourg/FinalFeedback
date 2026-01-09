@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, HostListener, inject, Input, OnInit, Output } from '@angular/core';
 import { LikesService } from '../../../services/likes.service';
 import { CommentModerationService, MentionToken } from '../../../services/comment-moderation.service';
 
@@ -28,8 +28,9 @@ export type FeedUiReply = {
 export class ReplyComponent implements OnInit {
   @Input() reply!: FeedUiReply;
   @Input() parentCommentId!: string;
-
   @Input() initiallyLiked?: boolean;
+  @Input() currentUserId?: string;  // ← ADD THIS
+
   @Output() likeChanged = new EventEmitter<{
     replyId: string;
     parentCommentId: string;
@@ -46,6 +47,8 @@ export class ReplyComponent implements OnInit {
     commentId: string; 
     replyingToUsername: string;
   }>();
+  @Output() deleteRequested = new EventEmitter<{ replyId: string; parentCommentId: string }>();
+
 
   private likesService = inject(LikesService);
   private changeDetectorRef = inject(ChangeDetectorRef);
@@ -54,6 +57,7 @@ export class ReplyComponent implements OnInit {
 
   meLiked = false;
   submittingLike = false;
+  showMenu = false;
 
   async ngOnInit() {
     // If likeCount already set by parent, skip loading
@@ -129,6 +133,31 @@ export class ReplyComponent implements OnInit {
     this.replyRequested.emit({
       commentId: this.parentCommentId,
       replyingToUsername: this.reply.username,
+    });
+  }
+
+    canDelete(): boolean {
+    return this.currentUserId === this.reply.author_id;
+  }
+
+  toggleMenu() {
+    this.showMenu = !this.showMenu;
+    this.changeDetectorRef.markForCheck();
+  }
+
+  @HostListener('document:click')
+  closeMenu() {
+    if (this.showMenu) {
+      this.showMenu = false;
+      this.changeDetectorRef.markForCheck();
+    }
+  }
+
+  onDelete() {
+    this.showMenu = false;
+    this.deleteRequested.emit({
+      replyId: this.reply.replyId,
+      parentCommentId: this.parentCommentId
     });
   }
 

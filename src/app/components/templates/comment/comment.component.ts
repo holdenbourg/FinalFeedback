@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, HostListener, inject, Input, OnInit, Output } from '@angular/core';
 import { LikesService } from '../../../services/likes.service';
 import { CommentModerationService, MentionToken } from '../../../services/comment-moderation.service';
 import { UsersService } from '../../../services/users.service';
@@ -27,19 +27,21 @@ export type FeedUiComment = {
 
 export class CommentComponent implements OnInit {
   @Input() comment!: FeedUiComment;
+  @Input() currentUserId?: string;
 
   @Output() replyRequested = new EventEmitter<{ commentId: string; replyingToUsername: string }>();
-
   @Output() likeChanged = new EventEmitter<{ commentId: string; liked: boolean; likeCount: number }>();
   @Output() likeToggled = new EventEmitter<{ commentId: string; liked: boolean; likeCount: number }>();
+  @Output() deleteRequested = new EventEmitter<string>();
 
-  private likes = inject(LikesService);
-  private cdr = inject(ChangeDetectorRef);
+  private likesService = inject(LikesService);
+  private changeDetectorRef = inject(ChangeDetectorRef);
 
   private commentModerationService = inject(CommentModerationService);
 
   meLiked = false;
   submittingLike = false;
+  showMenu = false;
 
   async ngOnInit() {
     // If likeCount already set by parent, skip loading
@@ -52,7 +54,7 @@ export class CommentComponent implements OnInit {
       this.meLiked = this.comment.isLikedByCurrentUser;
     } else {
       try {
-        this.meLiked = await this.likes.isLiked('comment', this.comment.commentId);
+        this.meLiked = await this.likesService.isLiked('comment', this.comment.commentId);
       } catch { }
     }
     
@@ -61,8 +63,8 @@ export class CommentComponent implements OnInit {
 
   private async refreshLikeCount() {
     try {
-      this.comment.likeCount = await this.likes.count('comment', this.comment.commentId);
-      this.cdr.markForCheck();
+      this.comment.likeCount = await this.likesService.count('comment', this.comment.commentId);
+      this.changeDetectorRef.markForCheck();
     } catch (err) {
       console.error('Error refreshing like count:', err);
     }
@@ -80,7 +82,7 @@ export class CommentComponent implements OnInit {
     this.comment.likeCount = prev + (next ? 1 : -1);
 
     try {
-      await this.likes.toggleLike('comment', this.comment.commentId, next);
+      await this.likesService.toggleLike('comment', this.comment.commentId, next);
       
       // Refresh from database to ensure accuracy
       await this.refreshLikeCount();
@@ -98,7 +100,7 @@ export class CommentComponent implements OnInit {
 
     } finally {
       this.submittingLike = false;
-      this.cdr.markForCheck();
+      this.changeDetectorRef.markForCheck();
     }
   }
 
@@ -115,6 +117,32 @@ export class CommentComponent implements OnInit {
 
   tokensOf(text: string | null | undefined): MentionToken[] {
     return this.commentModerationService.tokenizeMentions(text);
+  }
+
+    // ✅ NEW: Check if current user can delete
+  canDelete(): boolean {
+    return this.currentUserId === this.comment.author_id;
+  }
+
+  // ✅ NEW: Toggle menu
+  toggleMenu() {
+    this.showMenu = !this.showMenu;
+    this.changeDetectorRef.markForCheck();
+  }
+
+  // ✅ NEW: Close menu when clicking outside
+  @HostListener('document:click')
+  closeMenu() {
+    if (this.showMenu) {
+      this.showMenu = false;
+      this.changeDetectorRef.markForCheck();
+    }
+  }
+
+  // ✅ NEW: Handle delete
+  onDelete() {
+    this.showMenu = false;
+    this.deleteRequested.emit(this.comment.commentId);
   }
 
 

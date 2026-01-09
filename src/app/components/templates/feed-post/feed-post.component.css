@@ -226,6 +226,7 @@
   padding-left: 12px;
   box-sizing: border-box;
   margin-right: 2.5px;
+  scrollbar-gutter: stable;
 }
 .comment-scroll-box::-webkit-scrollbar {
   width: 0.5em; 

@@ -106,4 +106,16 @@ export class CommentsService {
 
     return data as unknown as CommentModel;
   }
+
+  async deleteComment(commentId: string): Promise<void> {
+    const { error } = await supabase
+      .from('comments')
+      .delete()
+      .eq('id', commentId);
+
+    if (error) {
+      console.error('Error deleting comment:', error);
+      throw error;
+    }
+  }
 }

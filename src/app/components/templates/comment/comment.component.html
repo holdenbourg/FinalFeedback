@@ -44,6 +44,23 @@
       >
         <i class="{{ meLiked ? 'bx bxs-like' : 'bx bx-like' }}"></i>
       </button>
+      <div class="comment-menu" *ngIf="canDelete()">
+        <button
+          class="menu-btn"
+          type="button"
+          (click)="toggleMenu(); $event.stopPropagation()"
+          title="More options"
+        >
+          <i class='bx bx-dots-horizontal-rounded'></i>
+        </button>
+
+        <div class="menu-dropdown" *ngIf="showMenu" (click)="$event.stopPropagation()">
+          <button class="menu-item delete" type="button" (click)="onDelete()">
+            <i class='bx bx-trash'></i>
+            Delete
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

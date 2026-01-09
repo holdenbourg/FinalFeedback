@@ -67,6 +67,92 @@
   align-items: flex-start;
   justify-content: flex-end;
   padding-right: 24px;
+  gap: 4px;  /* ← Add this */
+}
+
+/* Copy all .menu-btn, .menu-dropdown, .menu-item styles from comment.component.css */
+.reply-menu {
+  position: relative;
+}
+
+.menu-btn {
+  background: transparent;
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.6vw;
+  display: inline-flex;
+  align-items: center;
+  width: 2vw;
+  height: 2vw;
+  min-width: 28px;
+  min-height: 28px;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.menu-btn:hover {
+  opacity: 1;
+}
+
+/* Dropdown menu */
+.menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: rgba(30, 30, 30, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  min-width: 120px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  animation: menuSlideDown 0.15s ease;
+  margin-top: 4px;
+}
+
+@keyframes menuSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menu-item {
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 0.95vw;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.menu-item.delete {
+  color: #ff6b6b;
+}
+
+.menu-item.delete:hover {
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.menu-item i {
+  font-size: 1.2rem;
 }
 
 .reply-text .atted { 

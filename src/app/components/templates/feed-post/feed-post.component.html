@@ -155,7 +155,9 @@
               <div class="comment-row" [attr.id]="'c-' + c.commentId">
                 <app-comment
                   [comment]="c"
-                  (replyRequested)="startReplyTo($event.commentId, $event.replyingToUsername)">
+                  [currentUserId]="currentUser()?.id"
+                  (replyRequested)="startReplyTo($event.commentId, $event.replyingToUsername)"
+                  (deleteRequested)="onDeleteComment($event)">
                 </app-comment>
               </div>
 
@@ -166,7 +168,9 @@
                       <app-reply
                         [reply]="r"
                         [parentCommentId]="c.commentId"
-                        (replyRequested)="startReplyTo($event.commentId, $event.replyingToUsername)">
+                        [currentUserId]="currentUser()?.id"
+                        (replyRequested)="startReplyTo($event.commentId, $event.replyingToUsername)"
+                        (deleteRequested)="onDeleteReply($event)">
                       </app-reply>
                     </div>
                   </li>
