@@ -84,7 +84,6 @@
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
-  gap: 4px;  /* ← Space between like and menu */
 }
 
 /* Three-dot menu button */
@@ -100,13 +99,14 @@
   font-size: 1.6vw;
   display: inline-flex;
   align-items: center;
-  width: 2vw;
+  width: 1vw;
   height: 2vw;
   min-width: 28px;
   min-height: 28px;
   justify-content: center;
   opacity: 0.7;
   transition: opacity 0.15s ease;
+  margin-right: 5px;
 }
 
 .menu-btn:hover {
@@ -122,7 +122,7 @@
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
-  min-width: 120px;
+  min-width: 100px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 100;
   animation: menuSlideDown 0.15s ease;
@@ -146,7 +146,7 @@
   background: transparent;
   border: none;
   color: #fff;
-  font-size: 0.95vw;
+  font-size: 0.75vw !important;
   font-weight: 500;
   text-align: left;
   cursor: pointer;
@@ -177,18 +177,26 @@
   border: 0;
   color: #fff;
   cursor: pointer;
-  font-size: 1.6vw;  /* Changed from rem to vw for responsive sizing */
+  font-size: 1.6vw;
   display: inline-flex;
   align-items: center;
-  width: 2vw;  /* Changed from fixed 32px to responsive */
+  width: 1vw;
   height: 2vw;
-  min-width: 28px;  /* Minimum size on small screens */
+  min-width: 28px;
   min-height: 28px;
   justify-content: center;
+  opacity: 0.7;
 }
-.icon-btn:focus-visible {
-  outline: 2px solid rgba(255,255,255,.5);
-  border-radius: 6px;
+.icon-btn:hover {
+  opacity: 1;
+}
+
+
+.bx bx-like {
+  background: red;
+}
+.bx bxs-like {
+  background: blue;
 }
 
 .replies {
