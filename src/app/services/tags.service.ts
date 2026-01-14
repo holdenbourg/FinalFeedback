@@ -86,6 +86,155 @@ export class TagsService {
 
     if (error) throw error;
   }
+  
+  /**
+   * Create tags from @mentions in text
+   * Validates that mentioned users exist before creating tags
+   */
+  async createTagsFromMentions(
+    text: string,
+    targetType: 'post' | 'comment' | 'reply',
+    targetId: string,
+    postId: string
+  ): Promise<string[]> {
+    try {
+      // Get current user
+      const { data: { user }, error: uErr } = await supabase.auth.getUser();
+      if (uErr || !user) {
+        console.error('[TagsService] Not signed in:', uErr);
+        return [];
+      }
+
+      // Extract @mentions from text
+      const mentions = this.extractMentions(text);
+      if (mentions.length === 0) {
+        return [];
+      }
+
+      console.log('[TagsService] Found mentions:', mentions);
+
+      // Get post status to match tag status
+      const { data: post, error: postErr } = await supabase
+        .from('posts')
+        .select('visibility')
+        .eq('id', postId)
+        .single();
+
+      if (postErr) {
+        console.error('[TagsService] Error fetching post status:', postErr);
+        return [];
+      }
+
+      const status = post.visibility as 'public' | 'archived';
+
+      // Validate each mentioned user exists and get their ID
+      const validTags: Array<{ tagged_id: string }> = [];
+      
+      for (const username of mentions) {
+        // ✅ FIX: Use eq() with toLowerCase() instead of ilike()
+        const { data: userData, error: userErr } = await supabase
+          .from('users')
+          .select('id')
+          .eq('username', username.toLowerCase())
+          .maybeSingle();  // ✅ FIX: Use maybeSingle() instead of single()
+
+        if (!userErr && userData) {
+          // Don't tag yourself
+          if (userData.id !== user.id) {
+            validTags.push({ tagged_id: userData.id });
+          } else {
+            console.log('[TagsService] Skipping self-tag');
+          }
+        } else {
+          console.log(`[TagsService] User "${username}" not found, skipping tag`);
+        }
+      }
+
+      if (validTags.length === 0) {
+        console.log('[TagsService] No valid users to tag');
+        return [];
+      }
+
+      // Create tags for all valid users
+      const tags = validTags.map(tag => ({
+        tagger_id: user.id,
+        tagged_id: tag.tagged_id,
+        target_type: targetType,
+        target_id: targetId,
+        status: status
+      }));
+
+      console.log('[TagsService] Creating tags:', tags);
+
+      const { data: created, error: insertErr } = await supabase
+        .from('tags')
+        .insert(tags)
+        .select('id');
+
+      if (insertErr) {
+        console.error('[TagsService] Error creating tags:', insertErr);
+        return [];
+      }
+
+      console.log(`[TagsService] Created ${created?.length || 0} tags`);
+      return (created || []).map(t => t.id);
+
+    } catch (err) {
+      console.error('[TagsService] Exception in createTagsFromMentions:', err);
+      return [];
+    }
+  }
+
+  /**
+   * Extract @mentions from text
+   * Returns array of usernames (without @, lowercase)
+   */
+  private extractMentions(text: string): string[] {
+    if (!text) return [];
+
+    // Match @username (letters, numbers, underscores)
+    // Exclude @ symbols inside words (like email addresses)
+    const mentionRegex = /(?:^|[^\w])@(\w+)/g;
+    const mentions: string[] = [];
+    let match;
+
+    while ((match = mentionRegex.exec(text)) !== null) {
+      const username = match[1].toLowerCase();
+      // Avoid duplicates
+      if (!mentions.includes(username)) {
+        mentions.push(username);
+      }
+    }
+
+    return mentions;
+  }
+
+  /**
+   * Delete all tags associated with a comment or reply
+   * Used when deleting comments/replies to clean up orphaned tags
+   */
+  async deleteTagsByTarget(
+    targetType: 'comment' | 'reply',
+    targetId: string
+  ): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('tags')
+        .delete()
+        .eq('target_type', targetType)
+        .eq('target_id', targetId);
+
+      if (error) {
+        console.error('[TagsService] Error deleting tags:', error);
+        throw error;
+      }
+
+      console.log(`[TagsService] Deleted tags for ${targetType} ${targetId}`);
+    } catch (err) {
+      console.error('[TagsService] Exception in deleteTagsByTarget:', err);
+      throw err;
+    }
+  }
 
   /**
    * Delete a specific tag

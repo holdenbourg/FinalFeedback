@@ -422,9 +422,292 @@
   outline-offset: 2px; 
 }
 
-/* ---------- Loading/Error ---------- */
-.loading-error { 
-  color: #fff; 
-  text-align: center; 
-  padding: 40px; 
+.rate-button.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  color: #999;
+}
+.rate-button.disabled:hover {
+  transform: none;
+}
+.rate-button.disabled.active {
+  opacity: 0.6;
+}
+
+/* ========== Shimmer Loading Styles ========== */
+
+.shimmer-container {
+  pointer-events: none;
+}
+
+/* Shimmer animation */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Base shimmer element */
+.shimmer-base {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+}
+
+/* Left column shimmer */
+.shimmer-left {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.shimmer-row {
+  padding: 0 20px;
+  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shimmer-label,
+.shimmer-value {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+}
+
+.shimmer-label {
+  width: 35%;
+  height: 24px;
+}
+
+.shimmer-value {
+  height: 20px;
+}
+
+/* Right column shimmer */
+.shimmer-right {
+  background: transparent;
+}
+
+.shimmer-film-info {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.shimmer-film-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px;
+  min-width: 0;
+}
+
+.shimmer-title {
+  height: 32px;
+  width: 80%;
+  margin-left: auto;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+}
+
+.shimmer-release {
+  height: 24px;
+  width: 50%;
+  margin-left: auto;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+}
+
+.shimmer-badges {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.shimmer-badge {
+  height: 28px;
+  width: 80px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 999px;
+}
+
+.shimmer-spacer {
+  flex: 1;
+}
+
+.shimmer-counts {
+  display: flex;
+  gap: 14px;
+  justify-content: flex-end;
+}
+
+.shimmer-count {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+.shimmer-count-num {
+  height: 28px;
+  width: 40px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+}
+
+.shimmer-count-label {
+  height: 16px;
+  width: 50px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+}
+
+.shimmer-poster {
+  height: 100%;
+  width: clamp(160px, 16vw, 340px);
+  flex-shrink: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 5px;
+}
+
+/* Streaming shimmer */
+.shimmer-streaming {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.shimmer-providers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  padding: 15px 0;
+}
+
+.shimmer-provider {
+  height: 50px;
+  width: 100px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+}
+
+/* Ratings shimmer */
+.shimmer-ratings-button {
+  background: transparent;
+}
+
+.shimmer-ratings-grid {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.shimmer-rating-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.shimmer-rating-logo {
+  height: clamp(64px, 6vw, 120px);
+  width: 80%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+}
+
+.shimmer-rating-score {
+  height: 20px;
+  width: 60%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+}
+
+/* ✅ Rate button shimmer */
+.shimmer-rate-button {
+  height: 56px;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 10px;
 }

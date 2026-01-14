@@ -235,14 +235,6 @@ export class LoginRegisterComponent implements OnInit, OnDestroy {
     }
   }
 
-  async signInWithFacebook() {
-    try {
-      await this.authService.signInWithFacebook(this.buildRedirectUrl());
-    } catch (error: any) {
-      this.handleAuthError(error);
-    }
-  }
-
   private handleAuthError(error: any) {
     this.warning = error?.message ?? 'Sign-in failed. Please try again.';
     this.warningType = 'error';

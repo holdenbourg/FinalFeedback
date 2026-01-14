@@ -5,8 +5,8 @@ import { SearchComponent } from './components/search/search.component';
 import { FilmInformationComponent } from './components/film-information/film-information.component';
 import { RateFilmComponent } from './components/rate-film/rate-film.component';
 import { EditFilmRatingComponent } from './components/edit-film-rating/edit-film-rating.component';
-import { FilmsLibraryComponent } from './components/films-library/films-library.component';
-import { FilmsSummaryComponent } from './components/films-summary/films-summary.component';
+import { LibraryComponent } from './components/library/library.component';
+import { SummaryComponent } from './components/summary/summary.component';
 import { AuthGuard } from './core/auth.guard';
 import { PostFilmComponent } from './components/post-film/post-film.component';
 import { AccountComponent } from './components/account/account.component';
@@ -33,11 +33,9 @@ export const routes: Routes = [
 
     { path: 'post/:type', component: PostFilmComponent, canActivate: [AuthGuard] }, // movies | series
     
-    { path: 'movies/library', component: FilmsLibraryComponent, data: { kind: 'movie' }, canActivate: [AuthGuard] },
-    { path: 'movies/summary', component: FilmsSummaryComponent, data: { kind: 'movie' }, canActivate: [AuthGuard] },
+    { path: 'library', component: LibraryComponent, data: { kind: 'movie' }, canActivate: [AuthGuard] },
 
-    { path: 'shows/library', component: FilmsLibraryComponent, data: { kind: 'series' }, canActivate: [AuthGuard] },
-    { path: 'shows/summary', component: FilmsSummaryComponent, data: { kind: 'series' }, canActivate: [AuthGuard] },
+    { path: 'summary', component: SummaryComponent, data: { kind: 'series' }, canActivate: [AuthGuard] },
 
     { path: 'edit/:type/:postId', component: EditFilmRatingComponent, canActivate: [AuthGuard] },
 

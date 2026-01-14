@@ -21,84 +21,66 @@
     <li class="list-item">
       <a (click)="routingService.navigateToHome()">
         <i class="bx bx-home-alt"></i>
-        <span class="link-name" [style.--i]="sidebarService.navDelay(0, filmKind())">Home</span>
+        <span class="link-name" style="--i:3;">Home</span>
       </a>
     </li>
 
     <li class="list-item">
       <a (click)="routingService.navigateToSearchMovies()">
         <i class="bx bx-search"></i>
-        <span class="link-name" [style.--i]="sidebarService.navDelay(1, filmKind())">Search</span>
+        <span class="link-name" style="--i:2;">Search</span>
       </a>
     </li>
 
-    <li class="list-item" [class.active]="filmKind()==='movie'">
-      <a (click)="routingService.navigateToMoviesLibrary()">
-        <i class="bx bx-camera-movie"></i>
-        <span class="link-name" [style.--i]="sidebarService.navDelay(2, filmKind())">Movies</span>
-      </a>
-    </li>
-    
-    <ng-container *ngIf="filmKind()==='movie'">
-      <li class="films-item active">
-        <a class="library-icon" (click)="routingService.navigateToMoviesLibrary()">
-          <i class='bx  bx-list-ul'></i>
-          <span class="link-name" [style.--i]="sidebarService.navDelay(2, filmKind())">Library</span>
-        </a>
-      </li>
-      <li class="films-item" >
-        <a class="summary-icon" (click)="routingService.navigateToMoviesSummary()">
-          <i class='bx bx-bar-chart-alt-2'></i>
-          <span class="link-name" [style.--i]="sidebarService.navDelay(2, filmKind())">Summary</span>
-        </a>
-      </li>
-    </ng-container>
-
-    <li class="list-item" [class.active]="filmKind()==='series'">
-      <a (click)="routingService.navigateToShowsLibrary()">
-        <i class="bx bx-collection"></i>
-        <span class="link-name" [style.--i]="sidebarService.navDelay(3, filmKind())">Shows</span>
+    <li class="list-item active">
+      <a (click)="routingService.navigateToLibrary()">
+        <i class='bx  bx-list-ul'></i>
+        <span class="link-name" style="--i:1;">Library</span>
       </a>
     </li>
 
-    <ng-container *ngIf="filmKind()==='series'">
-      <li class="films-item active">
-        <a class="library-icon" (click)="routingService.navigateToShowsLibrary()">
-          <i class='bx  bx-list-ul'></i>
-          <span class="link-name" [style.--i]="sidebarService.navDelay(3, filmKind())">Library</span>
-        </a>
-      </li>
-      <li class="films-item" *ngIf="this.filteredRatedFilms().length >= 10">
-        <a class="summary-icon" (click)="routingService.navigateToShowsSummary()">
-          <i class='bx bx-bar-chart-alt-2'></i>
-          <span class="link-name" [style.--i]="sidebarService.navDelay(3, filmKind())">Summary</span>
-        </a>
-      </li>
-    </ng-container>
+    <li class="list-item">
+      <a (click)="routingService.navigateToSummary()">
+        <i class='bx bx-bar-chart-alt-2'></i>
+        <span class="link-name" style="--i:2;">Summary</span>
+      </a>
+    </li>
 
     <li class="list-item">
         <a (click)="routingService.navigateToAccountsPosts(currentUser()!.username)">
             <i class="bx bx-user"></i>
-            <span class="link-name" style="--i:6;">Account</span>
+            <span class="link-name" style="--i:3;">Account</span>
         </a>
     </li>
 
     <li class="list-item">
       <a (click)="routingService.navigateToSettings()">
         <i class="bx bx-cog"></i>
-        <span class="link-name" [style.--i]="sidebarService.navDelay(5, filmKind())">Settings</span>
+        <span class="link-name" style="--i:4;">Settings</span>
       </a>
     </li>
 
     <li class="username" *ngIf="currentUser() as cu">
-      <p class="link-name" [style.--i]="sidebarService.navDelay(6, filmKind())">Signed in as:</p>
-      <p class="link-name" [style.--i]="sidebarService.navDelay(6, filmKind())">{{ cu.username }}</p>
+      <p class="link-name" style="--i:1;">Signed in as:</p>
+      <p class="link-name" style="--i:1;">{{ cu.username }}</p>
     </li>
   </ul>
 </nav>
 
 <div class="container" [class.active]="sidebarService.sidebarActive() === false" [class.no-anim]="sidebarService.suppressAnim()">
-  <div class="left-side" *ngIf="activeFilm as af; else noSelection">
+  <!-- Loading State -->
+  <div class="left-side loading-shimmer" *ngIf="isLoadingRatings()">
+    <div class="shimmer-poster"></div>
+
+    <div class="shimmer-content">
+      <div class="shimmer-line"></div>
+      <div class="shimmer-line short"></div>
+      <div class="shimmer-line medium"></div>
+    </div>
+  </div>
+
+  <!-- Active Film -->
+  <div class="left-side" *ngIf="!isLoadingRatings() && activeFilm as af; else noSelection">
     <div class="top-information" *ngIf="af.date_rated">
       <img
         class="film-poster"
@@ -169,15 +151,16 @@
   </div>
 
   <ng-template #noSelection>
-    <div class="left-side empty">
-      <p class="empty-text">You don’t have any ratings yet</p>
-      <button type="button" class="empty-button" (click)="this.routingService.navigateToSearchMovies()" *ngIf="this.filmKind() === 'movie'">Find Movie To Rate</button>
-      <button type="button" class="empty-button" (click)="this.routingService.navigateToSearchSeries()" *ngIf="this.filmKind() === 'series'">Find Series To Rate</button>
+    <div class="left-side empty" *ngIf="!isLoadingRatings()">
+      <p class="empty-text">You don't have any ratings yet</p>
+      <button type="button" class="empty-button" (click)="this.routingService.navigateToSearchMovies()">
+        Find Something To Rate
+      </button>
     </div>
   </ng-template>
 
   <div class="rated-films-container">
-    <div class="seach-bar" *ngIf="filteredRatedFilms().length > 0">
+    <div class="seach-bar" *ngIf="usersRatedList().length > 0">
       <div class="input-box">
         <input
           type="text"
@@ -204,13 +187,82 @@
 
         <div class="filter-panel" *ngIf="filtersOpen()" (click)="$event.stopPropagation()">
           <div class="filter-row">
+            <span class="filter-heading">Media Type</span>
+
+            <div class="select-multi" [class.open]="mediaTypeOpen()">
+              <button type="button" class="select-trigger" (click)="toggleMediaTypeOpen()">
+                <span>{{ mediaTypeLabel() }}</span>
+                <i class="bx bx-chevron-down chevron" aria-hidden="true"></i>
+              </button>
+
+              <div class="select-menu" *ngIf="mediaTypeOpen()">
+                <div
+                  class="option"
+                  (click)="toggleMediaType('movie')"
+                  [class.selected]="selectedMediaTypes().has('movie')"
+                  role="option"
+                  [attr.aria-selected]="selectedMediaTypes().has('movie')"
+                >
+                  <span class="tickbox" aria-hidden="true"></span>
+                  <span class="label">Movies</span>
+                </div>
+
+                <div
+                  class="option"
+                  (click)="toggleMediaType('series')"
+                  [class.selected]="selectedMediaTypes().has('series')"
+                  role="option"
+                  [attr.aria-selected]="selectedMediaTypes().has('series')"
+                >
+                  <span class="tickbox" aria-hidden="true"></span>
+                  <span class="label">Shows</span>
+                </div>
+
+                <div class="select-actions">
+                  <button type="button" (click)="clearMediaTypes()">Clear</button>
+                  <button type="button" (click)="mediaTypeOpen.set(false)">Done</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-row">
             <span class="filter-heading">Sort by</span>
 
             <div class="segmented">
-              <button type="button" [class.active]="sortKey()==='dateRated'" (click)="setSort('dateRated')">Date Rated</button>
-              <button type="button" [class.active]="sortKey()==='rating'" (click)="setSort('rating')">Overall Rating</button>
-              <button type="button" [class.active]="sortKey()==='runtime'" (click)="setSort('runtime')">Runtime</button>
-              <button type="button" [class.active]="sortKey()==='title'" (click)="setSort('title')">Title</button>
+              <button type="button" 
+                      [class.active]="sortKey()==='dateRated'" 
+                      (click)="setSort('dateRated')">
+                Date Rated
+              </button>
+              
+              <button type="button" 
+                      [class.active]="sortKey()==='rating'" 
+                      (click)="setSort('rating')">
+                Overall Rating
+              </button>
+              
+              <button type="button" 
+                      [class.active]="sortKey()==='runtime'" 
+                      [class.disabled]="!canSortByRuntime()"
+                      [attr.title]="runtimeTooltip()"
+                      (click)="setSort('runtime')">
+                Runtime
+              </button>
+              
+              <button type="button" 
+                      [class.active]="sortKey()==='episodes'" 
+                      [class.disabled]="!canSortByEpisodes()"
+                      [attr.title]="episodesTooltip()"
+                      (click)="setSort('episodes')">
+                Episodes
+              </button>
+              
+              <button type="button" 
+                      [class.active]="sortKey()==='title'" 
+                      (click)="setSort('title')">
+                Title
+              </button>
             </div>
           </div>
 

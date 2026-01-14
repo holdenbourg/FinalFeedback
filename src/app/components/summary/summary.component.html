@@ -1,0 +1,528 @@
+<div class="poster-rows" aria-hidden="true">
+  <div class="row r1"><div class="inner"></div></div>
+  <div class="row r2"><div class="inner"></div></div>
+  <div class="row r3"><div class="inner"></div></div>
+  <div class="row r4"><div class="inner"></div></div>
+  <div class="row r5"><div class="inner"></div></div>
+  <div class="row r6"><div class="inner"></div></div>
+  <div class="row r7"><div class="inner"></div></div>
+  <div class="row r8"><div class="inner"></div></div>
+  <div class="row r9"><div class="inner"></div></div>
+  <div class="row r10"><div class="inner"></div></div>
+</div>
+
+<nav class="sidebar" [class.active]="sidebarService.sidebarActive()" [class.no-anim]="sidebarService.suppressAnim()">
+  <div class="logo-menu">
+    <h2 class="logo">What2Watch</h2>
+    <i class="bx bx-menu toggle-button" (click)="sidebarService.toggle()"></i>
+  </div>
+
+  <ul class="list">
+    <li class="list-item">
+      <a (click)="routingService.navigateToHome()">
+        <i class="bx bx-home-alt"></i>
+        <span class="link-name" style="--i:4;">Home</span>
+      </a>
+    </li>
+
+    <li class="list-item">
+      <a (click)="routingService.navigateToSearchMovies()">
+        <i class="bx bx-search"></i>
+        <span class="link-name" style="--i:3;">Search</span>
+      </a>
+    </li>
+
+    <li class="list-item">
+      <a (click)="routingService.navigateToLibrary()">
+        <i class='bx  bx-list-ul'></i>
+        <span class="link-name" style="--i:2;">Library</span>
+      </a>
+    </li>
+
+    <li class="list-item active">
+      <a (click)="routingService.navigateToSummary()">
+        <i class='bx bx-bar-chart-alt-2'></i>
+        <span class="link-name" style="--i:1;">Summary</span>
+      </a>
+    </li>
+
+
+    <li class="list-item">
+        <a (click)="routingService.navigateToAccountsPosts(currentUser()!.username)">
+            <i class="bx bx-user"></i>
+            <span class="link-name" style="--i:2;">Account</span>
+        </a>
+    </li>
+
+    <li class="list-item">
+      <a (click)="routingService.navigateToSettings()">
+        <i class="bx bx-cog"></i>
+        <span class="link-name" style="--i:3;">Settings</span>
+      </a>
+    </li>
+
+    <li class="username" *ngIf="currentUser() as cu">
+      <p class="link-name" style="--i:1;">Signed in as:</p>
+      <p class="link-name" style="--i:1;">{{ cu.username }}</p>
+    </li>
+  </ul>
+</nav>
+
+<!-- ✅ NEW: Tab Bar -->
+<div class="tab-bar">
+  <button 
+    type="button"
+    class="tab-btn"
+    [class.active]="currentTab() === 'all'"
+    [class.locked]="!canViewAll()"
+    [attr.title]="!canViewAll() ? allThresholdMessage() : ''"
+    (click)="onTabClick('all')">
+    <span class="tab-label">All</span>
+    <i class="bx bx-lock-alt lock-icon" *ngIf="!canViewAll()"></i>
+  </button>
+  
+  <button 
+    type="button"
+    class="tab-btn"
+    [class.active]="currentTab() === 'movies'"
+    [class.locked]="!canViewMovies()"
+    [attr.title]="!canViewMovies() ? moviesThresholdMessage() : ''"
+    (click)="onTabClick('movies')">
+    <span class="tab-label">Movies</span>
+    <i class="bx bx-lock-alt lock-icon" *ngIf="!canViewMovies()"></i>
+  </button>
+  
+  <button 
+    type="button"
+    class="tab-btn"
+    [class.active]="currentTab() === 'series'"
+    [class.locked]="!canViewSeries()"
+    [attr.title]="!canViewSeries() ? seriesThresholdMessage() : ''"
+    (click)="onTabClick('series')">
+    <span class="tab-label">Series</span>
+    <i class="bx bx-lock-alt lock-icon" *ngIf="!canViewSeries()"></i>
+  </button>
+</div>
+
+<main class="dashboard" [class.no-anim]="sidebarService.suppressAnim()">
+  
+  <!-- Locked overlay when current tab is locked -->
+  <div class="locked-overlay" *ngIf="currentTab() === 'all' && !canViewAll()">
+    <div class="locked-message">
+      <i class="bx bx-lock-alt"></i>
+      <h2>All Summary Locked</h2>
+      <p>{{ allThresholdMessage() }}</p>
+    </div>
+  </div>
+  
+  <div class="locked-overlay" *ngIf="currentTab() === 'movies' && !canViewMovies()">
+    <div class="locked-message">
+      <i class="bx bx-lock-alt"></i>
+      <h2>Movies Summary Locked</h2>
+      <p>{{ moviesThresholdMessage() }}</p>
+    </div>
+  </div>
+  
+  <div class="locked-overlay" *ngIf="currentTab() === 'series' && !canViewSeries()">
+    <div class="locked-message">
+      <i class="bx bx-lock-alt"></i>
+      <h2>Series Summary Locked</h2>
+      <p>{{ seriesThresholdMessage() }}</p>
+    </div>
+  </div>
+
+  <!-- Cell 1: Favorites -->
+  <section class="cell" *ngIf="(canViewMovies() || canViewSeries())">
+    <header class="cell-header">
+      <button class="chev-btn prev"
+              *ngIf="favoritesSequence().length > 1 && favIndex() > 0; else favPrevSpacer"
+              (click)="prevFav()" aria-label="Previous favorite">‹</button>
+      <ng-template #favPrevSpacer><span class="chev-spacer"></span></ng-template>
+
+      <h3>{{ favTitle() }}</h3>
+
+      <button class="chev-btn next"
+              *ngIf="favoritesSequence().length > 1 && favIndex() < favoritesSequence().length - 1; else favNextSpacer"
+              (click)="nextFav()" aria-label="Next favorite">›</button>
+      <ng-template #favNextSpacer><span class="chev-spacer"></span></ng-template>
+    </header>
+
+    <div class="fav">
+      <ng-container *ngIf="favoritesSequence().length; else noData">
+        <ng-container *ngIf="favoritesSequence()[favIndex() % favoritesSequence().length] as f">
+          <div class="fav-left">
+            <img
+              class="poster"
+              [src]="posterOrFallback(f.poster)"
+              (error)="onPosterError($event)"
+              [alt]="f.movieTitle" />
+          </div>
+          <div class="fav-right">
+            <div class="fav-title">{{ f.movieTitle }}</div>
+            <div class="fav-meta">
+              <span class="chip" *ngIf="f.rated">{{ f.rated }}</span>
+              <span class="chip" *ngIf="f.rating">★ {{ f.rating.toFixed(1) }}</span>
+              <span class="chip" *ngIf="f.runtimeMin > 0">{{ f.runtimeMin }} min</span>
+              <span class="chip" *ngIf="f.episodes">{{ f.episodes }} episodes</span>
+            </div>
+          </div>
+        </ng-container>
+      </ng-container>
+
+      <ng-template #noData><div class="empty">No data</div></ng-template>
+    </div>
+  </section>
+
+  <!-- Cell 2: Totals -->
+  <section class="cell" *ngIf="(canViewMovies() || canViewSeries())">
+    <header class="cell-header">
+      <button class="chev-btn prev"
+              *ngIf="countIndex() > 0; else countPrevSpacer"
+              (click)="prevCount()" aria-label="Previous count">‹</button>
+      <ng-template #countPrevSpacer><span class="chev-spacer"></span></ng-template>
+
+      <h3>{{ totalsTitle() }}</h3>
+
+      <button class="chev-btn next"
+              *ngIf="countIndex() < 1; else countNextSpacer"
+              (click)="nextCount()" aria-label="Next count">›</button>
+      <ng-template #countNextSpacer><span class="chev-spacer"></span></ng-template>
+    </header>
+
+    <div class="totals">
+      <div class="big-number" *ngIf="countIndex() === 0">
+        <div class="num">{{ totalItems() }}</div>
+        <div class="label">
+          <ng-container *ngIf="currentTab() === 'all'">Films</ng-container>
+          <ng-container *ngIf="currentTab() !== 'all'">{{ filmKind() === 'movie' ? 'Movies' : 'Series' }}</ng-container>
+        </div>
+      </div>
+
+      <!-- ✅ NEW: All tab shows BOTH minutes and episodes -->
+      <div class="big-number" *ngIf="countIndex() === 1 && currentTab() === 'all'">
+        <div class="num" style="font-size: clamp(20px, 2vw, 28px);">
+          {{ formatDuration(totalMovieMinutes()) }}
+        </div>
+        <div class="label" style="margin-bottom: 8px;">Movies Watched</div>
+        <div class="num" style="font-size: clamp(20px, 2vw, 28px);">
+          {{ totalSeriesEpisodes() }} Episodes
+        </div>
+        <div class="label">Series Watched</div>
+      </div>
+
+      <div class="big-number" *ngIf="countIndex() === 1 && currentTab() === 'movies'">
+        <div class="num">{{ totalProgressUnit() }}</div>
+        <div class="label">
+          {{ formatDuration(totalProgressUnit()) }}
+        </div>
+      </div>
+
+      <div class="big-number" *ngIf="countIndex() === 1 && currentTab() === 'series'">
+        <div class="num">{{ totalProgressUnit() }}</div>
+        <div class="label">Episodes</div>
+      </div>
+      <!-- 4 sub-stats -->
+      <div class="totals-extras" [class.all-tab]="currentTab() === 'all'">
+        <!-- ALL TAB: Show both movies and series stats with titles -->
+        <ng-container *ngIf="currentTab() === 'all'">
+          <!-- TOP 3 -->
+          <div class="stat">
+            <p class="stat-value" style="font-size: 12px;">{{ shortestMovieForAll().title || 'N/A' }}</p>
+            <p class="stat-label">Shortest Movie ({{ shortestMovieForAll().minutes }} min)</p>
+          </div>
+          <div class="stat">
+            <p class="stat-value" style="font-size: 12px;">{{ fewestEpisodesForAll().title || 'N/A' }}</p>
+            <p class="stat-label">Fewest Episodes ({{ fewestEpisodesForAll().episodes }} ep)</p>
+          </div>
+          <div class="stat">
+            <p class="stat-value">{{ ratingsExplored() }}</p>
+            <p class="stat-label">Ratings Explored</p>
+          </div>
+
+          <!-- BOTTOM 3 -->
+          <div class="stat">
+            <p class="stat-value" style="font-size: 12px;">{{ longestMovieForAll().title || 'N/A' }}</p>
+            <p class="stat-label">Longest Movie ({{ longestMovieForAll().minutes }} min)</p>
+          </div>
+          <div class="stat">
+            <p class="stat-value" style="font-size: 12px;">{{ mostEpisodesForAll().title || 'N/A' }}</p>
+            <p class="stat-label">Most Episodes ({{ mostEpisodesForAll().episodes }} ep)</p>
+          </div>
+          <div class="stat">
+            <p class="stat-value">{{ genresExplored() }}</p>
+            <p class="stat-label">Genres Explored</p>
+          </div>
+        </ng-container>
+
+        <!-- ✅ MOVIES TAB: Show movie stats with titles -->
+        <ng-container *ngIf="currentTab() === 'movies'">
+          <div class="stat">
+            <p class="stat-value" style="font-size: 12px;">{{ shortestMovieTitle() || 'N/A' }}</p>
+            <p class="stat-label">Shortest ({{ shortestMovieMinutes() }} min)</p>
+          </div>
+          <div class="stat">
+            <p class="stat-value" style="font-size: 12px;">{{ longestMovieTitle() || 'N/A' }}</p>
+            <p class="stat-label">Longest ({{ longestMovieMinutes() }} min)</p>
+          </div>
+          <div class="stat">
+            <p class="stat-value">{{ ratingsExplored() }}</p>
+            <p class="stat-label">Ratings Explored</p>
+          </div>
+          <div class="stat">
+            <p class="stat-value">{{ genresExplored() }}</p>
+            <p class="stat-label">Genres Explored</p>
+          </div>
+        </ng-container>
+
+        <!-- ✅ SERIES TAB: Show series stats with titles -->
+        <ng-container *ngIf="currentTab() === 'series'">
+          <div class="stat">
+            <p class="stat-value" style="font-size: 12px;">{{ fewestEpisodesTitle() || 'N/A' }}</p>
+            <p class="stat-label">Fewest ({{ fewestEpisodesCount() }} ep)</p>
+          </div>
+          <div class="stat">
+            <p class="stat-value" style="font-size: 12px;">{{ mostEpisodesTitle() || 'N/A' }}</p>
+            <p class="stat-label">Most ({{ mostEpisodesCount() }} ep)</p>
+          </div>
+          <div class="stat">
+            <p class="stat-value">{{ ratingsExplored() }}</p>
+            <p class="stat-label">Ratings Explored</p>
+          </div>
+          <div class="stat">
+            <p class="stat-value">{{ genresExplored() }}</p>
+            <p class="stat-label">Genres Explored</p>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </section>
+  <!-- Cell 3: Genre bars -->
+  <section class="cell" *ngIf="(canViewMovies() || canViewSeries())">
+    <header class="cell-header">
+      <button class="chev-btn prev"
+              *ngIf="genreBarIndex() > 0; else genreBarPrevSpacer"
+              (click)="prevGenreBar()" aria-label="Previous genre chart">‹</button>
+      <ng-template #genreBarPrevSpacer><span class="chev-spacer"></span></ng-template>
+
+      <h3>{{ genreBarTitle() }}</h3>
+
+      <button class="chev-btn next"
+              *ngIf="genreBarIndex() < 2; else genreBarNextSpacer"
+              (click)="nextGenreBar()" aria-label="Next genre chart">›</button>
+      <ng-template #genreBarNextSpacer><span class="chev-spacer"></span></ng-template>
+    </header>
+
+    <div class="bars scroll-box">
+      <ng-container *ngIf="genreBarIndex() === 0">
+        <div class="bar-list fill" *ngIf="genreAvgRating().length; else noData">
+          <div class="bar-row" *ngFor="let d of genreAvgRating()">
+            <span class="bar-label">{{ d.label }}</span>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width]="barPct(d.value, 10)"></div>
+            </div>
+            <span class="bar-value">{{ d.value.toFixed(1) }}</span>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="genreBarIndex() === 1">
+        <div class="bar-list fill" *ngIf="genreCount().length; else noData">
+          <div class="bar-row" *ngFor="let d of genreCount()">
+            <span class="bar-label">{{ d.label }}</span>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width]="barPct(d.value, maxValue(genreCount()))"></div>
+            </div>
+            <span class="bar-value">{{ round(d.value) }}</span>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="genreBarIndex() === 2">
+        <div class="bar-list fill" *ngIf="genreProgress().length; else noData">
+          <div class="bar-row" *ngFor="let d of genreProgress()">
+            <span class="bar-label">{{ d.label }}</span>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width]="barPct(d.value, maxValue(genreProgress()))"></div>
+            </div>
+            <span class="bar-value">{{ round(d.value) }}</span>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </section>
+
+  <!-- Cell 4: Rated bars -->
+  <section class="cell" *ngIf="(canViewMovies() || canViewSeries())">
+    <header class="cell-header">
+      <button class="chev-btn prev"
+              *ngIf="ratedBarIndex() > 0; else ratedBarPrevSpacer"
+              (click)="prevRatedBar()" aria-label="Previous rated chart">‹</button>
+      <ng-template #ratedBarPrevSpacer><span class="chev-spacer"></span></ng-template>
+
+      <h3>{{ ratedBarTitle() }}</h3>
+
+      <button class="chev-btn next"
+              *ngIf="ratedBarIndex() < 2; else ratedBarNextSpacer"
+              (click)="nextRatedBar()" aria-label="Next rated chart">›</button>
+      <ng-template #ratedBarNextSpacer><span class="chev-spacer"></span></ng-template>
+    </header>
+
+    <div class="bars scroll-box">
+      <ng-container *ngIf="ratedBarIndex() === 0">
+        <div class="bar-list fill" *ngIf="ratedAvgRating().length; else noData">
+          <div class="bar-row" *ngFor="let d of ratedAvgRating()">
+            <span class="bar-label">{{ d.label }}</span>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width]="barPct(d.value, 10)"></div>
+            </div>
+            <span class="bar-value">{{ d.value.toFixed(1) }}</span>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="ratedBarIndex() === 1">
+        <div class="bar-list fill" *ngIf="ratedCount().length; else noData">
+          <div class="bar-row" *ngFor="let d of ratedCount()">
+            <span class="bar-label">{{ d.label }}</span>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width]="barPct(d.value, maxValue(ratedCount()))"></div>
+            </div>
+            <span class="bar-value">{{ round(d.value) }}</span>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="ratedBarIndex() === 2">
+        <div class="bar-list fill" *ngIf="ratedProgress().length; else noData">
+          <div class="bar-row" *ngFor="let d of ratedProgress()">
+            <span class="bar-label">{{ d.label }}</span>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width]="barPct(d.value, maxValue(ratedProgress()))"></div>
+            </div>
+            <span class="bar-value">{{ round(d.value) }}</span>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </section>
+
+  <!-- Cell 5: Rated pies -->
+  <section class="cell" *ngIf="(canViewMovies() || canViewSeries())">
+    <header class="cell-header">
+      <button class="chev-btn prev"
+              *ngIf="ratedPieIndex() > 0; else ratedPiePrevSpacer"
+              (click)="prevRatedPie()" aria-label="Previous pie">‹</button>
+      <ng-template #ratedPiePrevSpacer><span class="chev-spacer"></span></ng-template>
+
+      <h3>{{ ratedPieTitle() }}</h3>
+
+      <button class="chev-btn next"
+              *ngIf="ratedPieIndex() < 1; else ratedPieNextSpacer"
+              (click)="nextRatedPie()" aria-label="Next pie">›</button>
+      <ng-template #ratedPieNextSpacer><span class="chev-spacer"></span></ng-template>
+    </header>
+
+    <div class="pies">
+      <ng-container *ngIf="ratedPieIndex() === 0">
+        <div class="pie-wrap" *ngIf="ratedCountShare().length; else noData">
+          <div class="pie-shell">
+            <div class="pie" [style.background]="pieGradient(ratedCountShare())"></div>
+            <div class="pie-inner-border"></div>
+            <div class="pie-center">
+              <div class="pie-top">{{ ratedPieCenterTop() }}</div>
+              <div class="pie-bottom">{{ ratedPieCenterBottom() }}</div>
+            </div>
+          </div>
+          <ul class="legend scroll-box">
+            <li *ngFor="let d of ratedCountShare(); let i = index">
+              <span class="swatch" [style.background]="segmentColor(i)"></span>
+              <span class="legend-label">{{ d.label }}</span>
+              <span class="muted">{{ round(d.value) }}</span>
+            </li>
+          </ul>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="ratedPieIndex() === 1">
+        <div class="pie-wrap" *ngIf="ratedProgressShare().length; else noData">
+          <div class="pie-shell">
+            <div class="pie" [style.background]="pieGradient(ratedProgressShare())"></div>
+            <div class="pie-inner-border"></div>
+            <div class="pie-center">
+              <div class="pie-top">{{ ratedPieCenterTop() }}</div>
+              <div class="pie-bottom">{{ ratedPieCenterBottom() }}</div>
+            </div>
+          </div>
+          <ul class="legend scroll-box">
+            <li *ngFor="let d of ratedProgressShare(); let i = index">
+              <span class="swatch" [style.background]="segmentColor(i)"></span>
+              <span class="legend-label">{{ d.label }}</span>
+              <span class="muted">{{ round(d.value) }}</span>
+            </li>
+          </ul>
+        </div>
+      </ng-container>
+    </div>
+  </section>
+
+  <!-- Cell 6: Genre pies -->
+  <section class="cell" *ngIf="(canViewMovies() || canViewSeries())">
+    <header class="cell-header">
+      <button class="chev-btn prev"
+              *ngIf="genrePieIndex() > 0; else genrePiePrevSpacer"
+              (click)="prevGenrePie()" aria-label="Previous pie">‹</button>
+      <ng-template #genrePiePrevSpacer><span class="chev-spacer"></span></ng-template>
+
+      <h3>{{ genrePieTitle() }}</h3>
+
+      <button class="chev-btn next"
+              *ngIf="genrePieIndex() < 1; else genrePieNextSpacer"
+              (click)="nextGenrePie()" aria-label="Next pie">›</button>
+      <ng-template #genrePieNextSpacer><span class="chev-spacer"></span></ng-template>
+    </header>
+
+    <div class="pies">
+      <ng-container *ngIf="genrePieIndex() === 0">
+        <div class="pie-wrap" *ngIf="genreCountShare().length; else noData">
+          <div class="pie-shell">
+            <div class="pie" [style.background]="pieGradient(genreCountShare())"></div>
+            <div class="pie-inner-border"></div>
+            <div class="pie-center">
+              <div class="pie-top">{{ genrePieCenterTop() }}</div>
+              <div class="pie-bottom">{{ genrePieCenterBottom() }}</div>
+            </div>
+          </div>
+          <ul class="legend scroll-box">
+            <li *ngFor="let d of genreCountShare(); let i = index">
+              <span class="swatch" [style.background]="segmentColor(i)"></span>
+              <span class="legend-label">{{ d.label }}</span>
+              <span class="muted">{{ round(d.value) }}</span>
+            </li>
+          </ul>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="genrePieIndex() === 1">
+        <div class="pie-wrap" *ngIf="genreProgressShare().length; else noData">
+          <div class="pie-shell">
+            <div class="pie" [style.background]="pieGradient(genreProgressShare())"></div>
+            <div class="pie-inner-border"></div>
+            <div class="pie-center">
+              <div class="pie-top">{{ genrePieCenterTop() }}</div>
+              <div class="pie-bottom">{{ genrePieCenterBottom() }}</div>
+            </div>
+          </div>
+          <ul class="legend scroll-box">
+            <li *ngFor="let d of genreProgressShare(); let i = index">
+              <span class="swatch" [style.background]="segmentColor(i)"></span>
+              <span class="legend-label">{{ d.label }}</span>
+              <span class="muted">{{ round(d.value) }}</span>
+            </li>
+          </ul>
+        </div>
+      </ng-container>
+    </div>
+  </section>
+
+  <ng-template #noData><div class="empty">No data</div></ng-template>
+</main>

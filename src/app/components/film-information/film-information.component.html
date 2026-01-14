@@ -184,14 +184,116 @@
         </div>
       </div>
 
-      <button type="button" class="rate-button" *ngIf="f.released && showButton(f.released)" (click)="onRateThisFilm()">Rate "{{ f.title }}"</button>
+      <button 
+        type="button" 
+        class="rate-button" 
+        *ngIf="f.released && showButton(f.released)" 
+        (click)="onRateThisFilm()"
+        [class.disabled]="!canRateFilm()"
+        [disabled]="!canRateFilm()"
+        [attr.title]="runtimeRateButtonTitle()"
+      >
+        <span *ngIf="isCheckingRating()">Checking...</span>
+        <span *ngIf="!isCheckingRating() && !hasAlreadyRated()">Rate "{{ f.title }}"</span>
+        <span *ngIf="!isCheckingRating() && hasAlreadyRated()">Already Rated</span>
+      </button>
     </div>
   </div>
 </div>
 
 <ng-template #loadingOrError>
-  <div class="loading-error">
-    <p *ngIf="loading">Loading…</p>
-    <p *ngIf="!loading && error">{{ error }}</p>
+  <!-- Error message -->
+  <div class="loading-error" *ngIf="!loading && error">
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- ✅ NEW: Comprehensive shimmer loading -->
+  <div class="container shimmer-container" *ngIf="loading">
+    <!-- Left Column Shimmer -->
+    <div class="left-information shimmer-left">
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 60%;"></div>
+      </div>
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 45%;"></div>
+      </div>
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 70%;"></div>
+      </div>
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 55%;"></div>
+      </div>
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 65%;"></div>
+      </div>
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 85%;"></div>
+      </div>
+    </div>
+
+    <!-- Right Column Shimmer -->
+    <div class="right-information shimmer-right">
+      <!-- Film Info Shimmer -->
+      <div class="film-information shimmer-film-info">
+        <div class="shimmer-film-content">
+          <div class="shimmer-title"></div>
+          <div class="shimmer-release"></div>
+          <div class="shimmer-badges">
+            <div class="shimmer-badge"></div>
+            <div class="shimmer-badge"></div>
+          </div>
+          <div class="shimmer-spacer"></div>
+          <div class="shimmer-counts">
+            <div class="shimmer-count">
+              <div class="shimmer-count-num"></div>
+              <div class="shimmer-count-label"></div>
+            </div>
+            <div class="shimmer-count">
+              <div class="shimmer-count-num"></div>
+              <div class="shimmer-count-label"></div>
+            </div>
+          </div>
+        </div>
+        <div class="shimmer-poster"></div>
+      </div>
+
+      <!-- Streaming Shimmer -->
+      <div class="streaming-on shimmer-streaming">
+        <p class="label">Streaming On:</p>
+        <div class="shimmer-providers">
+          <div class="shimmer-provider"></div>
+          <div class="shimmer-provider"></div>
+          <div class="shimmer-provider"></div>
+          <div class="shimmer-provider"></div>
+        </div>
+      </div>
+
+      <!-- Ratings + Button Shimmer -->
+      <div class="ratings-button shimmer-ratings-button">
+        <div class="ratings shimmer-ratings-grid">
+          <div class="shimmer-rating-item">
+            <div class="shimmer-rating-logo"></div>
+            <div class="shimmer-rating-score"></div>
+          </div>
+          <div class="shimmer-rating-item">
+            <div class="shimmer-rating-logo"></div>
+            <div class="shimmer-rating-score"></div>
+          </div>
+          <div class="shimmer-rating-item">
+            <div class="shimmer-rating-logo"></div>
+            <div class="shimmer-rating-score"></div>
+          </div>
+        </div>
+        
+        <!-- ✅ Rate button shimmer -->
+        <div class="shimmer-rate-button"></div>
+      </div>
+    </div>
   </div>
 </ng-template>

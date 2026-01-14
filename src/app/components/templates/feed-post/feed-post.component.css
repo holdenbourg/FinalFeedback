@@ -537,6 +537,29 @@
   border-radius: 0;
 }
 
+.rating-shimmer {
+  margin: 7.5px 3px 10px;
+  padding: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 5px;
+}
+
+.rating-criteria-shimmer {
+  display: flex;
+  justify-content: space-around;
+  gap: 10px;
+  margin: 8px 0;
+  padding: 0 20px;
+}
+
+/* Make shimmer animations consistent */
+.skeleton-text {
+  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+}
+
 @keyframes skeleton-loading {
   0% {
     background-position: 200% 0;

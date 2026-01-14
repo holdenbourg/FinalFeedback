@@ -107,15 +107,38 @@ export class CommentsService {
     return data as unknown as CommentModel;
   }
 
+  /**
+   * Delete a comment or reply
+   * Verifies user owns the comment before deleting
+   */
   async deleteComment(commentId: string): Promise<void> {
-    const { error } = await supabase
+    // Get current user
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) {
+      console.error('[CommentsService] Not authenticated:', authErr);
+      throw authErr ?? new Error('Not authenticated');
+    }
+
+    console.log('[CommentsService] Deleting comment:', commentId, 'by user:', user.id);
+
+    // Delete the comment (user must be author due to RLS)
+    const { error, data } = await supabase
       .from('comments')
       .delete()
-      .eq('id', commentId);
+      .eq('id', commentId)
+      .eq('author_id', user.id)  // ✅ Explicit ownership check
+      .select();  // ✅ Return deleted row to verify
 
     if (error) {
-      console.error('Error deleting comment:', error);
+      console.error('[CommentsService] Delete error:', error);
       throw error;
     }
+
+    if (!data || data.length === 0) {
+      console.warn('[CommentsService] No rows deleted - comment not found or not owned by user');
+      throw new Error('Comment not found or you do not have permission to delete it');
+    }
+
+    console.log('[CommentsService] Successfully deleted comment');
   }
 }

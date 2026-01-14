@@ -35,23 +35,23 @@
     </li>
 
     <li class="list-item">
-      <a (click)="routingService.navigateToMoviesLibrary()">
-        <i class="bx bx-camera-movie"></i>
-        <span class="link-name" style="--i:4;">Movies</span>
+      <a (click)="routingService.navigateToLibrary()">
+        <i class='bx  bx-list-ul'></i>
+        <span class="link-name" style="--i:4;">Library</span>
       </a>
     </li>
 
     <li class="list-item">
-      <a (click)="routingService.navigateToShowsLibrary()">
-        <i class="bx bx-collection"></i>
-        <span class="link-name" style="--i:3;">Shows</span>
+      <a (click)="routingService.navigateToSummary()">
+        <i class='bx bx-bar-chart-alt-2'></i>
+        <span class="link-name" style="--i:3;">Summary</span>
       </a>
     </li>
 
     <li class="list-item">
         <a (click)="routingService.navigateToAccountsPosts(currentUser()!.username)">
             <i class="bx bx-user"></i>
-            <span class="link-name" style="--i:6;">Account</span>
+            <span class="link-name" style="--i:2;">Account</span>
         </a>
     </li>
 
@@ -122,13 +122,13 @@
       <div class="privacy-toggle-card">
         <div class="toggle-header">
           <div class="toggle-info">
-            <h3 class="toggle-label">
-              {{ isPrivate() ? 'Private Account' : 'Public Account' }}
-            </h3>
+            <h3 class="toggle-label">{{ isPrivate() ? 'Private Account' : 'Public Account' }}</h3>
+
             <p class="toggle-description">
               <span *ngIf="!isPrivate()">
                 Your profile can be viewed by anyone who finds your account. This includes your followers, following list, and posts you've created or been tagged in.
               </span>
+              
               <span *ngIf="isPrivate()">
                 Only followers you've accepted can see your profile. Others won't be able to see your posts, tagged content, or follower lists.
               </span>

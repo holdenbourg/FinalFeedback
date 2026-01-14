@@ -4,8 +4,7 @@ import { FormsModule } from "@angular/forms";
 import { LocalStorageService } from "../../services/local-storage.service";
 import { RoutingService } from "../../services/routing.service";
 import { RatedFilmComponent } from "../templates/rated-film/rated-film.component";
-import { NavigationEnd, Router } from "@angular/router";
-import { filter } from "rxjs/operators";
+import { Router } from "@angular/router";
 import { FilmCacheService } from "../../services/film-cache.service";
 import { SidebarService } from "../../services/sidebar.service";
 import { UsersService } from "../../services/users.service";
@@ -13,7 +12,7 @@ import { MovieCriteria, RatingModel, SeriesCriteria } from "../../models/databas
 import { RatingsService } from "../../services/ratings.service";
 import { UserModel } from "../../models/database-models/user.model";
 
-type SortKey = 'rating' | 'runtime' | 'dateRated' | 'title';
+type SortKey = 'rating' | 'runtime' | 'episodes' | 'dateRated' | 'title';
 
 type FilmKind = 'movie' | 'series';
 type RatedItem = RatingModel;
@@ -24,21 +23,20 @@ type FilmUIState = {
 };
 
 @Component({
-  selector: 'app-films-library',
+  selector: 'app-library',
   standalone: true,
   imports: [CommonModule, FormsModule, RatedFilmComponent],
-  templateUrl: './films-library.component.html',
-  styleUrls: ['./films-library.component.css'],
+  templateUrl: './library.component.html',
+  styleUrls: ['./library.component.css'],
 })
 
 
-export class FilmsLibraryComponent implements OnInit, AfterViewInit {
+export class LibraryComponent implements OnInit, AfterViewInit {
   private elementRef = inject(ElementRef)
   readonly ngZone = inject(NgZone);
   readonly routingService = inject(RoutingService);
   public readonly localStorageService = inject(LocalStorageService);
   readonly filmCache = inject(FilmCacheService);
-  private router = inject(Router);
   readonly sidebarService = inject(SidebarService);
   readonly usersService = inject(UsersService);
   readonly ratingsService = inject(RatingsService);
@@ -48,6 +46,7 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
   @ViewChild('scrollBox', { static: false }) scrollBoxRef?: ElementRef<HTMLElement>;
 
   public currentUser = signal<UserModel | null>(null);
+  public isLoadingRatings = signal(true);
 
   readonly searchInput = signal('');
 
@@ -59,17 +58,49 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
   readonly filtersOpen = signal(false);
   readonly genresOpen = signal(false);
   readonly ratedOpen  = signal(false);
+  readonly mediaTypeOpen = signal(false);
   readonly sortKey = signal<SortKey>('dateRated');
   readonly sortDirection = signal<'asc' | 'desc'>('desc');
   readonly selectedGenre = signal<string>('All');
   readonly selectedGenres = signal<Set<string>>(new Set());
   readonly selectedRated = signal<string>('All');
   readonly selectedRateds = signal<Set<string>>(new Set());
+  readonly selectedMediaTypes = signal<Set<'movie' | 'series'>>(new Set());
 
   ///  Delete Confirmation State  \\\
   readonly confirmOpen = signal(false);
   readonly confirmTarget = signal<RatedItem | null>(null);
 
+
+  mediaTypeLabel = computed(() => {
+    const sel = this.selectedMediaTypes();
+    if (sel.size === 0) return 'All';
+    if (sel.size === 1) {
+      return sel.has('movie') ? 'Movies' : 'Shows';
+    }
+    return 'Both';
+  });
+
+  canSortByRuntime = computed(() => {
+    const types = this.selectedMediaTypes();
+    // Can ONLY sort by runtime if ONLY movies selected (no shows, no empty)
+    return types.size === 1 && types.has('movie');
+  });
+  canSortByEpisodes = computed(() => {
+    const types = this.selectedMediaTypes();
+    // Can ONLY sort by episodes if ONLY shows selected (no movies, no empty)
+    return types.size === 1 && types.has('series');
+  });
+  runtimeTooltip = computed(() => {
+    return this.canSortByRuntime() 
+      ? '' 
+      : 'Select Movies to sort by Runtime';
+  });
+  episodesTooltip = computed(() => {
+    return this.canSortByEpisodes() 
+      ? '' 
+      : 'Select Shows to sort by Episodes';
+  });
 
   genresLabel = computed(() => {
     const sel = this.selectedGenres();
@@ -77,6 +108,7 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
     if (sel.size <= 2)  return Array.from(sel).join(', ');
     return `${sel.size} selected`;
   });
+
   ratedLabel = computed(() => {
     const sel = this.selectedRateds();
     if (sel.size === 0) return 'All';
@@ -99,12 +131,17 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
     this.allRatedSeries()
   );
 
-  public usersRatedList = computed<RatingModel[]>(() =>
-    this.filmKind() === 'series' ? this.usersRatedSeries() : this.usersRatedMovies()
-  );
+  public usersRatedList = computed<RatingModel[]>(() => {
+    return [
+      ...this.usersRatedMovies(),
+      ...this.usersRatedSeries()
+    ];
+  });
 
 
-  ngOnInit(): void {
+  ngOnInit() {
+    this.isLoadingRatings.set(true);
+
     this.usersService.getCurrentUserProfile()
       .then(async (u) => {
         this.currentUser.set(u);
@@ -118,10 +155,18 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
 
           this.allRatedMovies.set(movies);
           this.allRatedSeries.set(series);
+          
+          if (!this.activeFilm && this.usersRatedList().length > 0) {
+            this.activeFilm = this.usersRatedList()[0];
+          }
+
         } else {
           this.allRatedMovies.set([]);
           this.allRatedSeries.set([]);
         }
+
+        this.isLoadingRatings.set(false);
+
       })
       .catch(err => {
         console.error('Failed to load current user', err);
@@ -129,22 +174,8 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
         this.allRatedMovies.set([]);
         this.allRatedSeries.set([]);
         this.addRandomStartPointForRows();
+        this.isLoadingRatings.set(false);
       });
-
-    const setKindFromUrl = () => {
-      const url = (this.router.url || '').toLowerCase();
-      this.filmKind.set(/\b(shows)\b/.test(url) ? 'series' : 'movie');
-
-      this.restoreActiveAndScroll();
-
-      ///  clear filters when switching kind  \\\
-      this.selectedGenres.set(new Set());
-      this.selectedRateds.set(new Set());
-      this.searchInput.set('');
-    };
-
-    setKindFromUrl();
-    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(setKindFromUrl);
 
     ///  Clear any in-progress edit  \\\
     this.localStorageService.clearInformation('current-edit-movie');
@@ -217,8 +248,8 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
     });
   }
 
-  get isMovieCountOverTen(): boolean {
-    return this.filteredRatedFilms.length >= 10;
+  get hasAnyRatings(): boolean {
+    return this.allRatedMovies().length > 0 || this.allRatedSeries().length > 0;
   }
 
   ///  Returns true if film is specified type, false if not \\\
@@ -441,7 +472,15 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
   /** Call this whenever filters/sort/search change and the list is rederived */
   private ensureActiveStillValid() {
     const cur = this.activeFilm?.id;
-    if (!cur) return;
+    
+    if (!cur) {
+      const first = this.filteredRatedFilms()[0] ?? null;
+      if (first) {
+        this.activeFilm = first;
+        this.saveActive(first.id);
+      }
+      return;
+    }
 
     const exists = this.filteredRatedFilms().some(x => x.id === cur);
     if (!exists) {
@@ -555,6 +594,7 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
     const query     = this.searchInput().trim().toLowerCase();
     const genres    = this.selectedGenres();
     const rateds    = this.selectedRateds();
+    const mediaTypes = this.selectedMediaTypes();
     const key       = this.sortKey();
     const direction = this.sortDirection();
     const sign      = direction === 'asc' ? 1 : -1;
@@ -562,6 +602,10 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
     let list = this.usersRatedList();
 
     if (query) list = list.filter(m => m.title?.toLowerCase().includes(query));
+
+    if (mediaTypes.size > 0) {
+      list = list.filter(m => mediaTypes.has(m.media_type));
+    } 
 
     ///  Genre multi-filter (empty set = All)  \\\
     if (genres.size) {
@@ -586,10 +630,29 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
       let av = 0, bv = 0;
 
       switch (key) {
-        case 'rating':    av = a.rating ?? 0;                 bv = b.rating ?? 0;                 break;
-        case 'runtime':   av = this.runtimeMinutesOf(a);      bv = this.runtimeMinutesOf(b);      break;
-        case 'dateRated': av = this.dateValue(a.date_rated);  bv = this.dateValue(b.date_rated);   break;
-        case 'title':     return sign * a.title.localeCompare(b.title);
+        case 'rating':    
+          av = a.rating ?? 0;                 
+          bv = b.rating ?? 0;                 
+          break;
+        
+        case 'runtime':   
+          av = this.runtimeMinutesOf(a);      
+          bv = this.runtimeMinutesOf(b);      
+          break;
+        
+        case 'episodes':
+          // For series: use episodes, for movies: use 0 (will be at end if desc)
+          av = a.media_type === 'series' ? (a.criteria as SeriesCriteria).episodes ?? 0 : 0;
+          bv = b.media_type === 'series' ? (b.criteria as SeriesCriteria).episodes ?? 0 : 0;
+          break;
+        
+        case 'dateRated': 
+          av = this.dateValue(a.date_rated);  
+          bv = this.dateValue(b.date_rated);   
+          break;
+        
+        case 'title':     
+          return sign * a.title.localeCompare(b.title);
       }
 
       return sign * (av - bv);
@@ -603,18 +666,40 @@ export class FilmsLibraryComponent implements OnInit, AfterViewInit {
     return sorted;
   });
 
+  toggleMediaType(type: 'movie' | 'series') {
+    const set = new Set(this.selectedMediaTypes());
+    set.has(type) ? set.delete(type) : set.add(type);
+    this.selectedMediaTypes.set(set);
+  }
+  toggleMediaTypeOpen() {
+    this.mediaTypeOpen.update(v => !v);
+  }
+  clearMediaTypes() {
+    this.selectedMediaTypes.set(new Set());
+  }
+
   toggleRated(r: string) {
     const set = new Set(this.selectedRateds());
     set.has(r) ? set.delete(r) : set.add(r);
     this.selectedRateds.set(set);
   }
-  
+
   toggleFilters() { 
     this.filtersOpen.update(v => !v); 
   }
 
-  setSort(key: SortKey) { 
-    this.sortKey.set(key); 
+  setSort(key: SortKey) {
+    // Don't allow sorting by runtime if shows only
+    if (key === 'runtime' && !this.canSortByRuntime()) {
+      return;
+    }
+    
+    // Don't allow sorting by episodes if movies only
+    if (key === 'episodes' && !this.canSortByEpisodes()) {
+      return;
+    }
+    
+    this.sortKey.set(key);
   }
 
   setDirection(d: 'asc'|'desc') { 

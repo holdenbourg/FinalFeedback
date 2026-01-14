@@ -73,6 +73,9 @@ export class AccountComponent implements OnInit {
   // Expose enum to template
   AccountViewState = AccountViewState;
 
+  // Track if profile user has requested current user
+  private profileUserHasRequestedMe = signal(false);
+
   // Modal state
   selectedPostIndex = signal<number | null>(null);
   showPostModal = signal(false);
@@ -116,17 +119,21 @@ export class AccountComponent implements OnInit {
            state === AccountViewState.NOT_FOLLOWING_PRIVATE;
   });
 
-  showFollowButton = computed(() => this.canFollow());
-  
+  showFollowButton = computed(() => (this.canFollow() && this.profileUserHasRequestedMe() === false));
+
   showUnfollowButton = computed(() => {
     const state = this.viewState();
     return state === AccountViewState.FOLLOWING_PUBLIC ||
-           state === AccountViewState.FOLLOWING_PRIVATE;
+          state === AccountViewState.FOLLOWING_PRIVATE;
   });
 
   showRequestedButton = computed(() => 
     this.viewState() === AccountViewState.REQUESTED
   );
+
+  showAcceptDeclineButtons = computed(() => {
+    return this.hasRequestedMe();
+  });
 
   followButtonText = computed(() => {
     const user = this.profileUser();
@@ -196,21 +203,16 @@ export class AccountComponent implements OnInit {
     }
   }
 
-  /**
-   * Determine the account view state based on relationships
-   */
   private async determineViewState(): Promise<AccountViewState> {
     const current = this.currentUser();
     const profile = this.profileUser();
-
+    
     if (!current || !profile) {
-      console.log('account not found');
       return AccountViewState.NOT_FOUND;
     }
 
-    // Check if viewing own account
+    // Own account
     if (current.id === profile.id) {
-      console.log('own account');
       return AccountViewState.OWN_ACCOUNT;
     }
 
@@ -236,37 +238,44 @@ export class AccountComponent implements OnInit {
       return AccountViewState.BLOCKER;
     }
 
-    // Check if following
-    const isFollowing = await this.followsService.isFollowing(
-      current.id,
-      profile.id
+    // ✅ NEW: Check if they requested you (takes priority)
+    const theyRequestedMe = await this.followsService.hasRequestedToFollow(
+      profile.id,
+      current.id
     );
+    this.profileUserHasRequestedMe.set(theyRequestedMe);
 
-    if (isFollowing) {
-      console.log('following');
-      return profile.private
-        ? AccountViewState.FOLLOWING_PRIVATE
+    // Check following status
+    const following = await this.followsService.isFollowing(current.id, profile.id);
+
+    if (following) {
+      return profile.private 
+        ? AccountViewState.FOLLOWING_PRIVATE 
         : AccountViewState.FOLLOWING_PUBLIC;
     }
 
-    // Check if follow request is pending
-    const hasRequested = await this.followsService.hasRequestedToFollow(
-      current.id,
-      profile.id
-    );
-
-    if (hasRequested) {
-      console.log('requested');
+    // Check if you requested them
+    const requested = await this.followsService.hasRequestedToFollow(current.id, profile.id);
+    
+    if (requested) {
       return AccountViewState.REQUESTED;
     }
 
-    // Not following - check if account is private
-    console.log('not follwing');
+    // Not following
+    if (profile.private) {
+      return AccountViewState.NOT_FOLLOWING_PRIVATE;
+    }
 
-    return profile.private
-      ? AccountViewState.NOT_FOLLOWING_PRIVATE
-      : AccountViewState.NOT_FOLLOWING_PUBLIC;
+    return AccountViewState.NOT_FOLLOWING_PUBLIC;
   }
+
+  /**
+   * Check if profile user has requested to follow current user
+   */
+  private hasRequestedMe = computed(() => {
+    // This will be set during loadSocialData
+    return this.profileUserHasRequestedMe();
+  });
 
 
   ///  -======================================-  Load Posts Logic (Posts, Tagged, and Archived)  -======================================- \\\
@@ -873,11 +882,18 @@ export class AccountComponent implements OnInit {
     try {
       await this.followsService.acceptRequest(requesterId);
       
-      // Reload social data and account
+      // ✅ NEW: Reset the flag since request is now accepted
+      this.profileUserHasRequestedMe.set(false);
+      
+      // Refresh data and re-determine view state
       const profile = this.profileUser();
       if (profile) {
+        await this.loadUserCounts(profile.id);
         await this.loadSocialData(profile.id);
-        await this.loadAccount(this.username(), this.activeTab());
+        
+        // ✅ Re-determine view state to update buttons
+        const newState = await this.determineViewState();
+        this.viewState.set(newState);
       }
     } catch (err) {
       console.error('[Account] Failed to accept request:', err);
@@ -888,10 +904,17 @@ export class AccountComponent implements OnInit {
     try {
       await this.followsService.rejectRequest(requesterId);
       
-      // Reload social data
+      // ✅ NEW: Reset the flag since request is now rejected
+      this.profileUserHasRequestedMe.set(false);
+      
+      // Refresh data and re-determine view state
       const profile = this.profileUser();
       if (profile) {
         await this.loadSocialData(profile.id);
+        
+        // ✅ Re-determine view state to update buttons
+        const newState = await this.determineViewState();
+        this.viewState.set(newState);
       }
     } catch (err) {
       console.error('[Account] Failed to reject request:', err);

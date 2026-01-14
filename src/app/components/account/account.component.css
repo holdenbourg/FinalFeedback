@@ -276,10 +276,17 @@
 }
 
 /* Buttons */
+.btn-group {
+  display: flex;
+  gap: 8px;
+}
+
 .btn-edit-profile,
 .btn-follow,
 .btn-following,
-.btn-requested {
+.btn-requested,
+.btn-accept-big,
+.btn-reject-big {
   padding: 6px 20px;
   border-radius: 6px;
   font-size: 14px;
@@ -295,7 +302,6 @@
   border: 2.5px solid rgba(255, 255, 255, 0.5);
   color: #fff;
 }
-
 .btn-edit-profile:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.8);
@@ -304,27 +310,45 @@
 .btn-follow {
   background: transparent;
   border: 2.5px solid rgba(255, 255, 255, 0.3);
-  color: #fff;  color: #fff;
+  color: #fff;
 }
-
 .btn-follow:hover {
   background: rgba(255, 255, 255, 0.15);
 }
 
-.btn-following {
+.btn-following, .btn-requested {
   background: rgba(255, 255, 255, 0.15);
   border: 2.5px solid rgba(255, 255, 255, 0.3);
   color: #fff;
 }
-
-.btn-following:hover {
+.btn-following:hover, .btn-requested:hover {
   background: rgba(255, 255, 255, 0.25);
 }
 
-.btn-requested {
-  background: rgba(255, 255, 255, 0.1);
-  border: 2.5px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.6);
+.btn-accept-big, .btn-reject-big {
+  background: transparent;
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 20px 6px 14px;
+}
+.btn-accept-big:hover {
+  background: rgba(76, 175, 80, 0.3);
+  border-color: rgba(76, 175, 80, 0.6);
+}
+.btn-accept-big i {
+  font-size: 18px;
+}
+
+.btn-reject-big:hover {
+  background: rgba(244, 67, 54, 0.3);
+  border-color: rgba(244, 67, 54, 0.6);
+}
+.btn-reject-big i {
+  font-size: 18px;
 }
 
 /* Stats Row */
@@ -640,15 +664,6 @@
   font-size: 14px;
 }
 
-/* Request Items */
-.request-item {
-  cursor: default;
-}
-
-.request-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
 .request-info {
   flex: 1;
   display: flex;
@@ -675,12 +690,13 @@
 }
 
 .btn-accept {
-  background: #0095f6;
-  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .btn-accept:hover {
-  background: #007bc4;
+  background: rgba(76, 175, 80, 0.2);
+  color: rgba(76, 175, 80, 1);
 }
 
 .btn-reject {
@@ -737,7 +753,6 @@
   cursor: pointer;
   transition: background 0.2s;
 }
-
 .btn-follow-large:hover {
   background: rgba(255, 255, 255, 0.15);
 }

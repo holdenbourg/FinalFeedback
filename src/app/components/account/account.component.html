@@ -33,24 +33,24 @@
     </li>
 
     <li class="list-item">
-      <a (click)="routingService.navigateToMoviesLibrary()">
-        <i class="bx bx-camera-movie"></i>
-        <span class="link-name" style="--i:3;">Movies</span>
+      <a (click)="routingService.navigateToLibrary()">
+        <i class='bx  bx-list-ul'></i>
+        <span class="link-name" style="--i:3;">Library</span>
       </a>
     </li>
 
     <li class="list-item">
-      <a (click)="routingService.navigateToShowsLibrary()">
-        <i class="bx bx-collection"></i>
-        <span class="link-name" style="--i:2;">Shows</span>
+      <a (click)="routingService.navigateToSummary()">
+        <i class='bx bx-bar-chart-alt-2'></i>
+        <span class="link-name" style="--i:2;">Summary</span>
       </a>
     </li>
 
     <li class="list-item active">
-        <a (click)="routingService.navigateToAccountsPosts(currentUser()!.username)">
-            <i class="bx bx-user"></i>
-            <span class="link-name" style="--i:6;">Account</span>
-        </a>
+      <a (click)="routingService.navigateToAccountsPosts(currentUser()!.username)">
+          <i class="bx bx-user"></i>
+          <span class="link-name" style="--i:1;">Account</span>
+      </a>
     </li>
 
     <li class="list-item">
@@ -116,6 +116,18 @@
                     (click)="routingService.navigateToSettings()">
               Edit Profile
             </button>
+
+            <!-- Accept & Decline Buttons (They requested you) -->
+            <div *ngIf="showAcceptDeclineButtons()" class="btn-group">
+              <button class="btn-accept-big" (click)="onAcceptRequest(profileUser()!.id)">
+                <i class='bx bx-check'></i>
+                Accept
+              </button>
+              <button class="btn-reject-big" (click)="onRejectRequest(profileUser()!.id)">
+                <i class='bx bx-x'></i>
+                Decline
+              </button>
+            </div>
 
             <!-- Follow Button -->
             <button *ngIf="showFollowButton()"
@@ -291,9 +303,7 @@
             <i class='bx bx-user'></i>
             <p>Not following anyone yet</p>
           </div>
-          <div *ngFor="let followed of following()" 
-               class="social-item"
-               (click)="routingService.navigateToAccountsPosts(followed.username)">
+          <div *ngFor="let followed of following()" class="social-item" (click)="routingService.navigateToAccountsPosts(followed.username)">
             <img [src]="followed.profile_picture_url || 'assets/images/default-avatar.png'"
                  [attr.alt]="followed.username"
                  class="social-avatar">
@@ -302,13 +312,12 @@
         </div>
 
         <!-- Requests List (Own Account + Private Only) -->
-        <div *ngIf="socialTab === 'requests' && isOwnAccount() && user.private" 
-             class="social-list">
+        <div *ngIf="socialTab === 'requests' && isOwnAccount() && user.private" class="social-list">
           <div *ngIf="requests().length === 0" class="social-empty">
             <i class='bx bx-user-check'></i>
             <p>No pending requests</p>
           </div>
-          <div *ngFor="let request of requests()" class="social-item request-item">
+          <div *ngFor="let request of requests()" class="social-item request-item" (click)="routingService.navigateToAccountsPosts(request.username)">
             <img [src]="request.profile_picture_url || 'assets/images/default-avatar.png'"
                  [attr.alt]="request.username"
                  class="social-avatar">

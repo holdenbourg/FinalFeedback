@@ -163,61 +163,6 @@
   line-height: 50px; 
 }
 
-/* sub-categories (Library and Summary) */
-.list .films-item {
-  list-style: none;
-  padding-left: 12.5px;
-  width: 100%;
-  height: 35px;
-  margin: 5px 0;
-  line-height: 30px;
-  cursor: pointer;
-}
-.list .films-item a {
-  display: flex;
-  align-items: center;
-  font-size: 16px;
-  color: #fff;
-  text-decoration: none;
-  border-radius: 6px;
-  white-space: nowrap;
-  transition: .5s;
-}
-.list .films-item.active a, 
-.list .films-item a:hover {
-  background: rgba(255, 255, 255, .2);
-  transform: scale(1.05);
-}
-.list .films-item a i {
-  opacity: 1;
-  min-width: 50px;
-  height: 35px;
-  padding-left: 9.5px;
-  line-height: 35px;
-  transition: .5s;
-}
-.films-item .link-name {
-  transform: translateX(-10px) !important;
-}
-
-.sidebar .films-item {
-  padding-left: 6.75px;
-  padding-right: 6.75px;
-  transition: .5s;
-}
-
-.sidebar.active .films-item {
-  padding-left: 12.5px;
-}
-
-.library-icon i {
-  font-size: 18px;
-}
-
-.summary-icon i {
-  transform: translateY(1px) !important;
-}
-
 .username {
   position: absolute; 
   padding: 0 10px 15px;
@@ -232,6 +177,57 @@
 .no-anim * { 
   transition: none !important; 
   animation: none !important; 
+}
+
+
+/* ========== Loading Shimmer ========== */
+.loading-shimmer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+}
+
+.shimmer-poster {
+  width: 100%;
+  aspect-ratio: 2/3;
+  max-width: 300px;
+  background: linear-gradient(90deg, #2a2a2a 25%, #333 50%, #2a2a2a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+.shimmer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.shimmer-line {
+  height: 20px;
+  background: linear-gradient(90deg, #2a2a2a 25%, #333 50%, #2a2a2a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.shimmer-line.short {
+  width: 60%;
+}
+
+.shimmer-line.medium {
+  width: 80%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 
@@ -696,6 +692,22 @@
 .segmented button.active,
 .segmented button:hover {
   background: rgba(255,255,255,0.16);
+}
+
+/* ========== Disabled Sort Buttons ========== */
+.segmented button.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  color: #999;
+}
+
+.segmented button.disabled:hover {
+  background: transparent;
+  transform: none;
+}
+
+.segmented button.disabled.active {
+  opacity: 0.6;
 }
 
 .direction-split {

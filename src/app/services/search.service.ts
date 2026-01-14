@@ -16,12 +16,30 @@ export class SearchService {
 
     switch (type) {
       case 'movies':
-        return this.api.search10Films(query, 'movie');
+        return this.api.search10Films(query, 'movie').pipe(
+          map(results => this.deduplicateFilms(results))
+        );
       case 'series':
-        return this.api.search10Films(query, 'series');
+        return this.api.search10Films(query, 'series').pipe(
+          map(results => this.deduplicateFilms(results))
+        );
       case 'users':
         return this.searchUsers(query);
     }
+  }
+
+  private deduplicateFilms(films: any[]): any[] {
+    const seen = new Map<string, any>();
+    
+    films.forEach(film => {
+      if (film.imdbID && !seen.has(film.imdbID)) {
+        seen.set(film.imdbID, film);
+      }
+    });
+    
+    const unique = Array.from(seen.values());
+    console.log(`[SearchService] Deduplicated ${films.length} → ${unique.length} films`);
+    return unique;
   }
 
   ///  Search users excluding blocked relationships and self  \\\

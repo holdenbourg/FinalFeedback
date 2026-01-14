@@ -1,23 +1,76 @@
-<article class="searched-user" tabindex="0" (click)="goToProfile()" [attr.aria-label]="'User ' + (userDetails.username || '')">
-  <div class="account-info">
-    <div class="avatar">
-      <img
-        *ngIf="avatar"
-        [src]="avatar"
-        [attr.alt]="(userDetails.username || 'user') + ' avatar'"
-        (error)="onAvatarError()"
-        loading="lazy"
-        decoding="async"
-      />
-      
-      <div *ngIf="!avatar" class="avatar-fallback" aria-hidden="true">
-        <span class="initials">{{ (userDetails.username || 'U').slice(0,1) }}</span>
-      </div>
+<article class="searched-user" (click)="goToProfile($event)">
+  <div class="user-info">
+    <img 
+      [src]="avatar"
+      [attr.alt]="userDetails.username"
+      class="user-avatar"
+      loading="lazy"
+      decoding="async">
+    
+    <div class="user-details">
+      <p class="user-username">&#64;{{ userDetails.username }}</p>
+      <p class="user-name" *ngIf="fullName">{{ fullName }}</p>
     </div>
+  </div>
 
-    <div class="account-information">
-      <p class="username">{{ userDetails.username }}</p>
-      <p class="full-name" *ngIf="fullName">{{ fullName }}</p>
+  <!-- Relationship Buttons -->
+  <div class="relationship-actions" (click)="$event.stopPropagation()">
+    <!-- Follow Button (Public, not following) -->
+    <button 
+      *ngIf="relationshipState() === 'follow'"
+      class="btn-action btn-follow"
+      (click)="onFollow()"
+      [disabled]="isProcessing()">
+      <i class='bx bx-user-plus'></i>
+      <span>Follow</span>
+    </button>
+
+    <!-- Request Button (Private, not requested) -->
+    <button 
+      *ngIf="relationshipState() === 'request'"
+      class="btn-action btn-request"
+      (click)="onRequest()"
+      [disabled]="isProcessing()">
+      <i class='bx bx-user-plus'></i>
+      <span>Request</span>
+    </button>
+
+    <!-- Following Button (Currently following) -->
+    <button 
+      *ngIf="relationshipState() === 'following'"
+      class="btn-action btn-following"
+      (click)="onUnfollow()"
+      [disabled]="isProcessing()">
+      <i class='bx bx-user-check'></i>
+      <span>Following</span>
+    </button>
+
+    <!-- Requested Button (Request pending) -->
+    <button 
+      *ngIf="relationshipState() === 'requested'"
+      class="btn-action btn-requested"
+      (click)="onCancelRequest()"
+      [disabled]="isProcessing()">
+      <i class='bx bx-time-five'></i>
+      <span>Requested</span>
+    </button>
+
+    <!-- Accept & Decline Buttons (They requested you) -->
+    <div *ngIf="relationshipState() === 'accept-decline'" class="btn-group">
+      <button 
+        class="btn-action btn-accept"
+        (click)="onAccept()"
+        [disabled]="isProcessing()">
+        <i class='bx bx-check'></i>
+        <span>Accept</span>
+      </button>
+      <button 
+        class="btn-action btn-decline"
+        (click)="onDecline()"
+        [disabled]="isProcessing()">
+        <i class='bx bx-x'></i>
+        <span>Decline</span>
+      </button>
     </div>
   </div>
 </article>

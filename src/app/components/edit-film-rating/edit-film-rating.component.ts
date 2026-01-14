@@ -110,7 +110,7 @@ export class EditFilmRatingComponent implements OnInit {
 
       this.filmCache.clearDraft(this.postId());
       this.filmCache.clearOriginal(this.postId());
-      this.navigateBackByKind();
+      this.routingService.navigateToLibrary();    
     } catch (e) {
       console.error('Failed to update rating', e);
       // TODO: surface toast/snackbar
@@ -183,17 +183,6 @@ export class EditFilmRatingComponent implements OnInit {
       a.ending !== b.ending ||
       a.mid !== b.mid
     );
-  }
-
-  private navigateBackByKind() {
-    const draft = this.draft();
-    if (!draft) return;
-
-    if(draft.media_type === 'movie') {
-      this.routingService.navigateToMoviesLibrary();
-    } else {
-      this.routingService.navigateToShowsLibrary();
-    }
   }
 
   private clamp(v: number) { return Math.max(1, Math.min(10, v)); }
@@ -286,7 +275,7 @@ export class EditFilmRatingComponent implements OnInit {
 
     const changed = this.criteriaChanged(init, currentCriteria);
     if (!changed) {
-      this.navigateBackByKind();
+      this.routingService.navigateToLibrary();
       return;
     }
 

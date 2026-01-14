@@ -1,85 +1,157 @@
 .searched-user {
   display: flex;
-  flex-direction: row;
+  align-items: center;
   justify-content: space-between;
+  padding: 16px 20px;
+  background: transparent;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   border: 0.15vw solid #fff;
   border-radius: 8.5px;
-  background-color: transparent;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  margin-bottom: 5px;
-  padding: 10px 12px;
-  backdrop-filter: blur(3px);
-  transition: transform .15s ease, background .15s ease;
-}
-.searched-user:hover,
-.searched-user:focus {
-  transform: translateY(-1px);
-  background: rgba(255,255,255,0.06);
-  outline: none;
+  transition: all 0.2s;
   cursor: pointer;
 }
 
-.account-info {
+.searched-user:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* User Info Section */
+.user-info {
   display: flex;
-  flex-direction: row;
   align-items: center;
   gap: 12px;
+  flex: 1;
+  min-width: 0; /* Allow text truncation */
 }
 
-.avatar {
-  height: 3vw;
-  width: 3vw;
-  min-height: 44px;
-  min-width: 44px;
-  border-radius: 999px;
-  overflow: hidden;
-  display: grid;
-  place-items: center;
-  -webkit-filter: invert(100%);
-}
-.avatar img {
-  width: 100%;
-  height: 100%;
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
   object-fit: cover;
+  flex-shrink: 0;
 }
 
-.avatar-fallback {
-  width: 100%;
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
-  display: grid;
-  place-items: center;
-}
-.avatar-fallback .initials {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #fff;
-  opacity: 0.9;
-}
-
-.account-information {
+.user-details {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  gap: 2px;
+  min-width: 0;
 }
 
-.username {
-  font-size: 1.15vw;
-  color: #fff;
+.user-username {
+  font-size: 16px;
   font-weight: 600;
+  color: #fff;
   margin: 0;
-  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.full-name {
-  font-size: 0.9vw;
-  color: rgba(255,255,255,0.8);
-  font-weight: 500;
+.user-name {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-@media (max-width: 900px) {
-  .username { font-size: 1rem; }
-  .full-name { font-size: 0.85rem; }
+/* Relationship Actions */
+.relationship-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 20px 8px 14px;
+  background: transparent;
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-action i {
+  font-size: 18px;
+}
+
+.btn-action:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Button Variants */
+.btn-follow, .btn-request {
+  background: transparent;
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+.btn-follow:hover, .btn-request:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-following, .btn-requested {
+  background: rgba(255, 255, 255, 0.15);
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+.btn-following:hover, .btn-requested:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.btn-accept:hover {
+  background: rgba(76, 175, 80, 0.3);
+  border-color: rgba(76, 175, 80, 0.6);
+}
+
+.btn-decline:hover {
+  background: rgba(244, 67, 54, 0.3);
+  border-color: rgba(244, 67, 54, 0.6);
+}
+
+/* Button Group (Accept & Decline) */
+.btn-group {
+  display: flex;
+  gap: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .searched-user {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .relationship-actions {
+    width: 100%;
+  }
+
+  .btn-action {
+    flex: 1;
+  }
+
+  .btn-group {
+    width: 100%;
+  }
+
+  .btn-group .btn-action {
+    flex: 1;
+  }
 }

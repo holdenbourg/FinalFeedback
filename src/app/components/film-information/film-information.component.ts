@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { CombinedFilmApiResponseModel } from '../../models/api-models/combined-film-api-response.model';
@@ -6,6 +6,9 @@ import { ApiService } from '../../services/api.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { RoutingService } from '../../services/routing.service';
 import { FilmCacheService } from '../../services/film-cache.service';
+import { PostRating, RatingsService } from '../../services/ratings.service';
+import { UserModel } from '../../models/database-models/user.model';
+import { UsersService } from '../../services/users.service';
 
 @Component({
   selector: 'app-film-information',
@@ -21,6 +24,13 @@ export class FilmInformationComponent implements OnInit {
   private route = inject(ActivatedRoute);
   public localStorageService = inject(LocalStorageService);
   private filmCache = inject(FilmCacheService);
+  private ratingsService = inject(RatingsService);
+  private usersService = inject(UsersService);
+
+  public currentUser = signal<UserModel | null>(null);
+
+  hasAlreadyRated = signal<boolean>(false);
+  isCheckingRating = signal<boolean>(false);
 
   public imdbId = '';
   public loading = true;
@@ -109,14 +119,19 @@ export class FilmInformationComponent implements OnInit {
   ]);
 
 
-  ngOnInit() {
+  async ngOnInit() {
     this.route.paramMap.subscribe(async pm => {
       this.imdbId = pm.get('imdbId') ?? '';
       if (!this.imdbId) return;
       await this.loadTitle(this.imdbId);
     });
 
-    this.addRandomStartPointForRows();    
+    this.addRandomStartPointForRows();  
+    
+    const current = await this.usersService.getCurrentUserProfile();
+    this.currentUser.set(current);
+
+    console.log(this.streamingServices);
   }
 
 
@@ -175,20 +190,39 @@ export class FilmInformationComponent implements OnInit {
       this.combinedApiResult = combined;
 
       ///  3) streaming services: use only known logos; attach optional homepage URL  \\\
+      const providers = this.combinedApiResult.watch_providers ?? [];
       const seen = new Set<string>();
-      this.streamingServices = (this.combinedApiResult.watch_providers ?? [])
-        .map((p: any) => p?.name?.trim())
-        .filter((name): name is string => !!name && !seen.has(name))
-        .map(name => {
-          seen.add(name);
-          const logo = this.streamingServiceLogos.get(name);
-          if (!logo) return null;
-          const url = this.streamingServiceUrls.get(name) ?? null;
-          return { name, logo, url };
-        })
-        .filter((x): x is { name: string; logo: string; url: string | null } => !!x);
+      const uniqueServices: { name: string; logo: string; url: string | null }[] = [];
+
+      for (const p of providers) {
+        // Extract and normalize name
+        const name = p?.name?.trim();
+        if (!name) continue;
         
-    console.log(this.combinedApiResult);
+        const normalizedName = name.toLowerCase();
+        
+        if (seen.has(normalizedName)) {
+          console.log(`[Streaming] Skipping duplicate: "${name}"`);
+          continue;
+        }
+        
+        seen.add(normalizedName);
+        
+        // Only include if we have a logo
+        const logo = this.streamingServiceLogos.get(name);
+        if (!logo) {
+          console.log(`[Streaming] No logo for: "${name}"`);
+          continue;
+        }
+        
+        const url = this.streamingServiceUrls.get(name) ?? null;
+        uniqueServices.push({ name, logo, url });
+      }
+
+      this.streamingServices = uniqueServices;
+      console.log(`[Streaming] Total providers: ${providers.length}, Unique: ${uniqueServices.length}`);
+            
+    await this.checkIfAlreadyRated();
 
     } catch (e: any) {
       console.error(e);
@@ -240,6 +274,49 @@ export class FilmInformationComponent implements OnInit {
 
     return apiDate <= today;
   }
+
+  // Check if user has already rated this film
+  async checkIfAlreadyRated() {
+    const user = this.currentUser();
+    if (!user || !this.combinedApiResult?.imdbId) {
+      this.hasAlreadyRated.set(false);
+      return;
+    }
+
+    this.isCheckingRating.set(true);
+
+    try {
+      const ratings = await this.ratingsService.getUserRatings(user.id);
+      
+      const alreadyRated = ratings.some(
+        rating => rating.media_id === this.combinedApiResult.imdbId
+      );
+      
+      this.hasAlreadyRated.set(alreadyRated);
+      console.log('[FilmInfo] Already rated:', alreadyRated);
+    } catch (err) {
+      console.error('Error checking if rated:', err);
+      this.hasAlreadyRated.set(false);
+    } finally {
+      this.isCheckingRating.set(false);
+    }
+  }
+
+  // Computed for button disabled state
+  canRateFilm = computed(() => {
+    return !this.hasAlreadyRated() && !this.isCheckingRating();
+  });
+
+  // Computed for button title
+  runtimeRateButtonTitle = computed(() => {
+    if (this.isCheckingRating()) {
+      return 'Checking...';
+    }
+    if (this.hasAlreadyRated()) {
+      return `You've already rated "${this.combinedApiResult.title}"`;
+    }
+    return '';  // No title if they can rate
+  });
 
   ///  Store the current film-information in the cache then route to rate-film  \\\
   onRateThisFilm() {

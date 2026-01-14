@@ -47,26 +47,15 @@ export class RoutingService {
     this.router.navigate(['/post', 'series', postId]);
   }
 
-  navigateToMoviesLibrary() {
-    this.router.navigate(['/movies/library']);
+  navigateToLibrary() {
+    this.router.navigate(['/library']);
   }
-  navigateToMoviesSummary() {
-    this.router.navigate(['/movies/summary']);
-  }
-  navigateToShowsLibrary() {
-    this.router.navigate(['/shows/library']);
-  }
-  navigateToShowsSummary() {
-    this.router.navigate(['/shows/summary']);
+  navigateToSummary() {
+    this.router.navigate(['/summary']);
   }
 
   navigateToEditFilm(type: 'movie' | 'series', postId: string) {
     this.router.navigate(['/edit', type, postId]);
-  }
-
-
-  navigateToSummary() {
-    this.router.navigate(['/summary']);
   }
 
   navigateToAccount(username: string, tab: 'posts' | 'tagged' | 'archive' = 'posts') {

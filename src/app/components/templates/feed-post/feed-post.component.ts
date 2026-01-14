@@ -98,37 +98,52 @@ export class FeedPostComponent implements OnInit, OnChanges {
 
   async ngOnInit() {
     // Load current user
-    const current = await this.usersService.getCurrentUserProfile();
-    this.currentUser.set(current);
+    const user = await this.usersService.getCurrentUserProfile();
+    this.currentUser.set(user);
 
-    // Phase 1: Show poster immediately
+    // Progressive loading: Show poster immediately
     this.isLoadingData = false;
     this.changeDetectorRef.detectChanges();
-    
-    // Phase 2: Load data (but keep comments hidden)
-    await Promise.all([
-      this.loadLikeStatusAndCount(),
-      this.loadRatingData(),
-      this.loadThread(),
-      this.loadTaggedUsers()
-    ]);
-    
-    // Phase 3: Load comment/reply counts AND liked status
-    await Promise.all([
-      this.loadCommentLikeCounts(),
-      this.loadCommentLikedStatus()  // ← ADD THIS
-    ]);
 
-    // Phase 4: Now show comments with likes ready
-    this.isLoadingComments = false;
-    this.changeDetectorRef.detectChanges();
+    // ✅ Use extracted method
+    await this.initializePost();
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    // Whenever post input changes, trigger detection
-    if (changes['post']) {
+    // ✅ FIX: When feedPost changes, reload all data
+    if (changes['feedPost'] && !changes['feedPost'].firstChange) {
+      // Reset state
+      this.isLoadingComments = true;
+      this.reversedComments = [];
+      this.repliesByComment.clear();
+      this.replyDisplayLimit.clear();
+      
+      // Reload everything for the new post
+      this.initializePost();
+      
       this.changeDetectorRef.markForCheck();
       this.changeDetectorRef.detectChanges();
+    }
+  }
+
+  // ✅ NEW: Extract initialization logic to reusable method
+  private async initializePost() {
+    try {
+      this.isLoadingComments = true;
+      
+      // Load all data in parallel
+      await Promise.all([
+        this.loadLikeStatusAndCount(),
+        this.loadRatingData(),
+        this.loadTaggedUsers(),
+        this.loadThread()
+      ]);
+      
+      this.isLoadingComments = false;
+      this.changeDetectorRef.markForCheck();
+    } catch (err) {
+      console.error('Error initializing post:', err);
+      this.isLoadingComments = false;
     }
   }
 
@@ -447,7 +462,17 @@ export class FeedPostComponent implements OnInit, OnChanges {
 
     try {
       if (!this.pendingReplyToCommentId) {
+        // CREATE COMMENT
         const row = await this.commentsService.addComment(this.feedPost.id, input);
+        
+        // ✅ NEW: Create tags from @mentions in comment
+        await this.tagsService.createTagsFromMentions(
+          input,
+          'comment',
+          row.id,
+          this.feedPost.id
+        );
+        
         const v = mapRowToView(row);
 
         this.reversedComments.unshift({
@@ -465,8 +490,18 @@ export class FeedPostComponent implements OnInit, OnChanges {
         setTimeout(() => this.highlightAndScroll('c-' + v.id), 100);
 
       } else {
+        // CREATE REPLY
         const parentId = this.pendingReplyToCommentId;
         const row = await this.commentsService.addReply(parentId, input);
+        
+        // ✅ NEW: Create tags from @mentions in reply
+        await this.tagsService.createTagsFromMentions(
+          input,
+          'reply',
+          row.id,
+          this.feedPost.id
+        );
+        
         const v = mapRowToView(row);
         const bucket = this.repliesByComment.get(parentId) ?? [];
         const replyingToUsername = this.pendingReplyToUsername ?? '';
@@ -485,10 +520,7 @@ export class FeedPostComponent implements OnInit, OnChanges {
 
         this.repliesByComment.set(parentId, bucket);
 
-        // ✅ Ensure new reply is visible by expanding limit by 1
         const current = this.replyLimit(parentId);
-        
-        // Always show at least 1 (the new reply)
         this.replyDisplayLimit.set(parentId, Math.max(1, current + 1));
 
         this.changeDetectorRef.detectChanges();
@@ -508,30 +540,35 @@ export class FeedPostComponent implements OnInit, OnChanges {
 
   async onDeleteComment(commentId: string) {
     try {
-      // Optimistic UI update
-      this.reversedComments = this.reversedComments.filter(c => c.commentId !== commentId);
+      // ✅ STEP 1: Get reply count BEFORE deleting (for count update)
+      const replyCount = this.repliesByComment.get(commentId)?.length || 0;
       
-      // Also remove its replies from the map
+      // ✅ STEP 2: Delete from database FIRST
+      // Delete tags first (if not using CASCADE)
+      try {
+        await this.tagsService.deleteTagsByTarget('comment', commentId);
+      } catch (tagErr) {
+        console.error('Error deleting comment tags:', tagErr);
+        // Continue - CASCADE might handle it
+      }
+      
+      // Delete comment (this should delete associated tags via CASCADE if set up)
+      await this.commentsService.deleteComment(commentId);
+      
+      // ✅ STEP 3: Update UI AFTER successful database delete
+      this.reversedComments = this.reversedComments.filter(c => c.commentId !== commentId);
       this.repliesByComment.delete(commentId);
       this.replyDisplayLimit.delete(commentId);
       
-      // Update comment count
       if (this.feedPost.comment_count !== undefined) {
-        // Count how many replies were deleted
-        const replyCount = this.repliesByComment.get(commentId)?.length || 0;
         this.feedPost.comment_count -= (1 + replyCount);
       }
       
-      // Force UI update
       this.changeDetectorRef.detectChanges();
-      
-      // Delete from database
-      await this.commentsService.deleteComment(commentId);
       
     } catch (err) {
       console.error('Error deleting comment:', err);
-      
-      // Reload thread on error
+      // Reload thread to ensure UI matches database
       await this.loadThread();
       this.changeDetectorRef.detectChanges();
     }
@@ -539,29 +576,34 @@ export class FeedPostComponent implements OnInit, OnChanges {
 
   async onDeleteReply(event: { replyId: string; parentCommentId: string }) {
     try {
-      // Get replies array for this comment
+      // ✅ STEP 1: Delete from database FIRST
+      // Delete tags first (if not using CASCADE)
+      try {
+        await this.tagsService.deleteTagsByTarget('reply', event.replyId);
+      } catch (tagErr) {
+        console.error('Error deleting reply tags:', tagErr);
+        // Continue - CASCADE might handle it
+      }
+      
+      // Delete reply from database
+      await this.commentsService.deleteComment(event.replyId);
+      
+      // ✅ STEP 2: Update UI AFTER successful database delete
       const replies = this.repliesByComment.get(event.parentCommentId);
       if (!replies) return;
       
-      // Optimistic UI update
       const updatedReplies = replies.filter(r => r.replyId !== event.replyId);
       this.repliesByComment.set(event.parentCommentId, updatedReplies);
       
-      // Update comment count
       if (this.feedPost.comment_count !== undefined) {
         this.feedPost.comment_count -= 1;
       }
       
-      // Force UI update
       this.changeDetectorRef.detectChanges();
-      
-      // Delete from database
-      await this.commentsService.deleteComment(event.replyId);
       
     } catch (err) {
       console.error('Error deleting reply:', err);
-      
-      // Reload thread on error
+      // Reload thread to ensure UI matches database
       await this.loadThread();
       this.changeDetectorRef.detectChanges();
     }

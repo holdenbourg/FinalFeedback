@@ -51,9 +51,16 @@ export class SearchComponent implements OnInit {
   ngOnInit() {
     this.addRandomStartPointForRows();
     
-    ///  react to both :type and ?q= changes  \\\
+    // ✅ FIX: Clear results immediately when type changes
     this.route.paramMap.subscribe(pm => {
-      this.type = (pm.get('type') as SearchType) ?? 'movies';
+      const newType = (pm.get('type') as SearchType) ?? 'movies';
+      
+      // If type changed, clear results immediately
+      if (newType !== this.type) {
+        this.clearResults();  // ✅ Clear before type change
+      }
+      
+      this.type = newType;
 
       const q = (this.route.snapshot.queryParamMap.get('q') ?? '').trim();
       if (q) this.runSearch(q); else this.clearResults();
@@ -86,6 +93,9 @@ export class SearchComponent implements OnInit {
       queryParams: { q: query || null },  ///  null removes param if empty  \\\
       queryParamsHandling: 'merge'
     });
+
+        console.log(this.results);
+
   }
 
   private runSearch(query: string) {

@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, HostListener, ChangeDetectorRef, OnInit, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, HostListener, ChangeDetectorRef, OnInit, signal, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PostModelWithAuthor } from '../../models/database-models/post.model';
 import { FeedPostComponent } from '../templates/feed-post/feed-post.component';
@@ -15,7 +15,7 @@ import { UsersService } from '../../services/users.service';
   templateUrl: './post-detail-modal.component.html',
   styleUrl: './post-detail-modal.component.css'
 })
-export class PostDetailModalComponent implements OnInit {
+export class PostDetailModalComponent implements OnInit, OnChanges {
   private changeDetectorRef = inject(ChangeDetectorRef);
   private ratingsService = inject(RatingsService);
   private usersService = inject(UsersService);
@@ -42,11 +42,24 @@ export class PostDetailModalComponent implements OnInit {
   confirmOpen = false;
   confirmMode: 'delete' | 'archive' | 'unarchive' | null = null;
 
+
   async ngOnInit() {
     // Load current user
     const current = await this.usersService.getCurrentUserProfile();
     this.currentUser.set(current);
+    
+    this.updateFeedPost();
+  }
 
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['post'] && !changes['post'].firstChange) {
+      this.updateFeedPost();
+      this.changeDetectorRef.markForCheck();
+    }
+  }
+
+
+  private updateFeedPost() {
     this.feedPost = {
       id: this.post.post.id,
       author_id: this.post.post.author_id,
@@ -165,6 +178,12 @@ export class PostDetailModalComponent implements OnInit {
 
   @HostListener('document:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
+    // ✅ FIX: Check if user is typing in an input or textarea
+    const target = event.target as HTMLElement;
+    const isTyping = target.tagName === 'INPUT' || 
+                    target.tagName === 'TEXTAREA' || 
+                    target.isContentEditable;
+
     switch (event.key) {
       case 'Escape':
         if (this.confirmOpen) {
@@ -176,18 +195,16 @@ export class PostDetailModalComponent implements OnInit {
         }
         break;
       case 'ArrowLeft':
-        this.onPrevious();
+        if (!isTyping) {
+          this.onPrevious();
+        }
         break;
       case 'ArrowRight':
-        this.onNext();
+        if (!isTyping) {
+          this.onNext();
+        }
         break;
     }
-  }
-
-  @HostListener('document:click')
-  onDocumentClick() {
-    // Clicking anywhere outside closes the menu
-    if (this.menuOpen) this.closeMenu();
   }
 
   onBackdropClick(event: MouseEvent) {

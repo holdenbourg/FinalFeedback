@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit, inject, signal, computed } from '@angular/core';
-import { Router, NavigationEnd } from '@angular/router';
+import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 import { filter } from 'rxjs';
 import { RoutingService } from '../../services/routing.service';
 import { SidebarService } from '../../services/sidebar.service';
@@ -10,36 +10,54 @@ import { MovieCriteria, RatingModel, SeriesCriteria } from '../../models/databas
 import { RatingsService } from '../../services/ratings.service';
 
 type FilmKind = 'movie' | 'series';
+type TabType = 'all' | 'movies' | 'series';
+
+interface TabAvailability {
+  all: boolean;
+  movies: boolean;
+  series: boolean;
+}
+
 type ChartDatum = { 
   label: string; 
   value: number 
 };
+
 type FavoriteEntry = { 
   label: string; 
   movieTitle: string; 
   rated?: string; 
   poster?: string; 
   rating?: number; 
-  runtimeMin: number 
+  runtimeMin: number;
+  episodes?: number;  // ✅ For series 
 };
 
 @Component({
-  selector: 'app-films-summary',
+  selector: 'app-summary',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './films-summary.component.html',
-  styleUrls: ['./films-summary.component.css'],
+  templateUrl: './summary.component.html',
+  styleUrls: ['./summary.component.css'],
 })
 
-
-export class FilmsSummaryComponent implements OnInit {
+export class SummaryComponent implements OnInit {
   readonly routingService = inject(RoutingService);
   readonly sidebarService = inject(SidebarService);
   readonly usersService = inject(UsersService);
   readonly ratingsService = inject(RatingsService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   readonly filmKind = signal<FilmKind>('movie');
+
+  // ✅ NEW: Tab system
+  readonly currentTab = signal<TabType>('movies');
+  readonly tabAvailability = signal<TabAvailability>({
+    all: false,
+    movies: false,
+    series: false
+  });
 
   readonly favIndex      = signal(0);
   readonly countIndex    = signal(0);
@@ -64,45 +82,248 @@ export class FilmsSummaryComponent implements OnInit {
     this.allRatedSeries()
   );
 
+  // ✅ Combined list for current tab
+  public combinedRatedList = computed<RatingModel[]>(() => {
+    const tab = this.currentTab();
+    
+    if (tab === 'all') {
+      return [...this.allRatedMovies(), ...this.allRatedSeries()];
+    } else if (tab === 'movies') {
+      return this.allRatedMovies();
+    } else {
+      return this.allRatedSeries();
+    }
+  });
+
+  // ✅ Use combinedRatedList for all data display
   public usersRatedList = computed<RatingModel[]>(() =>
-    this.filmKind() === 'series' ? this.usersRatedSeries() : this.usersRatedMovies()
+    this.combinedRatedList()
   );
 
+  // ✅ Computed: Which tabs are clickable
+  readonly canViewAll = computed(() => this.tabAvailability().all);
+  readonly canViewMovies = computed(() => this.tabAvailability().movies);
+  readonly canViewSeries = computed(() => this.tabAvailability().series);
 
-  ngOnInit() {
-    this.usersService.getCurrentUserProfile()
-      .then(async (u) => {
-        this.currentUser.set(u);
-        this.addRandomStartPointForRows();
+  // ✅ Computed: Threshold messages
+  readonly moviesThresholdMessage = computed(() => {
+    const count = this.allRatedMovies().length;
+    if (count >= 10) return '';
+    return `Rate ${10 - count} more movie${10 - count === 1 ? '' : 's'} to unlock`;
+  });
 
-        if (u) {
-          const [movies, series] = await Promise.all([
-            this.ratingsService.getUserMovies(u.id),
-            this.ratingsService.getUserSeries(u.id),
-          ]);
+  readonly seriesThresholdMessage = computed(() => {
+    const count = this.allRatedSeries().length;
+    if (count >= 10) return '';
+    return `Rate ${10 - count} more series to unlock`;
+  });
 
-          this.allRatedMovies.set(movies);
-          this.allRatedSeries.set(series);
-        } else {
-          this.allRatedMovies.set([]);
-          this.allRatedSeries.set([]);
-        }
-      })
-      .catch(err => {
-        console.error('Failed to load current user', err);
-        this.currentUser.set(null);
+  readonly allThresholdMessage = computed(() => {
+    const movieCount = this.allRatedMovies().length;
+    const seriesCount = this.allRatedSeries().length;
+    
+    if (movieCount >= 10 && seriesCount >= 10) return '';
+    
+    const moviesNeeded = Math.max(0, 10 - movieCount);
+    const seriesNeeded = Math.max(0, 10 - seriesCount);
+    
+    if (moviesNeeded > 0 && seriesNeeded > 0) {
+      return `Rate ${moviesNeeded} more movie${moviesNeeded === 1 ? '' : 's'} and ${seriesNeeded} more series to unlock`;
+    } else if (moviesNeeded > 0) {
+      return `Rate ${moviesNeeded} more movie${moviesNeeded === 1 ? '' : 's'} to unlock`;
+    } else {
+      return `Rate ${seriesNeeded} more series to unlock`;
+    }
+  });
+
+  async ngOnInit() {
+    this.addRandomStartPointForRows();
+    
+    try {
+      // Load user and ratings
+      const u = await this.usersService.getCurrentUserProfile();
+      this.currentUser.set(u);
+
+      if (u) {
+        const [movies, series] = await Promise.all([
+          this.ratingsService.getUserMovies(u.id),
+          this.ratingsService.getUserSeries(u.id),
+        ]);
+
+        this.allRatedMovies.set(movies);
+        this.allRatedSeries.set(series);
+        
+        // ✅ Calculate tab availability
+        const movieCount = movies.length;
+        const seriesCount = series.length;
+        
+        const availability: TabAvailability = {
+          movies: movieCount >= 10,
+          series: seriesCount >= 10,
+          all: movieCount >= 10 && seriesCount >= 10
+        };
+        
+        this.tabAvailability.set(availability);
+        
+        console.log('[Summary] Tab availability:', availability);
+        console.log(`[Summary] Movies: ${movieCount}, Series: ${seriesCount}`);
+        
+        // ✅ Handle initial routing
+        await this.handleInitialRouting(availability);
+      } else {
         this.allRatedMovies.set([]);
         this.allRatedSeries.set([]);
-        this.addRandomStartPointForRows();
-      });
+        this.tabAvailability.set({ all: false, movies: false, series: false });
+      }
+    } catch (err) {
+      console.error('Failed to load current user', err);
+      this.currentUser.set(null);
+      this.allRatedMovies.set([]);
+      this.allRatedSeries.set([]);
+      this.tabAvailability.set({ all: false, movies: false, series: false });
+    }
 
-    const setKindFromUrl = () => {
-      const url = (this.router.url || '').toLowerCase();
-      this.filmKind.set(/\b(shows)\b/.test(url) ? 'series' : 'movie');
-    };
+    // ✅ Listen to URL changes
+    this.router.events
+      .pipe(filter(e => e instanceof NavigationEnd))
+      .subscribe(() => this.updateTabFromUrl());
+  }
 
-    setKindFromUrl();
-    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(setKindFromUrl);
+  /**
+   * Determine which tab to show on initial load
+   */
+  private async handleInitialRouting(availability: TabAvailability) {
+    const currentUrl = this.router.url.toLowerCase();
+    
+    // Extract tab from URL query params
+    let requestedTab: TabType = 'all'; // default
+    
+    if (currentUrl.includes('tab=all')) {
+      requestedTab = 'all';
+    } else if (currentUrl.includes('tab=series') || currentUrl.includes('tab=shows')) {
+      requestedTab = 'series';
+    } else if (currentUrl.includes('tab=movies')) {
+      requestedTab = 'movies';
+    } else {
+      // No tab specified - determine default
+      requestedTab = this.determineDefaultTab(availability);
+    }
+    
+    // Check if requested tab is available
+    const canView = this.canViewTab(requestedTab, availability);
+    
+    if (canView) {
+      // Requested tab is available - navigate to it
+      console.log(`[Summary] Showing requested tab: ${requestedTab}`);
+      await this.navigateToTab(requestedTab);
+    } else {
+      // Requested tab not available - find first available
+      const fallbackTab = this.determineDefaultTab(availability);
+      console.log(`[Summary] Tab '${requestedTab}' locked, redirecting to: ${fallbackTab}`);
+      await this.navigateToTab(fallbackTab);
+    }
+  }
+
+  /**
+   * Determine which tab to show by default
+   */
+  private determineDefaultTab(availability: TabAvailability): TabType {
+    // Priority: all > series > movies
+    if (availability.all) return 'all';
+    if (availability.series) return 'series';
+    if (availability.movies) return 'movies';
+    
+    // Nothing unlocked - show movies (will display locked message)
+    return 'all';
+  }
+
+  /**
+   * Check if a tab can be viewed
+   */
+  private canViewTab(tab: TabType, availability: TabAvailability): boolean {
+    return availability[tab];
+  }
+
+  /**
+   * Navigate to a specific tab
+   */
+  private async navigateToTab(tab: TabType) {
+    this.currentTab.set(tab);
+    
+    // Update filmKind for data display
+    if (tab === 'movies') {
+      this.filmKind.set('movie');
+    } else if (tab === 'series') {
+      this.filmKind.set('series');
+    } else {
+      // 'all' tab - use movie as default for display purposes
+      this.filmKind.set('movie');
+    }
+    
+    // Update URL
+    await this.router.navigate(['/summary'], {
+      queryParams: { tab },
+      queryParamsHandling: 'merge'
+    });
+  }
+
+  /**
+   * Update current tab based on URL
+   */
+  private updateTabFromUrl() {
+    const url = this.router.url.toLowerCase();
+    
+    let tab: TabType = 'movies';
+    
+    if (url.includes('tab=all')) {
+      tab = 'all';
+    } else if (url.includes('tab=series') || url.includes('tab=shows')) {
+      tab = 'series';
+    } else if (url.includes('tab=movies')) {
+      tab = 'movies';
+    }
+    
+    this.currentTab.set(tab);
+    
+    // Update filmKind
+    if (tab === 'movies') {
+      this.filmKind.set('movie');
+    } else if (tab === 'series') {
+      this.filmKind.set('series');
+    }
+    
+    console.log(`[Summary] Tab changed to: ${tab}`);
+  }
+
+  /**
+   * User clicks on a tab
+   */
+  async onTabClick(tab: TabType) {
+    const availability = this.tabAvailability();
+    
+    // Check if tab is available
+    if (!this.canViewTab(tab, availability)) {
+      console.log(`[Summary] Tab '${tab}' is locked`);
+      return;
+    }
+    
+    // Navigate to tab
+    await this.navigateToTab(tab);
+    
+    // Reset all view indices when switching tabs
+    this.resetAllIndices();
+  }
+
+  /**
+   * Reset all card indices to 0
+   */
+  private resetAllIndices() {
+    this.favIndex.set(0);
+    this.countIndex.set(0);
+    this.genreBarIndex.set(0);
+    this.ratedBarIndex.set(0);
+    this.ratedPieIndex.set(0);
+    this.genrePieIndex.set(0);
   }
 
   // ---------- Helpers ----------
@@ -180,7 +401,12 @@ export class FilmsSummaryComponent implements OnInit {
     if (!items.length) return null;
 
     const best = [...items].sort((a: any, b: any) => (b.rating ?? 0) - (a.rating ?? 0))[0] as any;
-    const label = this.filmKind() === 'movie' ? 'Overall Favorite' : 'Top Rated Show';
+    
+    const tab = this.currentTab();
+    let label = 'Overall Favorite';
+    if (tab === 'movies') label = 'Overall Favorite';
+    else if (tab === 'series') label = 'Top Rated Show';
+    else label = 'Overall Favorite';
 
     return {
       label,
@@ -188,7 +414,8 @@ export class FilmsSummaryComponent implements OnInit {
       rated: best?.rated ?? undefined,
       poster: best?.poster_url ?? undefined,
       rating: best?.rating ?? undefined,
-      runtimeMin: this.filmKind() === 'movie' ? this.movieRuntimeMinutes(best) : 0,
+      runtimeMin: this.movieRuntimeMinutes(best),
+      episodes: this.seriesEpisodes(best) || undefined,
     };
   });
 
@@ -222,7 +449,8 @@ export class FilmsSummaryComponent implements OnInit {
         rated: movie?.rated ?? undefined,
         poster: movie?.poster_url ?? undefined,
         rating: movie?.rating ?? undefined,
-        runtimeMin: this.filmKind() === 'movie' ? this.movieRuntimeMinutes(movie) : 0,
+        runtimeMin: this.movieRuntimeMinutes(movie),
+        episodes: this.seriesEpisodes(movie) || undefined,
       });
     }
 
@@ -269,6 +497,15 @@ export class FilmsSummaryComponent implements OnInit {
     }
 
     return this.usersRatedList().reduce((acc, s) => acc + this.seriesEpisodes(s as any), 0);
+  });
+
+  // ✅ NEW: For "All" tab - calculate both movies minutes and series episodes
+  readonly totalMovieMinutes = computed(() => {
+    return this.allRatedMovies().reduce((acc, m) => acc + this.movieRuntimeMinutes(m), 0);
+  });
+
+  readonly totalSeriesEpisodes = computed(() => {
+    return this.allRatedSeries().reduce((acc, s) => acc + this.seriesEpisodes(s), 0);
   });
 
   // Movies: Longest / Shortest (ignore 0-minute runtimes)
@@ -345,7 +582,7 @@ export class FilmsSummaryComponent implements OnInit {
     return nums.length ? Math.min(...nums) : 0;
   });
 
-  // Creative: counts you’ve explored
+  // Creative: counts you've explored
   readonly genresExplored = computed(() => {
     const set = new Set<string>();
 
@@ -359,6 +596,39 @@ export class FilmsSummaryComponent implements OnInit {
     this.usersRatedList().forEach(m => this.canonicalRated(m).forEach(r => set.add(r)));
 
     return set.size;
+  });
+
+  // ✅ NEW: Computeds for "All" tab that work across both movies and series
+  readonly longestMovieForAll = computed(() => {
+    const movies = this.allRatedMovies().filter(m => this.movieRuntimeMinutes(m) > 0);
+    if (!movies.length) return { title: '', minutes: 0 };
+    
+    const best = [...movies].sort((a, b) => this.movieRuntimeMinutes(b) - this.movieRuntimeMinutes(a))[0];
+    return { title: best?.title ?? '', minutes: this.movieRuntimeMinutes(best) };
+  });
+
+  readonly shortestMovieForAll = computed(() => {
+    const movies = this.allRatedMovies().filter(m => this.movieRuntimeMinutes(m) > 0);
+    if (!movies.length) return { title: '', minutes: 0 };
+    
+    const best = [...movies].sort((a, b) => this.movieRuntimeMinutes(a) - this.movieRuntimeMinutes(b))[0];
+    return { title: best?.title ?? '', minutes: this.movieRuntimeMinutes(best) };
+  });
+
+  readonly mostEpisodesForAll = computed(() => {
+    const series = this.allRatedSeries().filter(s => this.seriesEpisodes(s) > 0);
+    if (!series.length) return { title: '', episodes: 0 };
+    
+    const best = [...series].sort((a, b) => this.seriesEpisodes(b) - this.seriesEpisodes(a))[0];
+    return { title: best?.title ?? '', episodes: this.seriesEpisodes(best) };
+  });
+
+  readonly fewestEpisodesForAll = computed(() => {
+    const series = this.allRatedSeries().filter(s => this.seriesEpisodes(s) > 0);
+    if (!series.length) return { title: '', episodes: 0 };
+    
+    const best = [...series].sort((a, b) => this.seriesEpisodes(a) - this.seriesEpisodes(b))[0];
+    return { title: best?.title ?? '', episodes: this.seriesEpisodes(best) };
   });
 
   private plural(n: number, one: string, many: string) { 
@@ -383,7 +653,15 @@ export class FilmsSummaryComponent implements OnInit {
   }
 
   totalsTitle(): string {
-    if (this.filmKind() === 'movie') return this.countIndex() === 0 ? 'Total Movies Watched' : 'Total Time Watched';
+    const tab = this.currentTab();
+    
+    if (tab === 'all') {
+      return this.countIndex() === 0 ? 'Total Films Watched' : 'Combined Watch Time';
+    }
+    
+    if (this.filmKind() === 'movie') {
+      return this.countIndex() === 0 ? 'Total Movies Watched' : 'Total Time Watched';
+    }
 
     return this.countIndex() === 0 ? 'Total Series Watched' : 'Total Episodes Watched';
   }

@@ -436,7 +436,8 @@ export class UsersService {
    */
   async updateAccountPrivacy(userId: string, isPrivate: boolean): Promise<{ success: boolean; error?: string }> {
     try {
-      const { error } = await supabase
+      // ✅ Step 1: Update privacy setting
+      const { error: updateError } = await supabase
         .from('users')
         .update({ 
           private: isPrivate,
@@ -444,9 +445,58 @@ export class UsersService {
         })
         .eq('id', userId);
 
-      if (error) {
-        console.error('Error updating privacy:', error.message);
-        return { success: false, error: error.message };
+      if (updateError) {
+        console.error('Error updating privacy:', updateError.message);
+        return { success: false, error: updateError.message };
+      }
+
+      if (!isPrivate) {
+        console.log('[UsersService] Switching to public - accepting all pending requests');
+        
+        // Get all pending requests for this user
+        const { data: requests, error: fetchError } = await supabase
+          .from('follow_requests')
+          .select('requester_id')
+          .eq('target_id', userId);
+
+        if (fetchError) {
+          console.error('Error fetching pending requests:', fetchError);
+          // Don't fail the entire operation, just log
+        } else if (requests && requests.length > 0) {
+          console.log(`[UsersService] Found ${requests.length} pending requests to accept`);
+
+          // Create follows for all requesters
+          const followsToInsert = requests.map(req => ({
+            follower_id: req.requester_id,
+            followee_id: userId
+          }));
+
+          const { error: followsError } = await supabase
+            .from('follows')
+            .insert(followsToInsert);
+
+          if (followsError) {
+            console.error('Error inserting follows:', followsError);
+            // Don't fail - they can manually accept later
+          } else {
+            console.log(`[UsersService] Created ${followsToInsert.length} follows`);
+          }
+
+          // Delete all the requests
+          const { error: deleteError } = await supabase
+            .from('follow_requests')
+            .delete()
+            .eq('target_id', userId);
+
+          if (deleteError) {
+            console.error('Error deleting requests:', deleteError);
+            // Don't fail - requests will just remain
+          } else {
+            console.log(`[UsersService] Deleted ${requests.length} follow requests`);
+          }
+        } else {
+          console.log('[UsersService] No pending requests to accept');
+        }
       }
 
       return { success: true };

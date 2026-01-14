@@ -279,6 +279,18 @@ export class PostFilmComponent implements OnInit, OnDestroy {
         console.log('[PostFilm] Tags created successfully');
       }
 
+      // Step 4: Create tags from @mentions in caption
+      if (this.caption.trim()) {
+        console.log('[PostFilm] Creating tags from caption @mentions');
+        await this.tagsService.createTagsFromMentions(
+          this.caption,
+          'post',      // Target type is 'post' for captions
+          postId,      // Target ID is the post ID
+          postId       // Post ID for status checking (same as target)
+        );
+        console.log('[PostFilm] Caption tags created successfully');
+      }
+
       // Success! Navigate to appropriate page
       if (visibility === 'public') {
         this.routingService.navigateToAccountsPosts(user.username);
