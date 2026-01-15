@@ -250,6 +250,8 @@
 .tab-label {
   font-family: "Poppins", sans-serif;
 }
+
+
 /* ========== Locked Overlay ========== */
 .locked-overlay {
   position: absolute;
@@ -289,6 +291,7 @@
   line-height: 1.5;
 }
 
+
 /* ---------- Dashboard ---------- */
 .dashboard { 
   position: absolute; 
@@ -318,6 +321,9 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+.cell.no-bottom-padding {
+  padding-bottom: 0;
 }
 
 /* Header (centered title + buttons) */
@@ -371,7 +377,8 @@
 .cell > .totals,
 .cell > .bars,
 .cell > .pies { 
-  flex: 1; min-height: 0; 
+  flex: 1; 
+  min-height: 0; 
 }
 
 /* ---------- Favorites (slightly larger) ---------- */
@@ -448,8 +455,6 @@
   gap: 8px;
 }
 
-
-/* ✅ NEW: Keep 2-column layout for All tab (same as movies/series) */
 .totals-extras.all-tab {
   grid-template-columns: repeat(3, minmax(0,1fr));
   grid-template-rows: repeat(2, auto);
@@ -476,6 +481,7 @@
   margin-top: 2px; 
 }
 
+
 /* ---------- Bars (no poke-through) ---------- */
 .bars { 
   display: flex; 
@@ -483,7 +489,6 @@
   min-height: 0; 
 }
 .bar-list.fill {
-  padding: 8px 6px;        /* <-- moved here */
   margin: 0;
 }
 
@@ -492,27 +497,10 @@
   grid-template-columns: 1fr 3fr auto; 
   gap: 8px; 
   align-items: center; 
-  padding: 6px 0; 
+  padding-bottom: 12px; 
 }
-
-.bar-list.fill::-webkit-scrollbar {
-  width: 0.5em;
-}
-
-.bar-list.fill::-webkit-scrollbar-thumb {
-  background: #fff;
-  border-radius: 0.25em;
-  cursor: pointer;
-}
-
-.bar-list.fill::-webkit-scrollbar-track {
-  margin: 6.5px 0;
-  background: transparent;
-}
-
-.bar-list.fill::-webkit-scrollbar-button {
-  display: none !important;
-  height: 0 !important;
+.bar-row:last-child {
+   padding-bottom: 0;
 }
 
 .bar-label { 
@@ -617,7 +605,6 @@
 .legend { 
   list-style: none; 
   display: grid; 
-  padding: 14px 6px;
   gap: 15px; 
   align-self: stretch; 
   align-content: start; 
@@ -634,9 +621,8 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto; 
-  padding: 14px 6px;       /* restore your original legend spacing */
+  padding: 10px 10px;       /* restore your original legend spacing */
   box-sizing: border-box;
-  scrollbar-gutter: stable;
 }
 .legend.scroll-box::-webkit-scrollbar,
 .bars.scroll-box::-webkit-scrollbar {
@@ -657,7 +643,7 @@
 }
 .legend.scroll-box::-webkit-scrollbar-track,
 .bars.scroll-box::-webkit-scrollbar-track {
-  margin: 0;     /* <-- key */
+  margin: 10px 0;
   background: transparent;
 }
 
@@ -693,19 +679,7 @@
   padding: 10px; 
 }
 
-/* Scrollbar styling */
-.scroll-box { 
-  scrollbar-width: thin; 
-  scrollbar-color: #ffffff transparent; 
-}
-.scroll-box::-webkit-scrollbar { 
-  width: 0.5em; 
-}
-.scroll-box::-webkit-scrollbar-thumb { 
-  background: #ffffff; 
-  border-radius: 0.25em; 
-  cursor: pointer; 
-}
+
 
 /* ---------- Memorable transitions for swapping views ---------- */
 /* A quick 3D flip-in with micro-zoom and de-blur */

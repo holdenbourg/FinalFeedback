@@ -30,7 +30,7 @@ export class FilmInformationComponent implements OnInit {
   public currentUser = signal<UserModel | null>(null);
 
   hasAlreadyRated = signal<boolean>(false);
-  isCheckingRating = signal<boolean>(false);
+  isCheckingRating = signal<boolean>(true);
 
   public imdbId = '';
   public loading = true;
@@ -120,6 +120,9 @@ export class FilmInformationComponent implements OnInit {
 
 
   async ngOnInit() {
+    const current = await this.usersService.getCurrentUserProfile();
+    this.currentUser.set(current);
+
     this.route.paramMap.subscribe(async pm => {
       this.imdbId = pm.get('imdbId') ?? '';
       if (!this.imdbId) return;
@@ -127,11 +130,6 @@ export class FilmInformationComponent implements OnInit {
     });
 
     this.addRandomStartPointForRows();  
-    
-    const current = await this.usersService.getCurrentUserProfile();
-    this.currentUser.set(current);
-
-    console.log(this.streamingServices);
   }
 
 
@@ -280,6 +278,7 @@ export class FilmInformationComponent implements OnInit {
     const user = this.currentUser();
     if (!user || !this.combinedApiResult?.imdbId) {
       this.hasAlreadyRated.set(false);
+      this.isCheckingRating.set(false);
       return;
     }
 

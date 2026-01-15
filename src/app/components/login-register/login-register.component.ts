@@ -15,7 +15,7 @@ import { UsersService } from '../../services/users.service';
   templateUrl: './login-register.component.html',
   styleUrls: ['./login-register.component.css']
 })
-export class LoginRegisterComponent implements OnInit, OnDestroy {
+export class LoginRegisterComponent implements OnInit {
   private router = inject(Router);
   private authService = inject(AuthService);
   private activatedRoute = inject(ActivatedRoute);
@@ -28,7 +28,6 @@ export class LoginRegisterComponent implements OnInit, OnDestroy {
 
   public termsChecked = false;
   public rememberMeChecked = false;
-  private unloadHandler: ((e: BeforeUnloadEvent) => void) | null = null;  ///  when rememberMeChecked = false  \\\
 
   public showWarning = false;
   public warning = '';
@@ -49,17 +48,9 @@ export class LoginRegisterComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.addRandomStartPointForRows();
-    this.bindUnloadHandlerIfNeeded();
   }
 
-  ngOnDestroy() {
-    if (this.unloadHandler) {
-      window.removeEventListener('beforeunload', this.unloadHandler);
-      this.unloadHandler = null;
-    }
-  }
-
-  // -======================================-  Login/Register Logic  -======================================- \\
+  ///  -======================================-  Login/Register Logic  -======================================-  \\
   async onRegister() {
     const warningMessage = this.validateRegister();
     if (warningMessage) {
@@ -108,10 +99,10 @@ export class LoginRegisterComponent implements OnInit, OnDestroy {
     }
 
     try {
-      // identifier can be username OR email
       await this.authService.signInWithIdentifier(
         this.loginObject.usernameOrEmail,
-        this.loginObject.password
+        this.loginObject.password,
+        this.rememberMeChecked
       );
 
       this.transitionWarning('Welcome back!', 'success');
@@ -249,22 +240,6 @@ export class LoginRegisterComponent implements OnInit, OnDestroy {
 
   toggleRememberMe() {
     this.rememberMeChecked = !this.rememberMeChecked;
-    this.bindUnloadHandlerIfNeeded();
-  }
-
-  private bindUnloadHandlerIfNeeded() {
-    if (this.unloadHandler) {
-      window.removeEventListener('beforeunload', this.unloadHandler);
-      this.unloadHandler = null;
-    }
-
-    if (!this.rememberMeChecked) {
-      this.unloadHandler = () => {
-        this.authService.signOut().catch(() => {});
-      };
-
-      window.addEventListener('beforeunload', this.unloadHandler);
-    }
   }
 
   private clearWarning() {

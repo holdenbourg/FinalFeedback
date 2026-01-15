@@ -77,23 +77,35 @@ export class AuthService {
   }
 
   /** Sign in with email or username + password */
-  async signInWithIdentifier(identifier: string, password: string) {
+  async signInWithIdentifier(identifier: string, password: string, rememberMe: boolean = true) {
     const email = await this.resolveEmail(identifier);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ 
+      email, 
+      password
+    });
 
-    // If the user originally used Google and never set a password, this will fail.
     if (error) {
       const msg = /Invalid login credentials/i.test(error.message)
-        ? 'Invalid credentials. If you signed up with Google, use “Continue with Google” or reset your password.'
+        ? 'Invalid credentials. If you signed up with Google, use "Continue with Google" or reset your password.'
         : error.message;
       throw new Error(msg);
     }
+
+    // ✅ Set a flag if they DON'T want to be remembered
+    if (!rememberMe) {
+      sessionStorage.setItem('w2w-session-only', 'true');
+    } else {
+      sessionStorage.removeItem('w2w-session-only');
+      localStorage.setItem('w2w-remember-me', 'true');
+    }
+
     return data;
   }
 
   async signOut() {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw new Error(error.message);
+    await supabase.auth.signOut();
+    sessionStorage.removeItem('w2w-session-only');
+    localStorage.removeItem('w2w-remember-me');
   }
 
   // ---------- Password reset helpers ----------

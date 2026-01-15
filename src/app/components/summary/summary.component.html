@@ -297,7 +297,7 @@
     </div>
   </section>
   <!-- Cell 3: Genre bars -->
-  <section class="cell" *ngIf="(canViewMovies() || canViewSeries())">
+  <section class="cell no-bottom-padding" *ngIf="(canViewMovies() || canViewSeries())">
     <header class="cell-header">
       <button class="chev-btn prev"
               *ngIf="genreBarIndex() > 0; else genreBarPrevSpacer"
@@ -352,7 +352,7 @@
   </section>
 
   <!-- Cell 4: Rated bars -->
-  <section class="cell" *ngIf="(canViewMovies() || canViewSeries())">
+  <section class="cell no-bottom-padding" *ngIf="(canViewMovies() || canViewSeries())">
     <header class="cell-header">
       <button class="chev-btn prev"
               *ngIf="ratedBarIndex() > 0; else ratedBarPrevSpacer"
@@ -407,7 +407,7 @@
   </section>
 
   <!-- Cell 5: Rated pies -->
-  <section class="cell" *ngIf="(canViewMovies() || canViewSeries())">
+  <section class="cell no-bottom-padding" *ngIf="(canViewMovies() || canViewSeries())">
     <header class="cell-header">
       <button class="chev-btn prev"
               *ngIf="ratedPieIndex() > 0; else ratedPiePrevSpacer"
@@ -466,7 +466,7 @@
   </section>
 
   <!-- Cell 6: Genre pies -->
-  <section class="cell" *ngIf="(canViewMovies() || canViewSeries())">
+  <section class="cell no-bottom-padding" *ngIf="(canViewMovies() || canViewSeries())">
     <header class="cell-header">
       <button class="chev-btn prev"
               *ngIf="genrePieIndex() > 0; else genrePiePrevSpacer"
