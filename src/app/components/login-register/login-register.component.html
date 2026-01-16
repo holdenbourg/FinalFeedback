@@ -14,6 +14,7 @@
 <div class="wrapper" [class.active]="activePanel === 'register'">
     <div class="form-box login">
         <h2>Login</h2>
+
         <div class="warning-banner" [class.show]="showWarning" [ngClass]="warningType" role="status" aria-live="polite">
             <p>{{ warning }}</p>
         </div>
@@ -122,10 +123,11 @@
 </div>
 
 <footer class="login-footer">
-  <div class="footer-content">
-    <p class="app-name">What2Watch</p>
-    <div class="footer-links">
-      <a routerLink="/privacy-policy" class="footer-link">Privacy Policy</a>
+    <div class="footer-content">
+        <p class="app-name">What2Watch</p>
+
+        <div class="footer-links">
+            <a routerLink="/privacy-policy" class="footer-link">Privacy Policy</a>
+        </div>
     </div>
-  </div>
 </footer>

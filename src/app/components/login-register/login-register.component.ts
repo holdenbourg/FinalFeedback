@@ -133,7 +133,8 @@ export class LoginRegisterComponent implements OnInit {
     }
   }
 
-  // -======================================-  Validators  -======================================- \\
+
+  ///  -======================================-  Validators  -======================================-  \\\
   private validateRegister(): string | null {
     const firstName = this.registerObject.firstName.trim();
     const lastName = this.registerObject.lastName.trim();
@@ -181,7 +182,7 @@ export class LoginRegisterComponent implements OnInit {
     return null;
   }
 
-  // -======================================-  Validator Helper Methods  -======================================- \\
+  ///  -======================================-  Validator Helper Methods  -======================================-  \\\
   private containsAnySpecialCharacters(input: string): boolean {
     const specialCharacters = /[.,\[\]{}()_\-+=!@#$%^&*:;'"<>?|~\/\\]/;
     return specialCharacters.test(input);
@@ -221,7 +222,7 @@ export class LoginRegisterComponent implements OnInit {
     return emailFormat.test(email);
   }
 
-  // -======================================-  OAuth Helpers  -======================================- \\
+  ///  -======================================-  OAuth Helpers  -======================================-  \\\
   private buildRedirectUrl(): string {
     const redirect = this.activatedRoute.snapshot.queryParamMap.get('redirect');
     const targetPath = redirect && redirect !== '/' ? redirect : '/home';
@@ -250,7 +251,7 @@ export class LoginRegisterComponent implements OnInit {
     this.showWarning = true;
   }
 
-  // -======================================-  Helper Methods  -======================================- \\
+  ///  -======================================-  Helper Methods  -======================================-  \\\
   toggleLoginRegister() {
     this.activePanel = this.activePanel === 'login' ? 'register' : 'login';
     this.clearWarning();
