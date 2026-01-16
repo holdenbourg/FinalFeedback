@@ -143,8 +143,7 @@ export class SettingsAccountInfoComponent implements OnInit, OnDestroy {
     }, duration);
   }
   
-  // ========== Auth Check ==========
-  
+  ///  -======================================-  Login/Register Logic  -======================================-  \\\  
   async checkAuthMethod() {
     try {
       const authUser = await this.usersService.getCurrentAuthUser();
@@ -169,8 +168,8 @@ export class SettingsAccountInfoComponent implements OnInit, OnDestroy {
     return provider.charAt(0).toUpperCase() + provider.slice(1);
   }
   
-  // ========== Update Profile ==========
   
+  ///  -======================================-  Update Logic  -======================================-  \\\
   async onUpdateProfile() {
     const user = this.currentUser();
     if (!user) return;
@@ -180,16 +179,22 @@ export class SettingsAccountInfoComponent implements OnInit, OnDestroy {
       this.showMessage('error', 'No changes to save', 3000);
       return;
     }
+
+    const validationError = this.validateProfileChanges();
+    if (validationError) {
+      this.showMessage('error', validationError);
+      return;
+    }
     
     this.clearMessages();
     this.isUpdatingProfile.set(true);
     
     try {
       const result = await this.usersService.updateUserProfile(user.id, {
-        username: this.username,
-        first_name: this.firstName,
-        last_name: this.lastName,
-        bio: this.bio
+        username: this.username.trim(),
+        first_name: this.firstName.trim(),
+        last_name: this.lastName.trim(),
+        bio: this.bio.trim()
       });
       
       if (result.success) {
@@ -205,6 +210,12 @@ export class SettingsAccountInfoComponent implements OnInit, OnDestroy {
           this.originalFirstName = updated.first_name || '';
           this.originalLastName = updated.last_name || '';
           this.originalBio = updated.bio || '';
+          
+          // ✅ UPDATE FORM FIELDS TOO
+          this.username = updated.username;
+          this.firstName = updated.first_name || '';
+          this.lastName = updated.last_name || '';
+          this.bio = updated.bio || '';
         }
         
         // Reset changes flag
@@ -219,12 +230,16 @@ export class SettingsAccountInfoComponent implements OnInit, OnDestroy {
       this.isUpdatingProfile.set(false);
     }
   }
-  
-  // ========== Update Email ==========
-  
+
   async onUpdateEmail() {
     if (this.isOAuthUser()) {
       this.showMessage('error', `Cannot change email for ${this.authProvider()} accounts`);
+      return;
+    }
+
+    const validationError = this.validateEmail();
+    if (validationError) {
+      this.showMessage('error', validationError);
       return;
     }
     
@@ -232,10 +247,11 @@ export class SettingsAccountInfoComponent implements OnInit, OnDestroy {
     this.isUpdatingEmail.set(true);
     
     try {
-      const result = await this.usersService.updateUserEmail(this.email);
+      const result = await this.usersService.updateUserEmail(this.email.trim());
       
       if (result.success) {
         this.showMessage('success', 'Email update initiated! Please check your new email for confirmation.', 7000);
+        this.originalEmail = this.email.trim();
       } else {
         this.showMessage('error', result.error || 'Failed to update email');
       }
@@ -246,23 +262,16 @@ export class SettingsAccountInfoComponent implements OnInit, OnDestroy {
       this.isUpdatingEmail.set(false);
     }
   }
-  
-  // ========== Update Password ==========
-  
+
   async onUpdatePassword() {
     if (this.isOAuthUser()) {
       this.showMessage('error', `Cannot set password for ${this.authProvider()} accounts`);
       return;
     }
-    
-    // Validation
-    if (!this.newPassword || this.newPassword.length < 6) {
-      this.showMessage('error', 'Password must be at least 6 characters');
-      return;
-    }
-    
-    if (this.newPassword !== this.confirmPassword) {
-      this.showMessage('error', 'Passwords do not match');
+
+    const validationError = this.validatePassword();
+    if (validationError) {
+      this.showMessage('error', validationError);
       return;
     }
     
@@ -288,7 +297,7 @@ export class SettingsAccountInfoComponent implements OnInit, OnDestroy {
   }
 
 
-    // ========== Delete Account ==========
+  // ========== Delete Account ==========
   async onDeleteAccount() {
     const user = this.currentUser();
     if (!user) return;
@@ -379,7 +388,6 @@ export class SettingsAccountInfoComponent implements OnInit, OnDestroy {
   }
   
   // ========== Upload Profile Picture ==========
-  
   async uploadFile(file: File) {
     const user = this.currentUser();
     if (!user) return;
@@ -421,6 +429,108 @@ export class SettingsAccountInfoComponent implements OnInit, OnDestroy {
     await this.uploadFile(file);
     input.value = ''; // Reset file input
   }
+
+
+  // -======================================-  Validator Helper Methods  -======================================- \\
+  private containsAnySpecialCharacters(input: string): boolean {
+    const specialCharacters = /[.,\[\]{}()_\-+=!@#$%^&*:;'"<>?|~\/\\]/;
+    return specialCharacters.test(input);
+  }
+
+  private containsAllowedSpecialCharacters(input: string): boolean {
+    const specialCharacters = /[!@#$%^&*]/;
+    return specialCharacters.test(input);
+  }
+
+  private containsCapitalLetter(input: string): boolean {
+    const capitalLetter = /[A-Z]/;
+    return capitalLetter.test(input);
+  }
+
+  private containsNumber(input: string): boolean {
+    const number = /\d/;
+    return number.test(input);
+  }
+
+  private containsWhiteSpace(input: string): boolean {
+    const whiteSpace = /\s/;
+    return whiteSpace.test(input);
+  }
+
+  private inputWithinRange(input: string, min: number, max: number): boolean {
+    return input.length >= min && input.length <= max;
+  }
+
+  private isUsernameValid(username: string): boolean {
+    const allowedCharacters = /^[A-Za-z0-9]+$/;
+    return allowedCharacters.test(username);
+  }
+
+  private isEmailValid(email: string): boolean {
+    const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailFormat.test(email);
+  }
+
+  // -======================================-  Validation Methods  -======================================- \\
+
+  private validateProfileChanges(): string | null {
+    const firstName = this.firstName.trim();
+    const lastName = this.lastName.trim();
+    const username = this.username.trim();
+
+    // First Name validation
+    if (firstName.length > 0) { // Only validate if not empty
+      if (!this.inputWithinRange(firstName, 2, 16)) return 'First name must be 2–16 characters';
+      if (this.containsWhiteSpace(firstName)) return `First name can't contain spaces`;
+      if (this.containsAnySpecialCharacters(firstName)) return `First name can't have special characters`;
+    }
+
+    // Last Name validation
+    if (lastName.length > 0) { // Only validate if not empty
+      if (!this.inputWithinRange(lastName, 2, 16)) return 'Last name must be 2–16 characters';
+      if (this.containsWhiteSpace(lastName)) return `Last name can't contain spaces`;
+      if (this.containsAnySpecialCharacters(lastName)) return `Last name can't have special characters`;
+    }
+
+    // Username validation (required)
+    if (!this.inputWithinRange(username, 6, 14)) return 'Username must be 6–14 characters';
+    if (this.containsWhiteSpace(username)) return `Username cannot contain spaces`;
+    if (!this.isUsernameValid(username)) return 'Username can only use letters and numbers';
+
+    // Bio validation (optional)
+    if (this.bio.length > 150) return 'Bio must be 150 characters or less';
+
+    return null;
+  }
+
+  private validateEmail(): string | null {
+    const email = this.email.trim();
+
+    if (!this.inputWithinRange(email, 6, 60)) return 'Email must be 6–60 characters';
+    if (this.containsWhiteSpace(email)) return `Email cannot contain spaces`;
+    if (!this.isEmailValid(email)) return `Email must look like "name@host.tld"`;
+
+    return null;
+  }
+
+  private validatePassword(): string | null {
+    const password = this.newPassword;
+    const confirm = this.confirmPassword;
+
+    if (!this.inputWithinRange(password, 8, 24)) return 'Password must be 8–24 characters';
+    if (this.containsWhiteSpace(password)) return `Password cannot contain spaces`;
+    if (!this.containsCapitalLetter(password)) return 'Password must contain a capital letter';
+    if (!this.containsNumber(password)) return 'Password must contain a number';
+    if (!this.containsAllowedSpecialCharacters(password))
+      return 'Password must contain one of ! @ # $ % ^ & *';
+
+    if (password !== confirm) return 'Passwords do not match';
+
+    return null;
+  }
+
+
+
   
   // ========== Helpers ==========
 

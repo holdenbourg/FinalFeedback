@@ -91,22 +91,39 @@ export class AuthService {
       throw new Error(msg);
     }
 
-    // ✅ Set a flag if they DON'T want to be remembered
-    if (!rememberMe) {
-      sessionStorage.setItem('w2w-session-only', 'true');
+    // ✅ Clean up old flag
+    localStorage.removeItem('w2w-remember-me');
+    
+    // ✅ ADD LOGGING
+    console.log('[Auth] Remember Me:', rememberMe);
+    console.log('[Auth] Session created:', data.session?.access_token ? 'YES' : 'NO');
+    
+    if (rememberMe) {
+      // User wants to stay logged in - clear session-only flags
+      sessionStorage.removeItem('w2w-session-active');
+      localStorage.removeItem('w2w-session-only');
+      console.log('[Auth] Remember Me ON - cleared session-only flags');
     } else {
-      sessionStorage.removeItem('w2w-session-only');
-      localStorage.setItem('w2w-remember-me', 'true');
+      // User wants session-only - set both flags
+      sessionStorage.setItem('w2w-session-active', Date.now().toString());
+      localStorage.setItem('w2w-session-only', 'true');
+      console.log('[Auth] Remember Me OFF - set session-only flags');
     }
+
+    // ✅ VERIFY session is stored
+    const storedSession = localStorage.getItem(`sb-${await supabase.auth.getUser() ? 'session' : 'user'}`);
+    console.log('[Auth] Supabase session stored in localStorage:', storedSession ? 'YES' : 'NO');
 
     return data;
   }
 
   async signOut() {
     await supabase.auth.signOut();
-    sessionStorage.removeItem('w2w-session-only');
+    sessionStorage.removeItem('w2w-session-active');
+    localStorage.removeItem('w2w-session-only');
     localStorage.removeItem('w2w-remember-me');
   }
+
 
   // ---------- Password reset helpers ----------
   /** Start a password reset by email or username */

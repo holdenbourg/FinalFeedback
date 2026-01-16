@@ -38,7 +38,7 @@
             </div>
 
             <div class="remember-forgot">
-                <label><input type="checkbox" class="w2w-checkbox" [checked]="rememberMeChecked" (click)="toggleRememberMe()"/>Remember me</label>                
+                <label><input type="checkbox" class="w2w-checkbox" [(ngModel)]="rememberMeChecked" name="remember-me"/>Remember me</label>
                 
                 <a (click)="$event.preventDefault()">Forgot password?</a>
             </div>

@@ -2,11 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-
 import { LoginModel } from '../../models/login-register-models/login.model';
 import { RegisterModel } from '../../models/login-register-models/register.model';
 import { AuthService } from '../../core/auth.service';
 import { UsersService } from '../../services/users.service';
+import { supabase } from '../../core/supabase.client';
 
 @Component({
   selector: 'app-login-register',
@@ -15,6 +15,7 @@ import { UsersService } from '../../services/users.service';
   templateUrl: './login-register.component.html',
   styleUrls: ['./login-register.component.css']
 })
+
 export class LoginRegisterComponent implements OnInit {
   private router = inject(Router);
   private authService = inject(AuthService);
@@ -46,11 +47,28 @@ export class LoginRegisterComponent implements OnInit {
     password: ''
   };
 
-  ngOnInit() {
+
+  async ngOnInit() {
     this.addRandomStartPointForRows();
+    
+    ///==-  If already logged in, redirect to home  -==\\\
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      console.log('[Login] Already logged in, redirecting to home');
+      this.router.navigateByUrl('/home');
+      return;
+    }
+    
+    ///==-  Restore checkbox preference   -==\\\
+    const preferRemember = localStorage.getItem('w2w-prefer-remember');
+    if (preferRemember !== null) {
+      this.rememberMeChecked = preferRemember === 'true';
+    }
   }
 
-  ///  -======================================-  Login/Register Logic  -======================================-  \\
+
+  ///  -======================================-  Login/Register Logic  -======================================-  \\\
+  ///==-  If given credentials are valid, create the account and route to login  -==\\\
   async onRegister() {
     const warningMessage = this.validateRegister();
     if (warningMessage) {
@@ -60,7 +78,6 @@ export class LoginRegisterComponent implements OnInit {
 
     const { firstName, lastName, email, username, password } = this.registerObject;
 
-    // Case-insensitive existence checks via UsersService
     if (await this.usersService.emailExistsCaseInsensitive(email)) {
       this.transitionWarning('Email is already registered', 'error');
       return;
@@ -91,6 +108,7 @@ export class LoginRegisterComponent implements OnInit {
     }
   }
 
+  ///==-  If given credentials are valid, create the account and route to login  -==\\\
   async onLogin() {
     const warningMessage = this.validateLogin();
     if (warningMessage) {
@@ -236,10 +254,6 @@ export class LoginRegisterComponent implements OnInit {
   toggleLoginRegister() {
     this.activePanel = this.activePanel === 'login' ? 'register' : 'login';
     this.clearWarning();
-  }
-
-  toggleRememberMe() {
-    this.rememberMeChecked = !this.rememberMeChecked;
   }
 
   private clearWarning() {
