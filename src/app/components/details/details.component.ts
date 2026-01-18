@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { MovieDetailsResponseModel } from '../../models/api-models/tmdb-models/movie-details-response.model';
+import { MovieDetailsPageModel } from '../../models/api-models/movie-details-page.model';
+import { PersonDetailsPageModel } from '../../models/api-models/person-details-page.model';
+import { TvDetailsPageModel } from '../../models/api-models/tv-details-page.model';
 
 @Component({
   selector: 'app-details',
@@ -11,17 +14,22 @@ import { MovieDetailsResponseModel } from '../../models/api-models/tmdb-models/m
   templateUrl: './details.component.html',
   styleUrls: ['./details.component.css'] // you can reuse your old css file
 })
+
 export class DetailsComponent implements OnInit {
   private api = inject(ApiService);
   private route = inject(ActivatedRoute);
+
+  mediaType: 'movie' | 'tv' | 'person' | null = null;
+
+  movieDetails: MovieDetailsPageModel | null = null;
+  tvDetails: TvDetailsPageModel | null = null;
+  personDetails: PersonDetailsPageModel | null = null;
 
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
 
   type = signal<'movie' | 'tv' | 'person' | null>(null);
   id = signal<number | null>(null);
-
-  movieDetails = signal<MovieDetailsResponseModel | null>(null);
 
   readonly fallbackPoster = 'assets/images/no-poster.png';
 
