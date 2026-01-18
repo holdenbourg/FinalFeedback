@@ -14,6 +14,7 @@ import { SettingsAccountInfoComponent } from './components/settings-account-info
 import { SettingsPrivacyComponent } from './components/settings-privacy/settings-privacy.component';
 import { SettingsPrivacyPolicyComponent } from './components/settings-privacy-policy/settings-privacy-policy.component';
 import { PrivacyPolicyComponent } from './components/privacy-policy/privacy-policy.component';
+import { DetailsComponent } from './components/details/details.component';
 
 
 export const routes: Routes = [
@@ -24,7 +25,9 @@ export const routes: Routes = [
     { path: 'home', component: HomeComponent, canActivate: [AuthGuard] },
 
     { path: 'search', redirectTo: 'search/movies', pathMatch: 'full' },
-    { path: 'search/:type', component: SearchComponent, canActivate: [AuthGuard] }, // movies | series | users
+    { path: 'search/:type', component: SearchComponent, canActivate: [AuthGuard] }, // all | movies | series | people | users
+
+    { path: 'details/:type/:id', component: DetailsComponent, canActivate: [AuthGuard]  },
 
     { path: 'movie/:imdbId', component: FilmInformationComponent, canActivate: [AuthGuard] },
     { path: 'series/:imdbId', component: FilmInformationComponent, canActivate: [AuthGuard] },

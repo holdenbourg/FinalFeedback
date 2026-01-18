@@ -25,6 +25,7 @@ import { PersonSearchResposneModel } from '../models/api-models/tmdb-models/pers
 import { SearchApiResponseModel } from '../models/api-models/tmdb-models/search-api-response.model';
 import { MovieSearchApiResponseModel, MultiSearchResultModel, PersonSearchApiResponseModel, TvSearchApiResponseModel } from '../models/api-models/tmdb-models/tmdb-search-api-response-types.model';
 import { MultiSearchPersonResultModel } from '../models/api-models/tmdb-models/multi-search-person-result.model';
+import { MovieDetailsResponseModel } from '../models/api-models/tmdb-models/movie-details-response.model';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -359,6 +360,84 @@ export class ApiService {
           return of([] as UpcomingFilmModel[]);
         })
       );
+  }
+
+  getMovieDetailsTmdb(movieId: number, language: string = environment.tmdb.language ?? 'en-US'): Observable<MovieDetailsResponseModel> {
+    const url = `${environment.tmdb.baseUrl}/movie/${movieId}`;
+  
+    const params = new HttpParams()
+      .set('api_key', environment.tmdb.apiKey)
+      .set('language', language);
+  
+    // Use `any` because TMDB returns date strings / nullable fields.
+    return this.http.get<any>(url, { params }).pipe(
+      map((raw) => this.mapMovieDetails(raw)),
+      catchError((err: HttpErrorResponse) => {
+        console.error('[ApiService] getMovieDetailsTmdb error', err);
+  
+        // Return a safe empty object (so component can show error state if desired)
+        return of(this.mapMovieDetails({ id: movieId }));
+      })
+    );
+  }
+  
+  private mapMovieDetails(raw: any): MovieDetailsResponseModel {
+    return {
+      adult: !!raw?.adult,
+      backdrop_path: raw?.backdrop_path ?? '',
+      belongs_to_collection: raw?.belongs_to_collection
+        ? {
+            id: raw.belongs_to_collection.id ?? 0,
+            name: raw.belongs_to_collection.name ?? '',
+            poster_path: raw.belongs_to_collection.poster_path ?? '',
+            backdrop_path: raw.belongs_to_collection.backdrop_path ?? ''
+          }
+        : null,
+  
+      budget: raw?.budget ?? 0,
+      genres: Array.isArray(raw?.genres)
+        ? raw.genres.map((g: any) => ({ id: g.id ?? 0, name: g.name ?? '' }))
+        : [],
+      homepage: raw?.homepage ?? '',
+      id: raw?.id ?? 0,
+      imdb_id: raw?.imdb_id ?? '',
+      origin_country: Array.isArray(raw?.origin_country) ? raw.origin_country : [],
+      original_language: raw?.original_language ?? '',
+      original_title: raw?.original_title ?? '',
+      overview: raw?.overview ?? '',
+      popularity: raw?.popularity ?? 0,
+      poster_path: raw?.poster_path ?? '',
+      production_companies: Array.isArray(raw?.production_companies)
+        ? raw.production_companies.map((c: any) => ({
+            id: c.id ?? 0,
+            logo_path: c.logo_path ?? null,
+            name: c.name ?? '',
+            origin_country: c.origin_country ?? ''
+          }))
+        : [],
+      production_countries: Array.isArray(raw?.production_countries)
+        ? raw.production_countries.map((c: any) => ({
+            iso_3166_1: c.iso_3166_1 ?? '',
+            name: c.name ?? ''
+          }))
+        : [],
+      release_date: this.parseTmdbDate(raw?.release_date),
+      revenue: raw?.revenue ?? 0,
+      runtime: raw?.runtime ?? 0,
+      spoken_languages: Array.isArray(raw?.spoken_languages)
+        ? raw.spoken_languages.map((l: any) => ({
+            english_name: l.english_name ?? '',
+            iso_639_1: l.iso_639_1 ?? '',
+            name: l.name ?? ''
+          }))
+        : [],
+      status: raw?.status ?? '',
+      tagline: raw?.tagline ?? '',
+      title: raw?.title ?? '',
+      video: !!raw?.video,
+      vote_average: raw?.vote_average ?? 0,
+      vote_count: raw?.vote_count ?? 0
+    };
   }
 
   private parseTmdbDate(value?: string | null): Date | null {

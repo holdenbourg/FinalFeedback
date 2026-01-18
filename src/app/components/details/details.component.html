@@ -1,0 +1,63 @@
+<div class="container" *ngIf="!loading() && !error(); else loadingOrError">
+    <ng-container *ngIf="type() === 'movie' && movieDetails() as m">
+      <div class="left-information">
+        <p class="row">
+          <span class="label">Release Date:</span>
+          <span class="value">{{ m.release_date ? (m.release_date | date:'longDate') : 'N/A' }}</span>
+        </p>
+  
+        <p class="row">
+          <span class="label">Runtime:</span>
+          <span class="value">{{ runtimeText() }}</span>
+        </p>
+  
+        <p class="row">
+          <span class="label">Genres:</span>
+          <span class="value">{{ genreText() }}</span>
+        </p>
+  
+        <p class="row">
+          <span class="label">Summary:</span>
+          <span class="value">{{ m.overview || 'N/A' }}</span>
+        </p>
+      </div>
+  
+      <div class="right-information">
+        <div class="film-information">
+          <div class="film-left">
+            <div class="film-scroll">
+              <p class="title">{{ m.title }}</p>
+              <p class="release" *ngIf="m.release_date">{{ m.release_date | date:'yyyy' }}</p>
+  
+              <div class="meta">
+                <span class="badge" *ngIf="m.status">{{ m.status }}</span>
+                <span class="badge" *ngIf="genreText() !== 'N/A'">{{ genreText() }}</span>
+              </div>
+            </div>
+  
+            <div class="film-counts">
+              <div class="count">
+                <div class="count-num">{{ m.vote_average | number:'1.1-1' }}</div>
+                <div class="count-label">TMDB</div>
+              </div>
+  
+              <div class="count">
+                <div class="count-num">{{ m.vote_count }}</div>
+                <div class="count-label">Votes</div>
+              </div>
+            </div>
+          </div>
+  
+          <img class="film-poster" [src]="posterSrc()" [attr.alt]="m.title" (error)="setFallback($event)" />
+        </div>
+      </div>
+    </ng-container>
+  </div>
+  
+  <ng-template #loadingOrError>
+    <div class="loading-error" *ngIf="!loading() && error()">
+      <p>{{ error() }}</p>
+    </div>
+  
+    <!-- You can paste your shimmer block here unchanged -->
+  </ng-template>  

@@ -1,10 +1,11 @@
 import { Component, Input } from '@angular/core';
 import { MultiSearchMediaResultModel } from '../../../models/api-models/tmdb-models/multi-search-media-result.model';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-searched-film',
   standalone: true,
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './searched-film.component.html',
   styleUrls: ['./searched-film.component.css']
 })

@@ -1,5 +1,9 @@
-<article class="film-details-card" tabindex="0" [attr.aria-label]="displayTitle + (displayYear ? ' (' + displayYear + ')' : '')">
-  <div class="film-poster-wrap">
+<article
+  class="film-details-card"
+  tabindex="0"
+  [attr.aria-label]="displayTitle + (displayYear ? ' (' + displayYear + ')' : '')"
+  [routerLink]="['/details', item.media_type, item.id]"
+>  <div class="film-poster-wrap">
     <img
       class="film-poster"
       [src]="posterSrc"

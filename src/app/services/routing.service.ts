@@ -14,14 +14,31 @@ export class RoutingService {
   navigateToHome() {
     this.router.navigate(['/home'], { replaceUrl: true });
   }
+  navigateToSearchAll(q?: string) {
+    this.router.navigate(['/search', 'all'], { queryParams: { q: q || null } });
+  }
   navigateToSearchMovies(q?: string) {
     this.router.navigate(['/search', 'movies'], { queryParams: { q: q || null } });
   }
   navigateToSearchSeries(q?: string) {
     this.router.navigate(['/search', 'series'], { queryParams: { q: q || null } });
   }
+  navigateToSearchPeople(q?: string) {
+    this.router.navigate(['/search', 'people'], { queryParams: { q: q || null } });
+  }
   navigateToSearchUsers(q?: string) {
     this.router.navigate(['/search', 'users'], { queryParams: { q: q || null } });
+  }
+
+  ///  Details  \\\
+  navigateToMovieDetails(id?: string) {
+    this.router.navigate(['/details', 'movie', id]);
+  }
+  navigateToShowDetails(id?: string) {
+    this.router.navigate(['/details', 'tv', id]);
+  }
+  navigateToPersonDetails(id?: string) {
+    this.router.navigate(['/details', 'person', id]);
   }
 
 
