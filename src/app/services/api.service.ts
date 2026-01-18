@@ -362,6 +362,7 @@ export class ApiService {
       );
   }
 
+  
   getMovieDetailsTmdb(movieId: number, language: string = environment.tmdb.language ?? 'en-US'): Observable<MovieDetailsResponseModel> {
     const url = `${environment.tmdb.baseUrl}/movie/${movieId}`;
   

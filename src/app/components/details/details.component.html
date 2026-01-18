@@ -1,63 +1,326 @@
-<div class="container" *ngIf="!loading() && !error(); else loadingOrError">
-    <ng-container *ngIf="type() === 'movie' && movieDetails() as m">
-      <div class="left-information">
-        <p class="row">
-          <span class="label">Release Date:</span>
-          <span class="value">{{ m.release_date ? (m.release_date | date:'longDate') : 'N/A' }}</span>
-        </p>
-  
-        <p class="row">
-          <span class="label">Runtime:</span>
-          <span class="value">{{ runtimeText() }}</span>
-        </p>
-  
-        <p class="row">
-          <span class="label">Genres:</span>
-          <span class="value">{{ genreText() }}</span>
-        </p>
-  
-        <p class="row">
-          <span class="label">Summary:</span>
-          <span class="value">{{ m.overview || 'N/A' }}</span>
-        </p>
-      </div>
-  
-      <div class="right-information">
-        <div class="film-information">
-          <div class="film-left">
-            <div class="film-scroll">
-              <p class="title">{{ m.title }}</p>
-              <p class="release" *ngIf="m.release_date">{{ m.release_date | date:'yyyy' }}</p>
-  
-              <div class="meta">
-                <span class="badge" *ngIf="m.status">{{ m.status }}</span>
-                <span class="badge" *ngIf="genreText() !== 'N/A'">{{ genreText() }}</span>
-              </div>
-            </div>
-  
-            <div class="film-counts">
-              <div class="count">
-                <div class="count-num">{{ m.vote_average | number:'1.1-1' }}</div>
-                <div class="count-label">TMDB</div>
-              </div>
-  
-              <div class="count">
-                <div class="count-num">{{ m.vote_count }}</div>
-                <div class="count-label">Votes</div>
-              </div>
-            </div>
+<div class="poster-rows" aria-hidden="true">
+  <div class="row r1"><div class="inner"></div></div>
+  <div class="row r2"><div class="inner"></div></div>
+  <div class="row r3"><div class="inner"></div></div>
+  <div class="row r4"><div class="inner"></div></div>
+  <div class="row r5"><div class="inner"></div></div>
+  <div class="row r6"><div class="inner"></div></div>
+  <div class="row r7"><div class="inner"></div></div>
+  <div class="row r8"><div class="inner"></div></div>
+  <div class="row r9"><div class="inner"></div></div>
+  <div class="row r10"><div class="inner"></div></div>
+</div>
+
+<div class="container" *ngIf="!loading && !error && movieDetails; else loadingOrError">
+  <div class="left-information">
+    <!-- Director/Writer Section -->
+    <p class="row" *ngIf="showDirWriterCombined; else separateDirWriter">
+      <span class="label">Director/Writer:</span>
+      <span class="value">{{ directorName }}</span>
+    </p>
+
+    <ng-template #separateDirWriter>
+      <p class="row" *ngIf="directorName !== 'N/A'">
+        <span class="label">Director:</span>
+        <span class="value">{{ directorName }}</span>
+      </p>
+
+      <p class="row" *ngIf="writerNames !== 'N/A'">
+        <span class="label">Writer:</span>
+        <span class="value">{{ writerNames }}</span>
+      </p>
+    </ng-template>
+
+    <!-- ✅ NEW: Production Companies -->
+    <p class="row" *ngIf="productionCompaniesText !== 'N/A'">
+      <span class="label">Production:</span>
+      <span class="value">{{ productionCompaniesText }}</span>
+    </p>
+
+    <!-- ✅ NEW: Budget -->
+    <p class="row" *ngIf="movieDetails.budget > 0">
+      <span class="label">Budget:</span>
+      <span class="value">{{ formatCurrency(movieDetails.budget) }}</span>
+    </p>
+
+    <!-- Box Office (Revenue) -->
+    <p class="row" *ngIf="movieDetails.revenue > 0">
+      <span class="label">Box Office:</span>
+      <span class="value">{{ formatCurrency(movieDetails.revenue) }}</span>
+    </p>
+
+    <!-- Awards -->
+    <p class="row" *ngIf="movieDetails.awards !== 'N/A'">
+      <span class="label">Awards:</span>
+      <span class="value">{{ movieDetails.awards }}</span>
+    </p>
+
+    <!-- Summary -->
+    <p class="row">
+      <span class="label">Summary:</span>
+      <span class="value">{{ movieDetails.overview || 'N/A' }}</span>
+    </p>
+  </div>
+
+  <div class="right-information">
+    <div class="film-information">
+      <div class="film-left">
+        <div class="film-scroll">
+          <!-- Title -->
+          <p class="title" (click)="goToHomePage()" [style.cursor]="movieDetails?.homepage ? 'pointer' : 'default'">{{ movieDetails.title }}</p>
+          
+          <!-- Release Year -->
+          <p class="release">{{ formatReleaseDate(movieDetails.release_date) }}</p>
+
+          <!-- Meta Badges -->
+          <div class="meta">
+            <!-- Rated Badge -->
+            <span class="badge" *ngIf="movieDetails.rated && movieDetails.rated !== 'N/A'">
+              {{ movieDetails.rated }}
+            </span>
+
+            <!-- Genres Badge -->
+            <span class="badge" *ngIf="(genresText || '').length">
+              {{ (genresText || '').split(', ').join(' • ') }}
+            </span>
           </div>
-  
-          <img class="film-poster" [src]="posterSrc()" [attr.alt]="m.title" (error)="setFallback($event)" />
+
+          <p class="tagline">{{ movieDetails.tagline }}</p>
+        </div>
+
+        <!-- Runtime & TMDb Score -->
+        <div class="film-counts">
+          <!-- Runtime -->
+          <div class="count" *ngIf="movieDetails.runtime > 0">
+            <div class="count-num">{{ formatRuntime(movieDetails.runtime) }}</div>
+            <div class="count-label">Runtime</div>
+          </div>
         </div>
       </div>
-    </ng-container>
-  </div>
-  
-  <ng-template #loadingOrError>
-    <div class="loading-error" *ngIf="!loading() && error()">
-      <p>{{ error() }}</p>
+
+      <!-- ✅ HIGH QUALITY POSTER -->
+      <img
+        class="film-poster"
+        [src]="posterSrc"
+        [attr.alt]="movieDetails.title + ' poster'"
+        [style.cursor]="movieDetails?.trailer ? 'pointer' : 'default'"
+        (click)="goToTrailer()"
+        (error)="setFallback($event)"
+        loading="lazy"
+        decoding="async"
+      />
     </div>
-  
-    <!-- You can paste your shimmer block here unchanged -->
-  </ng-template>  
+
+    <!-- Streaming Services -->
+    <div class="streaming-on">
+      <p class="label">Streaming On:</p>
+
+      <div class="streaming-services" *ngIf="streamingProviders.length > 0; else noStreamingServices">
+        <a
+          *ngFor="let provider of streamingProviders; trackBy: trackByProviderName"
+          class="provider-logo-link"
+          [attr.href]="provider.url || null"
+          [class.is-disabled]="!provider.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          [attr.aria-label]="provider.url ? ('Open on ' + provider.name) : null"
+        >
+          <img
+            class="provider-logo"
+            [src]="provider.logo"
+            [attr.alt]="provider.name"
+            (error)="onLogoError(provider)"
+            loading="lazy"
+            decoding="async"
+          />
+        </a>
+      </div>
+
+      <ng-template #noStreamingServices>
+        <p class="no-streaming-services">N/A</p>
+      </ng-template>
+    </div>
+
+    <!-- Ratings & Rate Button -->
+    <div class="ratings-button">
+      <div class="ratings">
+        <!-- IMDb Rating -->
+        <div class="ratings-item imdb-rating">
+          <a class="logo-link"
+            [attr.href]="imdbUrl || null"
+            [class.is-disabled]="!imdbUrl"
+            target="_blank" 
+            rel="noopener noreferrer"
+            aria-label="Open on IMDb"
+          >
+            <img 
+              class="imdb-img"
+              src="https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg"
+              alt="IMDb" 
+            />
+          </a>
+          <p class="score">{{ imdbRating }}</p>
+        </div>
+
+        <!-- Rotten Tomatoes Rating -->
+        <div class="ratings-item rotten-tomatoes-rating">
+          <a class="logo-link"
+            [attr.href]="rottenTomatoesUrl || null"
+            [class.is-disabled]="!rottenTomatoesUrl"
+            target="_blank" 
+            rel="noopener noreferrer"
+            aria-label="Open on Rotten Tomatoes"
+          >
+            <img 
+              class="rotten-tomatoes-img"
+              src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Rotten_Tomatoes_logo.svg"
+              alt="Rotten Tomatoes"
+            />
+          </a>
+          <p class="score">{{ rottenTomatoesRating }}</p>
+        </div>
+
+        <!-- Metacritic Rating -->
+        <div class="ratings-item metacritic-rating">
+          <a class="logo-link"
+            [attr.href]="metacriticUrl || null"
+            [class.is-disabled]="!metacriticUrl"
+            target="_blank" 
+            rel="noopener noreferrer"
+            aria-label="Open on Metacritic"
+          >
+            <img 
+              class="metacritic-img"
+              src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Metacritic_logo_original.svg"
+              alt="Metacritic" 
+            />
+          </a>
+          <p class="score">{{ metacriticRating }}</p>
+        </div>
+
+        <!-- TMDb Rating -->
+        <div class="ratings-item tmdb-rating">
+          <a class="logo-link"
+            [attr.href]="TmdbUrl || null"
+            [class.is-disabled]="!TmdbUrl"
+            target="_blank" 
+            rel="noopener noreferrer"
+            aria-label="Open on Tmdb"
+          >
+            <img 
+              class="tmdb-img"
+              src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.svg"
+              alt="TMDb" 
+            />
+          </a>
+          <p class="score">{{ movieDetails.vote_average.toFixed(1) }}/10</p>
+        </div>
+      </div>
+
+      <!-- Rate Button (placeholder for now) -->
+      <button 
+        type="button" 
+        class="rate-button" 
+        *ngIf="isReleased"
+      >
+        <span>Rate "{{ movieDetails.title }}"</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<ng-template #loadingOrError>
+  <!-- Error message -->
+  <div class="loading-error" *ngIf="!loading && error">
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- Loading Shimmer -->
+  <div class="container shimmer-container" *ngIf="loading">
+    <!-- Left Column Shimmer -->
+    <div class="left-information shimmer-left">
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 60%;"></div>
+      </div>
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 45%;"></div>
+      </div>
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 70%;"></div>
+      </div>
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 55%;"></div>
+      </div>
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 65%;"></div>
+      </div>
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 85%;"></div>
+      </div>
+    </div>
+
+    <!-- Right Column Shimmer -->
+    <div class="right-information shimmer-right">
+      <!-- Film Info Shimmer -->
+      <div class="film-information shimmer-film-info">
+        <div class="shimmer-film-content">
+          <div class="shimmer-title"></div>
+          <div class="shimmer-release"></div>
+          <div class="shimmer-badges">
+            <div class="shimmer-badge"></div>
+            <div class="shimmer-badge"></div>
+          </div>
+          <div class="shimmer-spacer"></div>
+          <div class="shimmer-counts">
+            <div class="shimmer-count">
+              <div class="shimmer-count-num"></div>
+              <div class="shimmer-count-label"></div>
+            </div>
+            <div class="shimmer-count">
+              <div class="shimmer-count-num"></div>
+              <div class="shimmer-count-label"></div>
+            </div>
+          </div>
+        </div>
+        <div class="shimmer-poster"></div>
+      </div>
+
+      <!-- Streaming Shimmer -->
+      <div class="streaming-on shimmer-streaming">
+        <p class="label">Streaming On:</p>
+        <div class="shimmer-providers">
+          <div class="shimmer-provider"></div>
+          <div class="shimmer-provider"></div>
+          <div class="shimmer-provider"></div>
+          <div class="shimmer-provider"></div>
+        </div>
+      </div>
+
+      <!-- Ratings + Button Shimmer -->
+      <div class="ratings-button shimmer-ratings-button">
+        <div class="ratings shimmer-ratings-grid">
+          <div class="shimmer-rating-item">
+            <div class="shimmer-rating-logo"></div>
+            <div class="shimmer-rating-score"></div>
+          </div>
+          <div class="shimmer-rating-item">
+            <div class="shimmer-rating-logo"></div>
+            <div class="shimmer-rating-score"></div>
+          </div>
+          <div class="shimmer-rating-item">
+            <div class="shimmer-rating-logo"></div>
+            <div class="shimmer-rating-score"></div>
+          </div>
+        </div>
+        
+        <div class="rate-button shimmer-rate-button"></div>
+      </div>
+    </div>
+  </div>
+</ng-template>

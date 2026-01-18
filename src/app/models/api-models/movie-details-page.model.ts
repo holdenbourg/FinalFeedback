@@ -39,3 +39,35 @@ export interface MovieDetailsPageModel {
     watch_providers: StreamModel[];
     trailer: string;
   }
+
+  export const emptyMovieDetailsPageModel = (tmdbId: number): MovieDetailsPageModel => ({
+  backdrop_path: '',
+  id: tmdbId,
+  media_type: 'movie',
+  overview: '',
+  poster_path: '',
+  belongs_to_collection: null,
+
+  genres: [],
+  budget: 0,
+  homepage: '',
+  imdb_id: '',
+  production_companies: [],
+  production_countries: [],
+  release_date: null,
+  revenue: 0,
+  runtime: 0,
+  spoken_languages: [],
+  tagline: '',
+  title: '',
+  vote_average: 0,
+
+  rated: '',
+  director: '',
+  writer: '',
+  awards: '',
+  ratings: [],
+
+  watch_providers: [],
+  trailer: ''
+});
