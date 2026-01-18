@@ -1,45 +1,51 @@
 import { Injectable, inject } from '@angular/core';
-import { catchError, from, map, Observable, of, switchMap } from 'rxjs';
+import { catchError, forkJoin, from, map, Observable, of, switchMap } from 'rxjs';
 import { ApiService } from './api.service';
 import { SearchType } from '../models/search-models/search.types';
 import { UsersService } from './users.service';
 
 @Injectable({ providedIn: 'root' })
 export class SearchService {
-  private api = inject(ApiService);
+  private apiService = inject(ApiService);
   private usersService = inject(UsersService);
 
-  ///  Search movies or shows using there respective API calls  \\\
+  ///  Search based on type  \\\
   search(type: SearchType, search: string): Observable<any[]> {
     const query = (search || '').trim();
     if (!query) return of([]);
 
     switch (type) {
+      case 'all':
+        return this.searchAll(query);
+        
       case 'movies':
-        return this.api.search10Films(query, 'movie').pipe(
-          map(results => this.deduplicateFilms(results))
-        );
-      case 'series':
-        return this.api.search10Films(query, 'series').pipe(
-          map(results => this.deduplicateFilms(results))
-        );
+        return this.apiService.searchMoviesTmdb(query).pipe(map(movies => movies.map(m => ({ ...m, media_type: 'movie' }))));
+        
+      case 'shows':
+        return this.apiService.searchTvTmdb(query).pipe(map(shows => shows.map(s => ({ ...s, media_type: 'tv' }))));
+        
+      case 'people':
+        return this.apiService.searchPeopleTmdb(query);
+        
       case 'users':
         return this.searchUsers(query);
     }
   }
 
-  private deduplicateFilms(films: any[]): any[] {
-    const seen = new Map<string, any>();
-    
-    films.forEach(film => {
-      if (film.imdbID && !seen.has(film.imdbID)) {
-        seen.set(film.imdbID, film);
-      }
-    });
-    
-    const unique = Array.from(seen.values());
-    console.log(`[SearchService] Deduplicated ${films.length} → ${unique.length} films`);
-    return unique;
+  ///  Search both TMDb and database users for "All" tab  \\\
+  private searchAll(query: string): Observable<any[]> {
+    return forkJoin({
+      tmdb: this.apiService.searchMultiTmdb(query),
+      users: this.searchUsers(query)
+    }).pipe(
+      map(results => {
+        return [...results.users, ...results.tmdb];
+      }),
+      catchError(err => {
+        console.error('Combined search error:', err);
+        return of([]);
+      })
+    );
   }
 
   ///  Search users excluding blocked relationships and self  \\\
@@ -47,15 +53,12 @@ export class SearchService {
     const q = (search || '').trim();
     if (!q) return of([]);
 
-    // Get current user ID first
     return from(this.usersService.getCurrentUserId()).pipe(
       switchMap(currentUserId => {
         if (!currentUserId) {
-          // Not logged in - use RPC without filtering
           return from(this.usersService.searchUsersRpc(q, 20, 0));
         }
 
-        // Logged in - filter out blocked users and self
         return from(
           this.usersService.searchUsersExcludingBlockedAndSelf(q, currentUserId, 20, 0)
         );

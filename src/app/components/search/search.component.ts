@@ -7,13 +7,15 @@ import { LocalStorageService } from '../../services/local-storage.service';
 import { RoutingService } from '../../services/routing.service';
 import { SearchService } from '../../services/search.service';
 
-import { SearchType } from '../../models/search-models/search.types';  ///  'movies' | 'series' | 'users'  \\\
+import { SearchType } from '../../models/search-models/search.types';
 
-import { SearchedFilmComponent } from '../templates/searched-film/searched-film.component';
 import { SearchedUserComponent } from '../templates/searched-user/searched-user.component';
 import { SidebarService } from '../../services/sidebar.service';
 import { UsersService } from '../../services/users.service';
 import { UserModel } from '../../models/database-models/user.model';
+import { ApiService } from '../../services/api.service';
+import { SearchedFilmComponent } from '../templates/searched-film/searched-film.component';
+import { SearchedPersonComponent } from '../templates/searched-person/searched-person.component';
 
 
 @Component({
@@ -22,7 +24,8 @@ import { UserModel } from '../../models/database-models/user.model';
   imports: [
     CommonModule, 
     FormsModule, 
-    SearchedFilmComponent, 
+    SearchedFilmComponent,
+    SearchedPersonComponent, 
     SearchedUserComponent,
     RouterModule
   ],
@@ -38,10 +41,11 @@ export class SearchComponent implements OnInit {
   readonly usersService = inject(UsersService);
   public localStorageService = inject(LocalStorageService);
   readonly sidebarService = inject(SidebarService);
+  public apiService = inject(ApiService);
 
   public currentUser = signal<UserModel | null>(null);
 
-  public type: SearchType = 'movies';
+  public type: SearchType = 'all';
   public searchInput = '';
   public results: any[] = [];
   public showWarning = false;
@@ -51,13 +55,13 @@ export class SearchComponent implements OnInit {
   ngOnInit() {
     this.addRandomStartPointForRows();
     
-    // ✅ FIX: Clear results immediately when type changes
+    // ✅ Clear results immediately when type changes
     this.route.paramMap.subscribe(pm => {
-      const newType = (pm.get('type') as SearchType) ?? 'movies';
+      const newType = (pm.get('type') as SearchType) ?? 'all';
       
       // If type changed, clear results immediately
       if (newType !== this.type) {
-        this.clearResults();  // ✅ Clear before type change
+        this.clearResults();
       }
       
       this.type = newType;
@@ -87,15 +91,13 @@ export class SearchComponent implements OnInit {
   /// -======================================-  Search Functionality  -======================================- \\\
   onSearch() {
     const query = (this.searchInput || '').trim();
+    if (!query) return;
 
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { q: query || null },  ///  null removes param if empty  \\\
+      queryParams: { q: query || null },
       queryParamsHandling: 'merge'
     });
-
-        console.log(this.results);
-
   }
 
   private runSearch(query: string) {
@@ -103,6 +105,7 @@ export class SearchComponent implements OnInit {
       next: items => {
         this.results = items ?? [];
         this.showWarning = this.results.length === 0;
+        console.log(`[Search] ${this.type} results:`, this.results);
       },
       error: err => {
         console.error(err);
@@ -118,6 +121,14 @@ export class SearchComponent implements OnInit {
   }
 
 
+  /// -======================================-  Tab Navigation  -======================================- \\\
+  navigateToTab(type: SearchType) {
+    this.router.navigate(['/search', type], { 
+      queryParams: { q: this.searchInput || null } 
+    });
+  }
+
+
   /// -======================================-  Helper Methods  -======================================- \\\
   addRandomStartPointForRows() {
     document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
@@ -126,16 +137,6 @@ export class SearchComponent implements OnInit {
 
       el.style.animationDelay = `${-(Math.random() * dur)}s`;
     });
-  }
-
-  toggleMoviesActive() {
-    this.router.navigate(['/search', 'movies'], { queryParams: { q: this.searchInput || null } });
-  }
-  toggleSeriesActive() {
-    this.router.navigate(['/search', 'series'], { queryParams: { q: this.searchInput || null } });
-  }
-  toggleUsersActive() {
-    this.router.navigate(['/search', 'users'], { queryParams: { q: this.searchInput || null } });
   }
 
 

@@ -275,9 +275,7 @@
   border-radius: 3px;
 }
 
-.movies,
-.series,
-.users {
+.tab-btn {
   padding-left: 7.5px;
   padding-right: 7.5px;
   margin-left: 2.5px;
@@ -288,13 +286,11 @@
   margin-top: auto;
   margin-bottom: auto;
   cursor: pointer;
+  white-space: nowrap;
 }
-.movies.active,
-.series.active,
-.users.active,
-.movies:hover,
-.series:hover,
-.users:hover {
+
+.tab-btn.active,
+.tab-btn:hover {
   padding-left: 7.5px;
   padding-right: 7.5px;
   font-size: 1.2em;
@@ -307,6 +303,17 @@
   cursor: pointer;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
+  transition: 0.2s;
+}
+
+.searched-mixed > div {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.searched-people > app-searched-person {
+  display: block;
+  margin-bottom: 8px;
 }
 
 .search-warning {

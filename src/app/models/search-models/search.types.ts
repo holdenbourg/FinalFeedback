@@ -1,1 +1,1 @@
-export type SearchType = 'movies' | 'series' | 'users';
+export type SearchType = 'all' | 'movies' | 'shows' | 'people' | 'users';

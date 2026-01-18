@@ -12,8 +12,19 @@ import { ExtensiveSearchFilmModel } from '../models/api-models/omdb-models/exten
 import { UpcomingFilmModel } from '../models/api-models/tmdb-models/upcoming-film.model';
 import { UpcomingFilmApiResponseModel } from '../models/api-models/tmdb-models/upcoming-film-api-response.model';
 
+import { MultiSearchMovieResultModel } from '../models/api-models/tmdb-models/multi-search-movie-result.model';
+import { MultiSearchTvResultModel } from '../models/api-models/tmdb-models/multi-search-tv-result.model';
+
 import { SeriesResponseModel } from '../models/api-models/mdb-models/series-response.model';
 import { MovieResponseModel } from '../models/api-models/mdb-models/movie-response.model';
+import { MultiSearchMediaResultModel } from '../models/api-models/tmdb-models/multi-search-media-result.model';
+import { MovieSearchResposneModel } from '../models/api-models/tmdb-models/movie-search-response.model';
+import { TvSearchResposneModel } from '../models/api-models/tmdb-models/tv-search-response.model';
+import { KnownForPersonSearchResposneModel } from '../models/api-models/tmdb-models/known-for-person-search-response.model';
+import { PersonSearchResposneModel } from '../models/api-models/tmdb-models/person-search-response.model';
+import { SearchApiResponseModel } from '../models/api-models/tmdb-models/search-api-response.model';
+import { MovieSearchApiResponseModel, MultiSearchResultModel, PersonSearchApiResponseModel, TvSearchApiResponseModel } from '../models/api-models/tmdb-models/tmdb-search-api-response-types.model';
+import { MultiSearchPersonResultModel } from '../models/api-models/tmdb-models/multi-search-person-result.model';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -64,8 +75,256 @@ export class ApiService {
       ));
   }
 
-  /// ---------------------------------------- TMDb (Upcoming Films) ---------------------------------------- \\\
-  ///  Upcoming films (region/language pulled from environment)  \\\
+  /// -======================================-  TMDb (Upcoming Films, Multiple Films, and Film Details)  -======================================- \\\
+  ///==-  Search Multi (Returns a mixed list of movie's and tv's)  -==\\\
+  searchMultiTmdb(query: string, page: number = 1, language: string = environment.tmdb.language ?? 'en-US', includeAdult: boolean = false): Observable<MultiSearchResultModel[]> {
+    const url = `${environment.tmdb.baseUrl}/search/multi`;
+
+    const params = new HttpParams()
+      .set('api_key', environment.tmdb.apiKey)
+      .set('query', query)
+      .set('include_adult', String(includeAdult))
+      .set('language', language)
+      .set('page', String(page));
+
+    const mapKnownFor = (items: any[] | undefined): MultiSearchMediaResultModel[] => {
+      if (!Array.isArray(items)) return [];
+
+      return items
+        .map((kf: any) => {
+          if (kf?.media_type === 'movie') {
+            return {
+              id: kf.id,
+              media_type: 'movie',
+              popularity: kf.popularity ?? 0,
+              adult: kf.adult,
+              title: kf.title ?? '',
+              original_title: kf.original_title ?? '',
+              overview: kf.overview ?? '',
+              poster_path: kf.poster_path ?? null,
+              backdrop_path: kf.backdrop_path ?? null,
+              original_language: kf.original_language ?? '',
+              genre_ids: kf.genre_ids ?? [],
+              release_date: this.parseTmdbDate(kf.release_date),
+              video: !!kf.video,
+              vote_average: kf.vote_average ?? 0,
+              vote_count: kf.vote_count ?? 0
+            } as MultiSearchMovieResultModel;
+          }
+
+          if (kf?.media_type === 'tv') {
+            return {
+              id: kf.id,
+              media_type: 'tv',
+              popularity: kf.popularity ?? 0,
+              adult: kf.adult,
+              name: kf.name ?? '',
+              original_name: kf.original_name ?? '',
+              overview: kf.overview ?? '',
+              poster_path: kf.poster_path ?? null,
+              backdrop_path: kf.backdrop_path ?? null,
+              original_language: kf.original_language ?? '',
+              genre_ids: kf.genre_ids ?? [],
+              first_air_date: this.parseTmdbDate(kf.first_air_date),
+              vote_average: kf.vote_average ?? 0,
+              vote_count: kf.vote_count ?? 0,
+              origin_country: kf.origin_country ?? []
+            } as MultiSearchTvResultModel;
+          }
+
+          return null;
+        })
+        .filter((x): x is MultiSearchMediaResultModel => x !== null);
+    };
+
+    // NOTE: raw TMDB JSON has date strings, so typing the HTTP call as `any` avoids TS lies.
+    return this.http.get<SearchApiResponseModel<any>>(url, { params }).pipe(
+      map((res) =>
+        (res?.results ?? []).map((el: any) => {
+
+          if (el?.media_type === 'movie') {
+            return {
+              id: el.id,
+              media_type: 'movie',
+              popularity: el.popularity ?? 0,
+              adult: el.adult,
+              title: el.title ?? '',
+              original_title: el.original_title ?? '',
+              overview: el.overview ?? '',
+              poster_path: el.poster_path ?? null,
+              backdrop_path: el.backdrop_path ?? null,
+              original_language: el.original_language ?? '',
+              genre_ids: el.genre_ids ?? [],
+              release_date: this.parseTmdbDate(el.release_date),
+              video: !!el.video,
+              vote_average: el.vote_average ?? 0,
+              vote_count: el.vote_count ?? 0
+            } as MultiSearchMovieResultModel;
+          }
+
+          if (el?.media_type === 'tv') {
+            return {
+              id: el.id,
+              media_type: 'tv',
+              popularity: el.popularity ?? 0,
+              adult: el.adult,
+              name: el.name ?? '',
+              original_name: el.original_name ?? '',
+              overview: el.overview ?? '',
+              poster_path: el.poster_path ?? null,
+              backdrop_path: el.backdrop_path ?? null,
+              original_language: el.original_language ?? '',
+              genre_ids: el.genre_ids ?? [],
+              first_air_date: this.parseTmdbDate(el.first_air_date),
+              vote_average: el.vote_average ?? 0,
+              vote_count: el.vote_count ?? 0,
+              origin_country: el.origin_country ?? []
+            } as MultiSearchTvResultModel;
+          }
+
+          // person
+          return {
+            id: el.id,
+            media_type: 'person',
+            popularity: el.popularity ?? 0,
+            adult: el.adult,
+            name: el.name ?? '',
+            original_name: el.original_name ?? '',
+            gender: el.gender ?? 0,
+            known_for_department: el.known_for_department ?? '',
+            profile_path: el.profile_path ?? null,
+            known_for: mapKnownFor(el.known_for)
+          } as MultiSearchPersonResultModel;
+
+        }) as MultiSearchResultModel[]
+      ),
+      catchError((err: HttpErrorResponse) => {
+        console.error('[ApiService] searchMultiTmdb error', err);
+        return of([] as MultiSearchResultModel[]);
+      })
+    );
+  }
+
+  ///==-  Movie Search  -==\\\
+  searchMoviesTmdb(query: string, page: number = 1, language: string = environment.tmdb.language ?? 'en-US', includeAdult: boolean = false): Observable<MovieSearchResposneModel[]> {
+    const url = `${environment.tmdb.baseUrl}/search/movie`;
+
+    const params = new HttpParams()
+      .set('api_key', environment.tmdb.apiKey)
+      .set('query', query)
+      .set('include_adult', String(includeAdult))
+      .set('language', language)
+      .set('page', String(page));
+
+    return this.http.get<MovieSearchApiResponseModel>(url, { params }).pipe(
+      map(res => (res?.results ?? []).map((el: any) => ({
+        adult: el.adult,
+        backdrop_path: el.backdrop_path ?? null,
+        genre_ids: el.genre_ids ?? [],
+        id: el.id,
+        original_language: el.original_language ?? '',
+        original_title: el.original_title ?? '',
+        overview: el.overview ?? '',
+        popularity: el.popularity ?? 0,
+        poster_path: el.poster_path ?? null,
+        release_date: this.parseTmdbDate(el.release_date),
+        title: el.title ?? '',
+        video: !!el.video,
+        vote_average: el.vote_average ?? 0,
+        vote_count: el.vote_count ?? 0
+      } as MovieSearchResposneModel))),
+      catchError((err: HttpErrorResponse) => {
+        console.error('[ApiService] searchMoviesTmdb error', err);
+        return of([] as MovieSearchResposneModel[]);
+      })
+    );
+  }
+
+  ///==-  TV Search  -==\\\
+  searchTvTmdb(query: string, page: number = 1, language: string = environment.tmdb.language ?? 'en-US', includeAdult: boolean = false): Observable<TvSearchResposneModel[]> {
+    const url = `${environment.tmdb.baseUrl}/search/tv`;
+
+    const params = new HttpParams()
+      .set('api_key', environment.tmdb.apiKey)
+      .set('query', query)
+      .set('include_adult', String(includeAdult))
+      .set('language', language)
+      .set('page', String(page));
+
+    return this.http.get<TvSearchApiResponseModel>(url, { params }).pipe(
+      map(res => (res?.results ?? []).map((el: any) => ({
+        adult: el.adult,
+        backdrop_path: el.backdrop_path ?? null,
+        genre_ids: el.genre_ids ?? [],
+        id: el.id,
+        origin_country: el.origin_country ?? [],
+        original_language: el.original_language ?? '',
+        original_name: el.original_name ?? '',
+        overview: el.overview ?? '',
+        popularity: el.popularity ?? 0,
+        poster_path: el.poster_path ?? null,
+        first_air_date: this.parseTmdbDate(el.first_air_date),
+        name: el.name ?? '',
+        vote_average: el.vote_average ?? 0,
+        vote_count: el.vote_count ?? 0
+      } as TvSearchResposneModel))),
+      catchError((err: HttpErrorResponse) => {
+        console.error('[ApiService] searchTvTmdb error', err);
+        return of([] as TvSearchResposneModel[]);
+      })
+    );
+  }
+
+  ///==-  Person Search  -==\\\
+  searchPeopleTmdb(query: string, page: number = 1, language: string = environment.tmdb.language ?? 'en-US', includeAdult: boolean = false): Observable<PersonSearchResposneModel[]> {
+
+    const url = `${environment.tmdb.baseUrl}/search/person`;
+
+    const params = new HttpParams()
+      .set('api_key', environment.tmdb.apiKey)
+      .set('query', query)
+      .set('include_adult', String(includeAdult))
+      .set('language', language)
+      .set('page', String(page));
+
+    return this.http.get<PersonSearchApiResponseModel>(url, { params }).pipe(
+      map(res => (res?.results ?? []).map((el: any) => ({
+        adult: el.adult,
+        gender: el.gender ?? 0,
+        id: el.id,
+        known_for_department: el.known_for_department ?? '',
+        name: el.name ?? '',
+        original_name: el.original_name ?? '',
+        popularity: el.popularity ?? 0,
+        profile_path: el.profile_path ?? null,
+        known_for: Array.isArray(el.known_for)
+          ? el.known_for.map((kf: any) => ({
+              adult: kf.adult,
+              backdrop_path: kf.backdrop_path ?? null,
+              id: kf.id,
+              title: kf.title ?? '',
+              original_language: kf.original_language ?? '',
+              original_title: kf.original_title ?? '',
+              overview: kf.overview ?? '',
+              poster_path: kf.poster_path ?? null,
+              media_type: kf.media_type ?? '',
+              genre_ids: kf.genre_ids ?? [],
+              popularity: kf.popularity ?? 0,
+              release_date: this.parseTmdbDate(kf.release_date),
+              video: !!kf.video,
+              vote_average: kf.vote_average ?? 0,
+              vote_count: kf.vote_count ?? 0
+            } as KnownForPersonSearchResposneModel))
+          : []
+      } as PersonSearchResposneModel))),
+      catchError((err: HttpErrorResponse) => {
+        console.error('[ApiService] searchPeopleTmdb error', err);
+        return of([] as PersonSearchResposneModel[]);
+      })
+    );
+  }
+
+  ///==-  Upcoming Movie List (region/language pulled from environment)  -==\\\
   getUpcomingFilms(): Observable<UpcomingFilmModel[]> {
     const url = `${environment.tmdb.baseUrl}/movie/upcoming`;
     const today = new Date().toISOString().slice(0, 10);
@@ -100,6 +359,14 @@ export class ApiService {
           return of([] as UpcomingFilmModel[]);
         })
       );
+  }
+
+  private parseTmdbDate(value?: string | null): Date | null {
+    if (!value) return null;
+
+    const d = new Date(value);
+
+    return Number.isNaN(d.getTime()) ? null : d;
   }
 
   /// ---------------------------------------- mdblist (Seach One Film) ---------------------------------------- \\\

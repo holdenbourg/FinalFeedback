@@ -26,7 +26,7 @@
         </li>
 
         <li class="list-item active">
-            <a (click)="routingService.navigateToSearchMovies()">
+            <a (click)="navigateToTab('all')">
                 <i class="bx bx-search"></i>
                 <span class="link-name" style="--i:1;">Search</span>
             </a>
@@ -83,9 +83,12 @@
             required
         />
 
-        <i class="movies"  [class.active]="type==='movies'" (click)="routingService.navigateToSearchMovies(searchInput)">Movies</i>
-        <i class="series"  [class.active]="type==='series'" (click)="routingService.navigateToSearchSeries(searchInput)">Series</i>
-        <i class="users"   [class.active]="type==='users'"  (click)="routingService.navigateToSearchUsers(searchInput)">Users</i>
+        <!-- ✅ 5 Tabs -->
+        <i class="tab-btn" [class.active]="type==='all'" (click)="navigateToTab('all')">All</i>
+        <i class="tab-btn" [class.active]="type==='movies'" (click)="navigateToTab('movies')">Movies</i>
+        <i class="tab-btn" [class.active]="type==='shows'" (click)="navigateToTab('shows')">Shows</i>
+        <i class="tab-btn" [class.active]="type==='people'" (click)="navigateToTab('people')">People</i>
+        <i class="tab-btn" [class.active]="type==='users'" (click)="navigateToTab('users')">Users</i>
 
         <a class="search" (click)="onSearch()">
             <i class='bx bx-search'></i>
@@ -95,14 +98,45 @@
     <div class="scroll-box">
         <p class="search-warning" [class.active]="showWarning">Nothing Came Up, Try Something Else</p>
 
-        <div *ngIf="type === 'movies' || type === 'series'" class="searched-movies">
+        <div *ngIf="type === 'all'" class="searched-mixed">
+            <div *ngFor="let item of results">
+                <app-searched-film
+                    *ngIf="item.media_type === 'movie' || item.media_type === 'tv'"
+                    [item]="item"
+                ></app-searched-film>
+
+                <app-searched-person
+                    *ngIf="item.media_type === 'person'"
+                    [item]="item"
+                ></app-searched-person>
+
+                <app-searched-user
+                    *ngIf="!item.media_type && item.username"
+                    [userDetails]="item"
+                    class="searched-user"
+                ></app-searched-user>
+            </div>
+        </div>
+
+        <div *ngIf="type === 'movies'" class="searched-mixed">
             <app-searched-film
-                *ngFor="let film of results"
-                [filmDetails]="film"
-                (click)="type === 'movies'
-                ? routingService.navigateToMovie(film.imdbID)
-                : routingService.navigateToSeries(film.imdbID)">
-            </app-searched-film>
+                *ngFor="let item of results"
+                [item]="item"
+            ></app-searched-film>
+        </div>
+
+        <div *ngIf="type === 'shows'" class="searched-mixed">
+            <app-searched-film
+                *ngFor="let item of results"
+                [item]="item"
+            ></app-searched-film>
+        </div>
+
+        <div *ngIf="type === 'people'" class="searched-people">
+            <app-searched-person
+                *ngFor="let item of results"
+                [item]="item"
+            ></app-searched-person>
         </div>
 
         <div *ngIf="type === 'users'" class="searched-users">

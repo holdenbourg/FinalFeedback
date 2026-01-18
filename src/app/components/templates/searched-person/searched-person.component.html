@@ -1,0 +1,18 @@
+<article class="film-details-card" tabindex="0" [attr.aria-label]="displayName">
+  <div class="film-poster-wrap">
+    <img
+      class="film-poster"
+      [src]="profileSrc"
+      [attr.alt]="displayName || 'Person'"
+      (error)="setFallback($event)"
+      loading="lazy"
+      decoding="async"
+    />
+  </div>
+
+  <div class="film-details">
+    <p class="film-title">{{ displayName }}</p>
+    <p class="film-type">{{ knownForText }}</p>
+    <p class="film-release-year">{{ displayDepartment }}</p>
+  </div>
+</article>
