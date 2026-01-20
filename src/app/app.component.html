@@ -1,1 +1,7 @@
-<router-outlet></router-outlet>
+<!-- Show mobile layout on phones/tablets -->
+<app-mobile-layout *ngIf="deviceService.isMobile() || deviceService.isTablet()">
+</app-mobile-layout>
+
+<!-- Show desktop layout on desktop -->
+<app-desktop-layout *ngIf="deviceService.isDesktop()">
+</app-desktop-layout>

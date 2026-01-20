@@ -1,0 +1,61 @@
+<!-- Mobile Layout: Bottom Tab Bar -->
+<div class="mobile-layout">
+    <!-- Main Content Area -->
+    <main class="mobile-content">
+        <router-outlet></router-outlet>
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+        <button 
+        class="nav-item"
+        [class.active]="isActive('/library')"
+        (click)="navigateTo('/library')"
+        aria-label="Library"
+        >
+        <i class='bx bx-list-ul'></i>
+        <span class="nav-label">Library</span>
+        </button>
+
+        <button 
+        class="nav-item"
+        [class.active]="isActive('/search')"
+        (click)="navigateTo('/search/all')"
+        aria-label="Search"
+        >
+        <i class='bx bx-search'></i>
+        <span class="nav-label">Search</span>
+        </button>
+
+        <button 
+        class="nav-item home-button"
+        [class.active]="isActive('/home')"
+        (click)="navigateTo('/home')"
+        aria-label="Home"
+        >
+        <i class='bx bx-home-alt'></i>
+        <span class="nav-label">Home</span>
+        </button>
+
+        <button 
+        class="nav-item"
+        [class.active]="isActive('/messages')"
+        (click)="navigateTo('/messages')"
+        aria-label="Messages"
+        >
+        <i class='bx bx-message-rounded'></i>
+        <span class="nav-label">Messages</span>
+        <span class="badge" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
+        </button>
+
+        <button 
+        class="nav-item"
+        [class.active]="isActive('/account')"
+        (click)="navigateTo('/account/posts')"
+        aria-label="Account"
+        >
+        <i class='bx bx-user'></i>
+        <span class="nav-label">Account</span>
+        </button>
+    </nav>
+    </div>

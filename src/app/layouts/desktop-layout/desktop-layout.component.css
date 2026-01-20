@@ -1,0 +1,20 @@
+.desktop-layout {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.sidebar {
+    /* Your existing sidebar styles */
+    width: 280px;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.95);
+    transition: all 0.3s ease;
+}
+
+.content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}

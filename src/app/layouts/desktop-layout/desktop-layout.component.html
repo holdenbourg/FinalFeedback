@@ -1,0 +1,63 @@
+<!-- Desktop Layout: Sidebar + Content -->
+<div class="desktop-layout">
+    <!-- Sidebar (your existing sidebar) -->
+    <nav class="sidebar" 
+            [class.active]="sidebarService.sidebarActive()" 
+            [class.no-anim]="sidebarService.suppressAnim()">
+        <div class="logo-menu">
+        <h2 class="logo">What2Watch</h2>
+        <i class="bx bx-menu toggle-button" (click)="sidebarService.toggle()"></i>
+        </div>
+
+        <ul class="list">
+        <li class="list-item">
+            <a (click)="routingService.navigateToHome()">
+            <i class="bx bx-home-alt"></i>
+            <span class="link-name">Home</span>
+            </a>
+        </li>
+
+        <li class="list-item">
+            <a (click)="routingService.navigateToSearchAll()">
+            <i class="bx bx-search"></i>
+            <span class="link-name">Search</span>
+            </a>
+        </li>
+
+        <li class="list-item">
+            <a (click)="routingService.navigateToLibrary()">
+            <i class='bx bx-list-ul'></i>
+            <span class="link-name">Library</span>
+            </a>
+        </li>
+
+        <li class="list-item">
+            <a (click)="routingService.navigateToSummary()">
+            <i class='bx bx-bar-chart-alt-2'></i>
+            <span class="link-name">Summary</span>
+            </a>
+        </li>
+
+        <li class="list-item">
+            <a (click)="routingService.navigateToAccountsPosts(currentUser()!.username)">
+            <i class="bx bx-user"></i>
+            <span class="link-name">Account</span>
+            </a>
+        </li>
+
+        <li class="list-item">
+            <a (click)="routingService.navigateToSettings()">
+            <i class="bx bx-cog"></i>
+            <span class="link-name">Settings</span>
+            </a>
+        </li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content" 
+            [class.active]="sidebarService.sidebarActive() === false" 
+            [class.no-anim]="sidebarService.suppressAnim()">
+        <router-outlet></router-outlet>
+    </main>
+</div>

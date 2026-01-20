@@ -2,11 +2,13 @@ import { Component, inject, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth.service';
 import { supabase } from './core/supabase.client';
+import { MobileLayoutComponent } from './layouts/mobile-layout/mobile-layout.component';
+import { DesktopLayoutComponent } from './layouts/desktop-layout/desktop-layout.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [MobileLayoutComponent, DesktopLayoutComponent],
   templateUrl: './app.component.html'
 })
 
