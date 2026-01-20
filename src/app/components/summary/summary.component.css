@@ -180,22 +180,33 @@
 }
 
 
-
-/* ========== Tab Bar ========== */
-.tab-bar {
+.container {
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 12.5px;
+  border-radius: 10px;
   position: absolute;
-  z-index: 3;
   left: 300px;
   right: 40px;
   top: 40px;
-  height: 50px;
+  bottom: 40px;
+  width: auto;
+  height: auto;
+  transition: 0.5s;
+  backdrop-filter: blur(3px);
+}
+.container.active {
+  left: 120px;
+}
+
+/* ========== Tab Bar ========== */
+.tab-bar {
+  z-index: 3;
+  height: 5%;
   display: flex;
   gap: 18px;
   transition: .5s;
-}
-
-.sidebar:not(.active) ~ .tab-bar {
-  left: 120px;
 }
 
 .tab-btn {
@@ -294,20 +305,13 @@
 
 /* ---------- Dashboard ---------- */
 .dashboard { 
-  position: absolute; 
+  height: 92.5%;
   z-index: 2; 
-  left: 300px; 
-  right: 40px; 
-  top: 100px; 
-  bottom: 40px; 
   display: grid; 
   grid-template-columns: repeat(3, 1fr); 
   grid-template-rows: repeat(2, 1fr); 
   gap: 18px; 
   transition:.5s; 
-}
-.sidebar:not(.active) ~ .dashboard { 
-  left: 120px; 
 }
 
 /* ---------- Cell ---------- */
@@ -430,20 +434,22 @@
   flex-direction: column; 
   gap: 8px; 
   min-height: 0; 
-  justify-content: space-between;
+  height: 100%;
 }
 
 .big-number { 
-  height: 100%; 
-  display: grid; 
-  place-items: center; 
-  text-align: center; 
-  padding: 8px; 
-  gap: 8px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 .big-number .num { 
-  font-size: clamp(30px, 2.5vw, 40px); 
+  font-size: 2vw;
   font-weight: 800; 
+}
+.big-number .num.all { 
+  font-size:  1.5vw;
 }
 .big-number .label { 
   opacity: 0.9; 
