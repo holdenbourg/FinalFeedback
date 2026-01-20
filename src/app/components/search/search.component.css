@@ -287,6 +287,7 @@
   margin-bottom: auto;
   cursor: pointer;
   white-space: nowrap;
+  font-style: normal;
 }
 
 .tab-btn.active,

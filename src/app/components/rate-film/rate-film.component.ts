@@ -9,6 +9,8 @@ import { UsersService } from '../../services/users.service';
 import { CombinedFilmApiResponseModel } from '../../models/api-models/combined-film-api-response.model';
 import { FilmData } from '../../models/helper-models/film-data.model';
 import { MovieCriteria, SeriesCriteria } from '../../services/ratings.service';
+import { MovieDetailsPageModel } from '../../models/api-models/movie-details-page.model';
+import { TvSeriesDetailsPageModel } from '../../models/api-models/tv-series-details-page.model';
 
 @Component({
   selector: 'app-rate-film',
@@ -27,7 +29,10 @@ export class RateFilmComponent implements OnInit {
   private router = inject(Router);
 
   imdbId = '';
-  film: CombinedFilmApiResponseModel | null = null;
+  type = '';
+  film: MovieDetailsPageModel| TvSeriesDetailsPageModel | null = null;
+  activeMovie: MovieDetailsPageModel | null = null;
+  activeSeries: TvSeriesDetailsPageModel | null = null;
 
   private useFallback = false;
   readonly fallbackPoster = 'assets/images/no-poster.png';
@@ -52,30 +57,31 @@ export class RateFilmComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.imdbId = this.activatedRoute.snapshot.params['imdbId'];
+    this.type = this.activatedRoute.snapshot.params['type'];
 
     this.addRandomStartPointForRows();
 
-    ///  1) Try navigation state (no storage hop)  \\\
-    const fromState = (this.router.getCurrentNavigation()?.extras?.state as any)?.film ?? (history.state?.film ?? null);
-    if (fromState) {
-      this.film = fromState;
-      this.filmCache.setApiCache(this.imdbId, this.film);
-      
-      return;
+    if (this.type === 'movie') {
+      const cached = this.filmCache.getApiCache<MovieDetailsPageModel>(this.imdbId);
+      if (cached) {
+        this.film = cached;
+        this.activeMovie = cached;
+
+        console.log(cached);
+        
+
+        return;
+      }
+    } else {
+      const cached = this.filmCache.getApiCache<TvSeriesDetailsPageModel>(this.imdbId);
+      if (cached) {
+        this.film = cached;
+        this.activeSeries = cached;
+
+        return;
+      }
     }
 
-    ///  2) Try cache (refresh-safe)  \\\
-    const cached = this.filmCache.getApiCache<CombinedFilmApiResponseModel>(this.imdbId);
-    if (cached) {
-      this.film = cached;
-
-      return;
-    }
-
-    ///  3) Fallback to API  \\\
-    const fetched = await this.apiService.getFilmOmdb(this.imdbId);
-    this.filmCache.setApiCache(this.imdbId, fetched);
-    this.film = fetched;
   }
 
 
@@ -121,20 +127,21 @@ export class RateFilmComponent implements OnInit {
     }
 
     // Extract genres from API data
-    const genresArray = this.extractGenres(this.film);
+    const genresArray = this.extractGenres();
+    const title = this.isMovie ? this.activeMovie!.title : this.activeSeries!.name;
+    const releaseDate = this.isMovie ? this.activeMovie!.release_date : this.activeSeries!.first_air_date;
 
     // Prepare complete film data for post-film component
     const filmData: FilmData = {
       imdbId: this.imdbId,
-      title: this.film.title || '',
-      poster: this.posterSrc,
+      title: title,
+      poster: this.film.poster_path,
       type: this.isMovie ? 'movie' : 'series',
       criteria: completeCriteria,
       rating: result.average,
       dateRated: todayISO,
-      // Add missing fields from API for database
-      releaseDate: this.extractReleaseDate(this.film),
-      rated: this.film.rated || (this.film as any).Rated || null,
+      releaseDate: releaseDate,
+      rated: this.film.rated || null,
       genres: genresArray
     };
 
@@ -148,57 +155,15 @@ export class RateFilmComponent implements OnInit {
 
 
   /// -======================================-  Helper Methods  -======================================- \\\
-  
-  /**
-   * Extract genres from API response
-   * Handles various API response formats
-   */
-  private extractGenres(film: CombinedFilmApiResponseModel): string[] {
-    // Try different possible genre field names from APIs
-    const genreString = 
-      (film as any).genres || 
-      (film as any).Genre || 
-      (film as any).genre || 
-      '';
 
-    if (!genreString || genreString === 'N/A') {
+  private extractGenres(): string[] {
+    const genres = this.film?.genres;
+
+    if (!genres) {
       return [];
     }
 
-    // Genres usually come as comma-separated string: "Action, Adventure, Sci-Fi"
-    return genreString
-      .split(',')
-      .map((g: string) => g.trim())
-      .filter((g: string) => g.length > 0);
-  }
-
-  /**
-   * Extract release date in YYYY-MM-DD format
-   * Handles various API response formats
-   */
-  private extractReleaseDate(film: CombinedFilmApiResponseModel): string | null {
-    const released = 
-      (film as any).released || 
-      (film as any).Released || 
-      (film as any).release_date ||
-      null;
-
-    if (!released || released === 'N/A') {
-      return null;
-    }
-
-    // Try to convert to YYYY-MM-DD format
-    try {
-      const date = new Date(released);
-      if (!isNaN(date.getTime())) {
-        return date.toISOString().split('T')[0];
-      }
-    } catch {
-      // If parsing fails, return as-is
-      return released;
-    }
-
-    return released;
+    return genres.map((genre) => genre.name);
   }
 
   addRandomStartPointForRows() {
@@ -209,13 +174,27 @@ export class RateFilmComponent implements OnInit {
       el.style.animationDelay = `${-(Math.random() * dur)}s`;
     });
   }
+  
+  private readonly tmdbImgBase = 'https://image.tmdb.org/t/p';
 
-  ///  Get poster if not use fallback "No Poster" image  \\\
+  // ✅ Get high-quality poster (w500 or original)
   get posterSrc(): string {
-    const poster = this.film?.poster;
-    const hasPoster = !!poster && poster !== 'N/A';
+    if (this.type === 'movie') {
+      if (!this.activeMovie?.poster_path) {
+        return 'assets/images/no-poster.png';
+      }
 
-    return (hasPoster && !this.useFallback) ? poster! : this.fallbackPoster;
+      return `${this.tmdbImgBase}/original${this.activeMovie.poster_path}`;
+    } else {
+      if (!this.activeSeries?.poster_path) {
+        return 'assets/images/no-poster.png';
+      }
+
+      return `${this.tmdbImgBase}/original${this.activeSeries.poster_path}`;
+    }
+    
+    // Use w500 for good balance of quality and load time
+    // Can also use 'w780' or 'original' for even higher quality
   }
   ///  If poster fails to load, use fallback "No Poster" image  \\\
   setFallback(ev?: Event) {
@@ -226,10 +205,7 @@ export class RateFilmComponent implements OnInit {
 
   ///  Returns true if film is specified type, false if not \\\
   get isMovie(): boolean { 
-    return (this.film?.type ?? '').toLowerCase() === 'movie'; 
-  }
-  get isSeries(): boolean { 
-    return (this.film?.type ?? '').toLowerCase() === 'series'; 
+    return (this.type ?? '').toLowerCase() === 'movie'; 
   }
 
   ///  Dynamic title for rating criteria  \\\
@@ -244,13 +220,13 @@ export class RateFilmComponent implements OnInit {
 
   ///  Derived counts for Series  \\\
   get totalSeasons(): number {
-    const list = this.film?.seasons ?? [];
+    const list = this.activeSeries?.seasons ?? [];
     const fromList = list.filter(s => (s?.episode_count ?? 0) > 0).length;
 
     return fromList;
   }
   get seasonsLabel(): string {
-    if (!this.isSeries) return 'N/A';
+    if (this.isMovie) return 'N/A';
 
     const n = this.totalSeasons;
 
@@ -260,12 +236,12 @@ export class RateFilmComponent implements OnInit {
   }
 
   get totalEpisodes(): number {
-    const list = this.film?.seasons ?? [];
+    const list = this.activeSeries?.seasons ?? [];
 
     return list.reduce((acc, s: any) => acc + (s?.episode_count ?? 0), 0);
   }
   get episodesLabel(): string {
-    if (!this.isSeries) return 'N/A';
+    if (this.isMovie) return 'N/A';
 
     const n = this.totalEpisodes;
 
@@ -357,32 +333,30 @@ export class RateFilmComponent implements OnInit {
 
 
   /// -======================================-  Formatting  -======================================- \\\
-  fixRelease(releaseDate: string) {
-    if (!releaseDate || releaseDate.length < 11) return releaseDate || '';
+  formatReleaseDate(date: Date | string | null | undefined): string {
+    if (!date) return 'N/A';
 
-    const day = releaseDate.substring(0,2);
-    let month = releaseDate.substring(3,6);
-    const year = releaseDate.substring(7);
+    const parsed = typeof date === 'string' ? new Date(date) : date;
 
-    const map: Record<string,string> = { Jan:'January', Feb:'February', Mar:'March', Apr:'April', May:'May', Jun:'June', Jul:'July', Aug:'August', Sep:'September', Oct:'October', Nov:'November', Dec:'December' };
-    month = map[month] ?? month;
-    
-    return `${month} ${day}, ${year}`;
+    if (!(parsed instanceof Date) || isNaN(parsed.getTime())) {
+      return 'N/A';
+    }
+
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    }).format(parsed);
   }
 
-  ///  Fix ongoing series dates (2005- → 2005-Present)  \\\
-  displayYear(year?: number) {
-    const raw = String(year ?? '').trim();
-    if (!raw) return '';
-
-    const norm = raw.replace(/–/g, '-').trim();
-
-    const isSeries = (this.film!.type || '').toLowerCase() === 'series';
-    const endsWithOpenRange = /-\s*$/.test(norm); // "2005-" (with optional trailing spaces)
-
-    if (isSeries && endsWithOpenRange) {
-      return norm.replace(/-\s*$/, '-Present');
+  // ✅ Get genres as comma-separated string
+  get genresText(): string {
+    if (this.type === 'movie') {
+      if (!this.activeMovie?.genres?.length) return 'N/A';
+      return this.activeMovie.genres.map(g => g.name).join(', ');
+    } else {
+      if (!this.activeSeries?.genres?.length) return 'N/A';
+      return this.activeSeries.genres.map(g => g.name).join(', ');
     }
-    return norm;
   }
 }

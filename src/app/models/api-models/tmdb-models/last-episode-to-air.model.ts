@@ -11,5 +11,5 @@ export interface LastEpisodeToAirModel {
     runtime: number,
     season_number: number,
     show_id: number,
-    still_path: string
+    still_path: string | null
 }

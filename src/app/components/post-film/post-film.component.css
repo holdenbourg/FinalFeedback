@@ -103,13 +103,11 @@
 
 .film-poster {
     height: 100%;
-    width: 43%;
     border-right: 0.2vw solid #fff;
     position: relative;
 }
 
 .poster {
-    width: 100%;
     height: 100%;
     object-fit: cover;
     border-radius: 10px 0 0 10px;
@@ -135,7 +133,7 @@
 .post-information {
     display: flex;
     flex-direction: column;
-    width: 57%;
+    width: 100%;
 }
 
 /* User info header */

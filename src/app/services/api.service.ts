@@ -26,6 +26,16 @@ import { SearchApiResponseModel } from '../models/api-models/tmdb-models/search-
 import { MovieSearchApiResponseModel, MultiSearchResultModel, PersonSearchApiResponseModel, TvSearchApiResponseModel } from '../models/api-models/tmdb-models/tmdb-search-api-response-types.model';
 import { MultiSearchPersonResultModel } from '../models/api-models/tmdb-models/multi-search-person-result.model';
 import { MovieDetailsResponseModel } from '../models/api-models/tmdb-models/movie-details-response.model';
+import { PeopleCombinedCreditsModel } from '../models/api-models/tmdb-models/people-combined-credits.model';
+import { PeopleDetailsModel } from '../models/api-models/tmdb-models/people-details.model';
+import { MovieCastModel } from '../models/api-models/tmdb-models/movie-cast.model';
+import { MovieCrewModel } from '../models/api-models/tmdb-models/movie-crew.model';
+import { TvCastModel } from '../models/api-models/tmdb-models/tv-cast.model';
+import { TvCrewModel } from '../models/api-models/tmdb-models/tv-crew.model';
+import { TvSeriesDetailsResponseModel } from '../models/api-models/tmdb-models/tv-series-deatils-response.model';
+import { LastEpisodeToAirModel } from '../models/api-models/tmdb-models/last-episode-to-air.model';
+import { TvSeasonDetailsResponseModel } from '../models/api-models/tmdb-models/tv-season-details-response.model';
+import { SeasonEpisodeModel } from '../models/api-models/tmdb-models/season-episode.model';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -361,8 +371,8 @@ export class ApiService {
         })
       );
   }
-
   
+  ///==-  Movie Details  -==\\\
   getMovieDetailsTmdb(movieId: number, language: string = environment.tmdb.language ?? 'en-US'): Observable<MovieDetailsResponseModel> {
     const url = `${environment.tmdb.baseUrl}/movie/${movieId}`;
   
@@ -381,7 +391,7 @@ export class ApiService {
       })
     );
   }
-  
+
   private mapMovieDetails(raw: any): MovieDetailsResponseModel {
     return {
       adult: !!raw?.adult,
@@ -441,6 +451,420 @@ export class ApiService {
     };
   }
 
+  ///==-  TV Series Details  -==\\\
+  getTvSeriesDetailsTmdb(seriesId: number, language: string = environment.tmdb.language ?? 'en-US'): Observable<TvSeriesDetailsResponseModel> {
+    const url = `${environment.tmdb.baseUrl}/tv/${seriesId}`;
+
+    const params = new HttpParams()
+      .set('api_key', environment.tmdb.apiKey)
+      .set('language', language);
+
+    return this.http.get<any>(url, { params }).pipe(
+      map(raw => this.mapTvDetails(raw)),
+      catchError((err: HttpErrorResponse) => {
+        console.error('[ApiService] getTvDetailsTmdb error', err);
+        return of(this.mapTvDetails({ id: seriesId }));
+      })
+    );
+  }
+
+  private mapTvDetails(raw: any): TvSeriesDetailsResponseModel {
+    const showId = raw?.id ?? 0;
+
+    return {
+      adult: !!raw?.adult,
+      backdrop_path: raw?.backdrop_path ?? '',
+
+      created_by: Array.isArray(raw?.created_by)
+        ? raw.created_by.map((cb: any) => ({
+            id: cb?.id ?? 0,
+            credit_id: cb?.credit_id ?? '',
+            name: cb?.name ?? '',
+            original_name: cb?.original_name ?? '',
+            gender: cb?.gender ?? 0,
+            profile_path: cb?.profile_path ?? null
+          }))
+        : [],
+
+      episode_run_time: Array.isArray(raw?.episode_run_time)
+        ? raw.episode_run_time
+        : null,
+
+      first_air_date: this.parseTmdbDate(raw?.first_air_date),
+
+      genres: Array.isArray(raw?.genres)
+        ? raw.genres.map((g: any) => ({
+            id: g?.id ?? 0,
+            name: g?.name ?? ''
+          }))
+        : [],
+
+      homepage: raw?.homepage ?? '',
+      id: showId,
+      in_production: !!raw?.in_production,
+      languages: Array.isArray(raw?.languages) ? raw.languages : [],
+      last_air_date: this.parseTmdbDate(raw?.last_air_date),
+
+      last_episode_to_air: raw?.last_episode_to_air
+        ? this.mapTvEpisode(raw.last_episode_to_air, showId)
+        : null,
+
+      name: raw?.name ?? '',
+
+      next_episode_to_air: raw?.next_episode_to_air
+        ? this.mapTvEpisode(raw.next_episode_to_air, showId)
+        : null,
+
+      networks: Array.isArray(raw?.networks)
+        ? raw.networks.map((n: any) => ({
+            id: n?.id ?? 0,
+            logo_path: n?.logo_path ?? '',
+            name: n?.name ?? '',
+            origin_country: n?.origin_country ?? ''
+          }))
+        : [],
+
+      number_of_episodes: raw?.number_of_episodes ?? 0,
+      number_of_seasons: raw?.number_of_seasons ?? 0,
+      origin_country: Array.isArray(raw?.origin_country) ? raw.origin_country : [],
+      original_language: raw?.original_language ?? '',
+      original_name: raw?.original_name ?? '',
+      overview: raw?.overview ?? '',
+      popularity: raw?.popularity ?? 0,
+      poster_path: raw?.poster_path ?? '',
+
+      production_companies: Array.isArray(raw?.production_companies)
+        ? raw.production_companies.map((c: any) => ({
+            id: c?.id ?? 0,
+            logo_path: c?.logo_path ?? null,
+            name: c?.name ?? '',
+            origin_country: c?.origin_country ?? ''
+          }))
+        : [],
+
+      production_countries: Array.isArray(raw?.production_countries)
+        ? raw.production_countries.map((c: any) => ({
+            iso_3166_1: c?.iso_3166_1 ?? '',
+            name: c?.name ?? ''
+          }))
+        : [],
+
+      seasons: Array.isArray(raw?.seasons)
+        ? raw.seasons.map((s: any) => ({
+            air_date: this.parseTmdbDate(s?.air_date),
+            episode_count: s?.episode_count ?? 0,
+            id: s?.id ?? 0,
+            name: s?.name ?? '',
+            overview: s?.overview ?? '',
+            poster_path: s?.poster_path ?? '',
+            season_number: s?.season_number ?? 0,
+            vote_average: s?.vote_average ?? 0
+          }))
+        : [],
+
+      spoken_languages: Array.isArray(raw?.spoken_languages)
+        ? raw.spoken_languages.map((l: any) => ({
+            english_name: l?.english_name ?? '',
+            iso_639_1: l?.iso_639_1 ?? '',
+            name: l?.name ?? ''
+          }))
+        : [],
+
+      status: raw?.status ?? '',
+      tagline: raw?.tagline ?? '',
+      type: raw?.type ?? '',
+      vote_average: raw?.vote_average ?? 0,
+      vote_count: raw?.vote_count ?? 0
+    };
+  }
+
+
+  private mapTvEpisode(rawEp: any, fallbackShowId: number): LastEpisodeToAirModel {
+    return {
+      id: rawEp?.id ?? 0,
+      name: rawEp?.name ?? '',
+      overview: rawEp?.overview ?? '',
+      vote_average: rawEp?.vote_average ?? 0,
+      vote_count: rawEp?.vote_count ?? 0,
+      air_date: this.parseTmdbDate(rawEp?.air_date),
+      episode_number: rawEp?.episode_number ?? 0,
+      episode_type: rawEp?.episode_type ?? '',
+      production_code: rawEp?.production_code ?? '',
+      runtime: rawEp?.runtime ?? 0,
+      season_number: rawEp?.season_number ?? 0,
+      show_id: rawEp?.show_id ?? fallbackShowId,
+      still_path: rawEp?.still_path ?? null
+    };
+  }
+
+  getTvExternalIdsTmdb(seriesId: number): Observable<{ imdb_id: string | null }> {
+    const url = `${environment.tmdb.baseUrl}/tv/${seriesId}/external_ids`;
+
+    const params = new HttpParams()
+      .set('api_key', environment.tmdb.apiKey);
+
+    return this.http.get<any>(url, { params }).pipe(
+      map(raw => ({
+        imdb_id: raw?.imdb_id || null
+      })),
+      catchError((err: HttpErrorResponse) => {
+        console.error('[ApiService] getTvExternalIdsTmdb error', err);
+        return of({ imdb_id: null });
+      })
+    );
+  }
+
+  ///==-  TV Series Season Details  -==\\\
+  getTvSeriesSeasonDetailsTmdb(seriesId: number, seasonNumber: number, language: string = environment.tmdb.language ?? 'en-US'): Observable<TvSeasonDetailsResponseModel> {
+    const url = `${environment.tmdb.baseUrl}/tv/${seriesId}/season/${seasonNumber}`;
+
+    const params = new HttpParams()
+      .set('api_key', environment.tmdb.apiKey)
+      .set('language', language);
+
+    return this.http.get<any>(url, { params }).pipe(
+      map(raw => this.mapTvSeasonDetails(raw, seriesId)),
+      catchError((err: HttpErrorResponse) => {
+        console.error('[ApiService] getTvSeasonDetailsTmdb error', err);
+        return of(this.mapTvSeasonDetails({ season_number: seasonNumber }, seriesId));
+      })
+    );
+  }
+
+  private mapTvSeasonDetails(raw: any, showId: number): TvSeasonDetailsResponseModel {
+    return {
+      _id: raw?._id ?? '',
+      air_date: this.parseTmdbDate(raw?.air_date),
+
+      episodes: Array.isArray(raw?.episodes)
+        ? raw.episodes.map((ep: any) => this.mapTvSeasonEpisode(ep, showId))
+        : [],
+
+      id: raw?.id ?? 0,
+      name: raw?.name ?? '',
+      overview: raw?.overview ?? '',
+      poster_path: raw?.poster_path ?? '',
+      season_number: raw?.season_number ?? 0,
+      networks: Array.isArray(raw?.networks)
+        ? raw.networks.map((n: any) => ({
+            id: n?.id ?? 0,
+            logo_path: n?.logo_path ?? '',
+            name: n?.name ?? '',
+            origin_country: n?.origin_country ?? ''
+          }))
+        : [],
+
+      vote_average: raw?.vote_average ?? 0
+    };
+  }
+
+  private mapTvSeasonEpisode(rawEp: any, showId: number): SeasonEpisodeModel {
+    return {
+      air_date: this.parseTmdbDate(rawEp?.air_date),
+      episode_number: rawEp?.episode_number ?? 0,
+      id: rawEp?.id ?? 0,
+      name: rawEp?.name ?? '',
+      overview: rawEp?.overview ?? '',
+      production_code: rawEp?.production_code ?? '',
+      runtime: rawEp?.runtime ?? 0,
+      season_number: rawEp?.season_number ?? 0,
+      show_id: rawEp?.show_id ?? showId,
+      still_path: rawEp?.still_path ?? null,
+      vote_average: rawEp?.vote_average ?? 0,
+      vote_count: rawEp?.vote_count ?? 0,
+      episode_type: rawEp?.episode_type ?? '',
+
+      crew: Array.isArray(rawEp?.crew)
+        ? rawEp.crew.map((c: any) => ({
+            id: c?.id ?? 0,
+            credit_id: c?.credit_id ?? '',
+            department: c?.department ?? '',
+            job: c?.job ?? '',
+            name: c?.name ?? '',
+            original_name: c?.original_name ?? '',
+            profile_path: c?.profile_path ?? null
+          }))
+        : [],
+
+      guest_stars: Array.isArray(rawEp?.guest_stars)
+        ? rawEp.guest_stars.map((g: any) => ({
+            id: g?.id ?? 0,
+            name: g?.name ?? '',
+            original_name: g?.original_name ?? '',
+            credit_id: g?.credit_id ?? '',
+            character: g?.character ?? '',
+            order: g?.order ?? 0,
+            profile_path: g?.profile_path ?? null
+          }))
+        : []
+    };
+  }
+
+  ///==-  People Details  -==\\\
+  getPersonDetailsTmdb(personId: number, language: string = environment.tmdb.language ?? 'en-US'): Observable<PeopleDetailsModel> {
+    const url = `${environment.tmdb.baseUrl}/person/${personId}`;
+
+    const params = new HttpParams()
+      .set('api_key', environment.tmdb.apiKey)
+      .set('language', language);
+
+    return this.http.get<any>(url, { params }).pipe(
+      map((raw) => ({
+        adult: !!raw?.adult,
+        also_known_as: Array.isArray(raw?.also_known_as) ? raw.also_known_as : [],
+        biography: raw?.biography ?? '',
+        birthday: this.parseTmdbDate(raw?.birthday),
+        deathday: this.parseTmdbDate(raw?.deathday),
+        gender: raw?.gender ?? 0,
+        homepage: raw?.homepage ?? '',
+        id: raw?.id ?? personId,
+        imdb_id: raw?.imdb_id ?? '',
+        known_for_department: raw?.known_for_department ?? '',
+        name: raw?.name ?? '',
+        place_of_birth: raw?.place_of_birth ?? '',
+        popularity: raw?.popularity ?? 0,
+        profile_path: raw?.profile_path ?? '' // TMDB may return null
+      } as PeopleDetailsModel)),
+      catchError((err: HttpErrorResponse) => {
+        console.error('[ApiService] getPersonDetailsTmdb error', err);
+        return of({
+          adult: false,
+          also_known_as: [],
+          biography: '',
+          birthday: null,
+          deathday: null,
+          gender: 0,
+          homepage: '',
+          id: personId,
+          imdb_id: '',
+          known_for_department: '',
+          name: '',
+          place_of_birth: '',
+          popularity: 0,
+          profile_path: ''
+        } as PeopleDetailsModel);
+      })
+    );
+  }
+
+  ///==-  People Combined Credits  -==\\\
+  getPersonCombinedCreditsTmdb(personId: number, language: string = environment.tmdb.language ?? 'en-US'): Observable<PeopleCombinedCreditsModel> {
+    const url = `${environment.tmdb.baseUrl}/person/${personId}/combined_credits`;
+
+    const params = new HttpParams()
+      .set('api_key', environment.tmdb.apiKey)
+      .set('language', language);
+
+    return this.http.get<any>(url, { params }).pipe(
+      map((raw) => ({
+        id: raw?.id ?? personId,
+        cast: Array.isArray(raw?.cast) ? raw.cast.map((c: any) => this.mapPersonCombinedCast(c)) : [],
+        crew: Array.isArray(raw?.crew) ? raw.crew.map((c: any) => this.mapPersonCombinedCrew(c)) : []
+      } as PeopleCombinedCreditsModel)),
+      catchError((err: HttpErrorResponse) => {
+        console.error('[ApiService] getPersonCombinedCreditsTmdb error', err);
+        return of({ id: personId, cast: [], crew: [] } as PeopleCombinedCreditsModel);
+      })
+    );
+  }
+
+  private mapPersonCombinedCast(raw: any): MovieCastModel | TvCastModel {
+    if (raw?.media_type === 'tv') {
+      return {
+        adult: !!raw?.adult,
+        backdrop_path: raw?.backdrop_path ?? null,
+        genre_ids: raw?.genre_ids ?? [],
+        id: raw?.id ?? 0,
+        origin_country: raw?.origin_country ?? [],
+        original_language: raw?.original_language ?? '',
+        original_name: raw?.original_name ?? '',
+        overview: raw?.overview ?? '',
+        popularity: raw?.popularity ?? 0,
+        poster_path: raw?.poster_path ?? '',
+        first_air_date: this.parseTmdbDate(raw?.first_air_date),
+        name: raw?.name ?? '',
+        vote_average: raw?.vote_average ?? 0,
+        vote_count: raw?.vote_count ?? 0,
+        character: raw?.character ?? '',
+        credit_id: raw?.credit_id ?? '',
+        episode_count: raw?.episode_count ?? 0,
+        first_credit_air_date: this.parseTmdbDate(raw?.first_credit_air_date),
+        media_type: 'tv'
+      } as TvCastModel;
+    }
+
+    // default to movie
+    return {
+      adult: !!raw?.adult,
+      backdrop_path: raw?.backdrop_path ?? '',
+      genre_ids: raw?.genre_ids ?? [],
+      id: raw?.id ?? 0,
+      original_language: raw?.original_language ?? '',
+      original_title: raw?.original_title ?? '',
+      overview: raw?.overview ?? '',
+      popularity: raw?.popularity ?? 0,
+      poster_path: raw?.poster_path ?? '',
+      release_date: this.parseTmdbDate(raw?.release_date),
+      title: raw?.title ?? '',
+      video: !!raw?.video,
+      vote_average: raw?.vote_average ?? 0,
+      vote_count: raw?.vote_count ?? 0,
+      character: raw?.character ?? '',
+      credit_id: raw?.credit_id ?? '',
+      order: raw?.order ?? 0,
+      media_type: 'movie'
+    } as MovieCastModel;
+  }
+
+  private mapPersonCombinedCrew(raw: any): MovieCrewModel | TvCrewModel {
+    if (raw?.media_type === 'tv') {
+      return {
+        adult: !!raw?.adult,
+        backdrop_path: raw?.backdrop_path ?? '',
+        genre_ids: raw?.genre_ids ?? [],
+        id: raw?.id ?? 0,
+        origin_country: raw?.origin_country ?? [],
+        original_language: raw?.original_language ?? '',
+        original_name: raw?.original_name ?? '',
+        overview: raw?.overview ?? '',
+        popularity: raw?.popularity ?? 0,
+        poster_path: raw?.poster_path ?? '',
+        first_air_date: this.parseTmdbDate(raw?.first_air_date),
+        name: raw?.name ?? '',
+        vote_average: raw?.vote_average ?? 0,
+        vote_count: raw?.vote_count ?? 0,
+        credit_id: raw?.credit_id ?? '',
+        department: raw?.department ?? '',
+        episode_count: raw?.episode_count ?? 0,
+        first_credit_air_date: this.parseTmdbDate(raw?.first_credit_air_date),
+        job: raw?.job ?? '',
+        media_type: 'tv'
+      } as TvCrewModel;
+    }
+
+    // default to movie
+    return {
+      adult: !!raw?.adult,
+      backdrop_path: raw?.backdrop_path ?? '',
+      genre_ids: raw?.genre_ids ?? [],
+      id: raw?.id ?? 0,
+      original_language: raw?.original_language ?? '',
+      original_title: raw?.original_title ?? '',
+      overview: raw?.overview ?? '',
+      popularity: raw?.popularity ?? 0,
+      poster_path: raw?.poster_path ?? '',
+      release_date: this.parseTmdbDate(raw?.release_date),
+      title: raw?.title ?? '',
+      video: !!raw?.video,
+      vote_average: raw?.vote_average ?? 0,
+      vote_count: raw?.vote_count ?? 0,
+      credit_id: raw?.credit_id ?? '',
+      department: raw?.department ?? '',
+      job: raw?.job ?? '',
+      media_type: 'movie'
+    } as MovieCrewModel;
+  }
+  
   private parseTmdbDate(value?: string | null): Date | null {
     if (!value) return null;
 

@@ -449,6 +449,7 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 15px;
+  margin-right: 2.5px;
 }
 
 /* Post Card - 2:3 Aspect Ratio (Film Poster) */

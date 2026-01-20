@@ -1,11 +1,12 @@
 import { Component, Input } from '@angular/core';
 import { MultiSearchMediaResultModel } from '../../../models/api-models/tmdb-models/multi-search-media-result.model';
 import { MultiSearchPersonResultModel } from '../../../models/api-models/tmdb-models/multi-search-person-result.model';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-searched-person',
   standalone: true,
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './searched-person.component.html',
   styleUrl: './searched-person.component.css'
 })

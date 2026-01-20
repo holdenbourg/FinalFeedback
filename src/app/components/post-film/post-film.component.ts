@@ -68,6 +68,7 @@ export class PostFilmComponent implements OnInit, OnDestroy {
 
     // Load film data from session storage
     const storedFilmData = sessionStorage.getItem('currentFilmRating');
+
     if (storedFilmData) {
       try {
         const filmData: FilmData = JSON.parse(storedFilmData);
@@ -252,7 +253,7 @@ export class PostFilmComponent implements OnInit, OnDestroy {
         film.type,
         film.imdbId,
         film.title,
-        film.poster,
+        this.posterSrc,
         film.criteria as MovieCriteria | SeriesCriteria,  // Criteria with runtime/seasons/episodes
         film.releaseDate,      // From API
         film.rated,            // From API (PG, PG-13, R, etc.)
@@ -265,7 +266,7 @@ export class PostFilmComponent implements OnInit, OnDestroy {
       console.log('[PostFilm] Creating post...');
       const postId = await this.postsService.createPost({
         rating_id: ratingId,
-        poster_url: film.poster,
+        poster_url: this.posterSrc,
         caption: this.caption.trim() || undefined,
         visibility: visibility
       });
@@ -360,6 +361,19 @@ export class PostFilmComponent implements OnInit, OnDestroy {
     if (this.searchInput.length === 0) {
       this.searchLabelActive = false;
     }
+  }
+
+  private readonly tmdbImgBase = 'https://image.tmdb.org/t/p';
+
+  // ✅ Get high-quality poster (w500 or original)
+  get posterSrc(): string {
+    if (!this.filmData()?.poster) {
+      return 'assets/images/no-poster.png';
+    }
+
+    return `${this.tmdbImgBase}/original${this.filmData()?.poster}`;
+    // Use w500 for good balance of quality and load time
+    // Can also use 'w780' or 'original' for even higher quality
   }
 
   // ========== Template Helpers ==========

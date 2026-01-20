@@ -137,7 +137,7 @@ export class RatingsService {
     title: string,
     posterUrl: string,
     criteria: MovieCriteria | SeriesCriteria,
-    releaseDate?: string | null,
+    releaseDate?: Date | null,
     rated?: string | null,
     genres?: string[]
   ): Promise<string> {

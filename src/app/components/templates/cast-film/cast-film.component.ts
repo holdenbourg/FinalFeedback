@@ -1,0 +1,58 @@
+import { Component, Input } from '@angular/core';
+import { MultiSearchMediaResultModel } from '../../../models/api-models/tmdb-models/multi-search-media-result.model';
+import { RouterLink } from '@angular/router';
+import { PeopleCastCredit } from '../../../models/api-models/tmdb-models/people-combined-credits.model';
+
+@Component({
+  selector: 'app-cast-film',
+  standalone: true,
+  imports: [RouterLink],
+  templateUrl: './cast-film.component.html',
+  styleUrl: './cast-film.component.css'
+})
+export class CastFilmComponent {
+  @Input({ required: true }) item!: PeopleCastCredit;
+  @Input() imageSize: 'w342' | 'w500' | 'w780' | 'original' = 'w342';
+
+  private readonly tmdbImgBase = 'https://image.tmdb.org/t/p';
+
+  get displayTitle(): string {
+    return this.item.media_type === 'movie' ? this.item.title : this.item.name;
+  }
+
+  get displayDate(): string {
+    const date =
+      this.item.media_type === 'movie'
+        ? this.item.release_date
+        : this.item.first_air_date;
+
+    if (!date) return '';
+
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    }).format(date);
+  }
+
+  get displayYear(): string {
+    const d = this.item.media_type === 'movie' ? this.item.release_date : this.item.first_air_date;
+
+    return d ? String(d.getFullYear()) : '';
+  }
+
+  get displayType(): string {
+    return this.item.media_type === 'movie' ? 'Movie' : 'Series';
+  }
+
+  get posterSrc(): string {
+    const path = this.item.poster_path;
+    if (!path) return 'assets/images/no-poster.png';
+    return `${this.tmdbImgBase}/${this.imageSize}${path}`;
+  }
+
+  setFallback(evt: Event) {
+    const img = evt.target as HTMLImageElement;
+    img.src = 'assets/images/no-poster.png';
+  }
+}

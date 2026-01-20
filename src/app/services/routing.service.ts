@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { CombinedFilmApiResponseModel } from '../models/api-models/combined-film-api-response.model';
+import { MovieDetailsPageModel } from '../models/api-models/movie-details-page.model';
+import { TvSeriesDetailsPageModel } from '../models/api-models/tv-series-details-page.model';
 
 @Injectable({ providedIn: 'root' })
 export class RoutingService {
@@ -46,7 +47,7 @@ export class RoutingService {
   navigateToMovie(imdbId: string) {
     this.router.navigate(['/movie', imdbId], { queryParams: {} });
   }
-  navigateToRateMovie(imdbId: string, film: CombinedFilmApiResponseModel) {
+  navigateToRateMovie(imdbId: string, film: MovieDetailsPageModel) {
     this.router.navigate(['/rate', 'movie', imdbId], { state: { film } });
   }
   navigateToPostMovie(postId: string) {
@@ -57,7 +58,7 @@ export class RoutingService {
   navigateToSeries(imdbId: string) {
     this.router.navigate(['/series', imdbId], { queryParams: {} });
   }
-  navigateToRateSeries(imdbId: string, film: CombinedFilmApiResponseModel) {
+  navigateToRateSeries(imdbId: string, film: TvSeriesDetailsPageModel) {
     this.router.navigate(['/rate', 'series', imdbId], { state: { film } });
   }
   navigateToPostSeries(postId: string) {

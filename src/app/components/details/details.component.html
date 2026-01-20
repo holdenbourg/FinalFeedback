@@ -11,55 +11,57 @@
   <div class="row r10"><div class="inner"></div></div>
 </div>
 
-<div class="container" *ngIf="!loading && !error && movieDetails; else loadingOrError">
+<div class="container movie-container" *ngIf="!loading && !error && movieDetails && type === 'movie'; else loadingOrError">
   <div class="left-information">
-    <!-- Director/Writer Section -->
-    <p class="row" *ngIf="showDirWriterCombined; else separateDirWriter">
-      <span class="label">Director/Writer:</span>
-      <span class="value">{{ directorName }}</span>
-    </p>
-
-    <ng-template #separateDirWriter>
-      <p class="row" *ngIf="directorName !== 'N/A'">
-        <span class="label">Director:</span>
+    <div class="information">
+      <!-- Director/Writer Section -->
+      <p class="row" *ngIf="showDirWriterCombined; else separateDirWriter">
+        <span class="label">Director/Writer:</span>
         <span class="value">{{ directorName }}</span>
       </p>
 
-      <p class="row" *ngIf="writerNames !== 'N/A'">
-        <span class="label">Writer:</span>
-        <span class="value">{{ writerNames }}</span>
+      <ng-template #separateDirWriter>
+        <p class="row" *ngIf="directorName !== 'N/A'">
+          <span class="label">Director:</span>
+          <span class="value">{{ directorName }}</span>
+        </p>
+
+        <p class="row" *ngIf="writerNames !== 'N/A'">
+          <span class="label">Writer:</span>
+          <span class="value">{{ writerNames }}</span>
+        </p>
+      </ng-template>
+
+      <!-- ✅ NEW: Production Companies -->
+      <p class="row" *ngIf="productionCompaniesText !== 'N/A'">
+        <span class="label">Production:</span>
+        <span class="value">{{ productionCompaniesText }}</span>
       </p>
-    </ng-template>
 
-    <!-- ✅ NEW: Production Companies -->
-    <p class="row" *ngIf="productionCompaniesText !== 'N/A'">
-      <span class="label">Production:</span>
-      <span class="value">{{ productionCompaniesText }}</span>
-    </p>
+      <!-- ✅ NEW: Budget -->
+      <p class="row" *ngIf="movieDetails.budget > 0">
+        <span class="label">Budget:</span>
+        <span class="value">{{ formatCurrency(movieDetails.budget) }}</span>
+      </p>
 
-    <!-- ✅ NEW: Budget -->
-    <p class="row" *ngIf="movieDetails.budget > 0">
-      <span class="label">Budget:</span>
-      <span class="value">{{ formatCurrency(movieDetails.budget) }}</span>
-    </p>
+      <!-- Box Office (Revenue) -->
+      <p class="row" *ngIf="movieDetails.revenue > 0">
+        <span class="label">Box Office:</span>
+        <span class="value">{{ formatCurrency(movieDetails.revenue) }}</span>
+      </p>
 
-    <!-- Box Office (Revenue) -->
-    <p class="row" *ngIf="movieDetails.revenue > 0">
-      <span class="label">Box Office:</span>
-      <span class="value">{{ formatCurrency(movieDetails.revenue) }}</span>
-    </p>
+      <!-- Awards -->
+      <p class="row" *ngIf="movieDetails.awards !== 'N/A'">
+        <span class="label">Awards:</span>
+        <span class="value">{{ movieDetails.awards }}</span>
+      </p>
 
-    <!-- Awards -->
-    <p class="row" *ngIf="movieDetails.awards !== 'N/A'">
-      <span class="label">Awards:</span>
-      <span class="value">{{ movieDetails.awards }}</span>
-    </p>
-
-    <!-- Summary -->
-    <p class="row">
-      <span class="label">Summary:</span>
-      <span class="value">{{ movieDetails.overview || 'N/A' }}</span>
-    </p>
+      <!-- Summary -->
+      <p class="row">
+        <span class="label">Summary:</span>
+        <span class="value">{{ movieDetails.overview || 'N/A' }}</span>
+      </p>
+    </div>
   </div>
 
   <div class="right-information">
@@ -67,7 +69,7 @@
       <div class="film-left">
         <div class="film-scroll">
           <!-- Title -->
-          <p class="title" (click)="goToHomePage()" [style.cursor]="movieDetails?.homepage ? 'pointer' : 'default'">{{ movieDetails.title }}</p>
+          <p class="title" (click)="goToHomePage()" [style.cursor]="movieDetails.homepage ? 'pointer' : 'default'">{{ movieDetails.title }}</p>
           
           <!-- Release Year -->
           <p class="release">{{ formatReleaseDate(movieDetails.release_date) }}</p>
@@ -88,12 +90,16 @@
           <p class="tagline">{{ movieDetails.tagline }}</p>
         </div>
 
-        <!-- Runtime & TMDb Score -->
+        <!-- Runtime -->
         <div class="film-counts">
-          <!-- Runtime -->
-          <div class="count" *ngIf="movieDetails.runtime > 0">
-            <div class="count-num">{{ formatRuntime(movieDetails.runtime) }}</div>
-            <div class="count-label">Runtime</div>
+          <div class="count" *ngIf="runtimeHours !== 0">
+            <div class="count-num">{{ runtimeHours }}</div>
+            <div class="count-label">{{ hoursLabel }}</div>
+          </div>
+
+          <div class="count" *ngIf="runtimeMinutesRemainder !== 0">
+            <div class="count-num">{{ runtimeMinutesRemainder }}</div>
+            <div class="count-label">{{ minutesLabel }}</div>
           </div>
         </div>
       </div>
@@ -103,7 +109,7 @@
         class="film-poster"
         [src]="posterSrc"
         [attr.alt]="movieDetails.title + ' poster'"
-        [style.cursor]="movieDetails?.trailer ? 'pointer' : 'default'"
+        [style.cursor]="movieDetails.trailer ? 'pointer' : 'default'"
         (click)="goToTrailer()"
         (error)="setFallback($event)"
         loading="lazy"
@@ -141,90 +147,426 @@
       </ng-template>
     </div>
 
-    <!-- Ratings & Rate Button -->
-    <div class="ratings-button">
-      <div class="ratings">
-        <!-- IMDb Rating -->
-        <div class="ratings-item imdb-rating">
-          <a class="logo-link"
-            [attr.href]="imdbUrl || null"
-            [class.is-disabled]="!imdbUrl"
-            target="_blank" 
-            rel="noopener noreferrer"
-            aria-label="Open on IMDb"
-          >
-            <img 
-              class="imdb-img"
-              src="https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg"
-              alt="IMDb" 
-            />
-          </a>
-          <p class="score">{{ imdbRating }}</p>
+    <!-- Ratings -->
+    <div class="ratings">
+      <!-- IMDb Rating -->
+      <div class="ratings-item imdb-rating">
+        <a class="logo-link"
+          [attr.href]="imdbUrl || null"
+          [class.is-disabled]="!imdbUrl"
+          target="_blank" 
+          rel="noopener noreferrer"
+          aria-label="Open on IMDb"
+        >
+          <img 
+            class="imdb-img"
+            src="https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg"
+            alt="IMDb" 
+          />
+        </a>
+        <p class="score">{{ imdbRating }}</p>
+      </div>
+
+      <!-- Rotten Tomatoes Rating -->
+      <div class="ratings-item rotten-tomatoes-rating">
+        <a class="logo-link"
+          [attr.href]="rottenTomatoesUrl || null"
+          [class.is-disabled]="!rottenTomatoesUrl"
+          target="_blank" 
+          rel="noopener noreferrer"
+          aria-label="Open on Rotten Tomatoes"
+        >
+          <img 
+            class="rotten-tomatoes-img"
+            src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Rotten_Tomatoes_logo.svg"
+            alt="Rotten Tomatoes"
+          />
+        </a>
+        <p class="score">{{ rottenTomatoesRating }}</p>
+      </div>
+
+      <!-- Metacritic Rating -->
+      <div class="ratings-item metacritic-rating">
+        <a class="logo-link"
+          [attr.href]="metacriticUrl || null"
+          [class.is-disabled]="!metacriticUrl"
+          target="_blank" 
+          rel="noopener noreferrer"
+          aria-label="Open on Metacritic"
+        >
+          <img 
+            class="metacritic-img"
+            src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Metacritic_logo_original.svg"
+            alt="Metacritic" 
+          />
+        </a>
+        <p class="score">{{ metacriticRating }}</p>
+      </div>
+
+      <!-- TMDb Rating -->
+      <div class="ratings-item tmdb-rating">
+        <a class="logo-link"
+          [attr.href]="TmdbUrl || null"
+          [class.is-disabled]="!TmdbUrl"
+          target="_blank" 
+          rel="noopener noreferrer"
+          aria-label="Open on Tmdb"
+        >
+          <img 
+            class="tmdb-img"
+            src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.svg"
+            alt="TMDb" 
+          />
+        </a>
+        <p class="score">{{ movieDetails.vote_average.toFixed(1) }}/10</p>
+      </div>
+    </div>
+
+    <!-- Rate Button -->
+    <button 
+      type="button" 
+      class="rate-button" 
+      (click)="onRateThisFilm()"
+      [class.disabled]="!canRateFilm()"
+      [disabled]="!canRateFilm()"
+      [attr.title]="runtimeRateButtonTitle()"
+    >
+      <span *ngIf="isCheckingRating()">Checking...</span>
+      <span *ngIf="!isCheckingRating() && !hasAlreadyRated() && isReleased">Rate "{{ movieDetails.title }}"</span>
+      <span *ngIf="!isCheckingRating() && hasAlreadyRated() && isReleased">Already Rated</span>
+      <span *ngIf="!isReleased">Not Released Yet</span>
+    </button>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!--  TV VIEW -->
+<!-- ============================================ -->
+<div class="container tv-container" *ngIf="!loading && !error && tvSeriesDetails && type === 'tv'; else loadingOrError">
+  <div class="left-information">
+    <div class="information">
+      <!-- Director/Writer Section -->
+      <p class="row" *ngIf="showDirWriterCombined; else separateDirWriter">
+        <span class="label">Director/Writer:</span>
+        <span class="value">{{ directorName }}</span>
+      </p>
+
+      <ng-template #separateDirWriter>
+        <p class="row" *ngIf="directorName !== 'N/A'">
+          <span class="label">Director:</span>
+          <span class="value">{{ directorName }}</span>
+        </p>
+
+        <p class="row" *ngIf="writerNames !== 'N/A'">
+          <span class="label">Writer:</span>
+          <span class="value">{{ writerNames }}</span>
+        </p>
+      </ng-template>
+
+      <!-- ✅ NEW: Production Companies -->
+      <p class="row" *ngIf="productionCompaniesText !== 'N/A'">
+        <span class="label">Production:</span>
+        <span class="value">{{ productionCompaniesText }}</span>
+      </p>
+
+      <!-- Box Office (Revenue) -->
+      <p class="row" *ngIf="tvSeriesDetails.boxOffice > 0">
+        <span class="label">Box Office:</span>
+        <span class="value">{{ formatCurrency(tvSeriesDetails.boxOffice) }}</span>
+      </p>
+
+      <!-- Awards -->
+      <p class="row" *ngIf="tvSeriesDetails.awards !== 'N/A'">
+        <span class="label">Awards:</span>
+        <span class="value">{{ tvSeriesDetails.awards }}</span>
+      </p>
+
+      <!-- Summary -->
+      <p class="row">
+        <span class="label">Summary:</span>
+        <span class="value">{{ tvSeriesDetails.overview || 'N/A' }}</span>
+      </p>
+    </div>
+  </div>
+
+  <div class="right-information">
+    <div class="film-information">
+      <div class="film-left">
+        <div class="film-scroll">
+          <!-- Title -->
+          <p class="title" (click)="goToHomePage()" [style.cursor]="tvSeriesDetails.homepage ? 'pointer' : 'default'">{{ tvSeriesDetails.name }}</p>
+          
+          <!-- Release Year -->
+          <p class="release">{{ formatReleaseDate(tvSeriesDetails.first_air_date) }}</p>
+
+          <!-- Meta Badges -->
+          <div class="meta">
+            <!-- Rated Badge -->
+            <span class="badge" *ngIf="tvSeriesDetails.rated && tvSeriesDetails.rated !== 'N/A'">
+              {{ tvSeriesDetails.rated }}
+            </span>
+
+            <!-- Genres Badge -->
+            <span class="badge" *ngIf="(genresText || '').length">
+              {{ (genresText || '').split(', ').join(' • ') }}
+            </span>
+          </div>
+
+          <p class="tagline">{{ tvSeriesDetails.tagline }}</p>
         </div>
 
-        <!-- Rotten Tomatoes Rating -->
-        <div class="ratings-item rotten-tomatoes-rating">
-          <a class="logo-link"
-            [attr.href]="rottenTomatoesUrl || null"
-            [class.is-disabled]="!rottenTomatoesUrl"
-            target="_blank" 
-            rel="noopener noreferrer"
-            aria-label="Open on Rotten Tomatoes"
-          >
-            <img 
-              class="rotten-tomatoes-img"
-              src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Rotten_Tomatoes_logo.svg"
-              alt="Rotten Tomatoes"
-            />
-          </a>
-          <p class="score">{{ rottenTomatoesRating }}</p>
-        </div>
+        <!-- seasons and episodes  -->
+        <div class="film-counts">
+          <div class="count" *ngIf="tvSeriesDetails.number_of_seasons !== 0">
+            <div class="count-num">{{ tvSeriesDetails.number_of_seasons }}</div>
+            <div class="count-label">{{ seasonsLabel }}</div>
+          </div>
 
-        <!-- Metacritic Rating -->
-        <div class="ratings-item metacritic-rating">
-          <a class="logo-link"
-            [attr.href]="metacriticUrl || null"
-            [class.is-disabled]="!metacriticUrl"
-            target="_blank" 
-            rel="noopener noreferrer"
-            aria-label="Open on Metacritic"
-          >
-            <img 
-              class="metacritic-img"
-              src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Metacritic_logo_original.svg"
-              alt="Metacritic" 
-            />
-          </a>
-          <p class="score">{{ metacriticRating }}</p>
-        </div>
-
-        <!-- TMDb Rating -->
-        <div class="ratings-item tmdb-rating">
-          <a class="logo-link"
-            [attr.href]="TmdbUrl || null"
-            [class.is-disabled]="!TmdbUrl"
-            target="_blank" 
-            rel="noopener noreferrer"
-            aria-label="Open on Tmdb"
-          >
-            <img 
-              class="tmdb-img"
-              src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.svg"
-              alt="TMDb" 
-            />
-          </a>
-          <p class="score">{{ movieDetails.vote_average.toFixed(1) }}/10</p>
+          <div class="count" *ngIf="tvSeriesDetails.number_of_episodes !== 0">
+            <div class="count-num">{{ tvSeriesDetails.number_of_episodes }}</div>
+            <div class="count-label">{{ episodesLabel }}</div>
+          </div>
         </div>
       </div>
 
-      <!-- Rate Button (placeholder for now) -->
-      <button 
-        type="button" 
-        class="rate-button" 
-        *ngIf="isReleased"
-      >
-        <span>Rate "{{ movieDetails.title }}"</span>
-      </button>
+      <img
+        class="film-poster"
+        [src]="posterSrc"
+        [attr.alt]="tvSeriesDetails.name + ' poster'"
+        [style.cursor]="tvSeriesDetails.trailer ? 'pointer' : 'default'"
+        (click)="goToTrailer()"
+        (error)="setFallback($event)"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+
+    <!-- Streaming Services -->
+    <div class="streaming-on">
+      <p class="label">Streaming On:</p>
+
+      <div class="streaming-services" *ngIf="streamingProviders.length > 0; else noStreamingServices">
+        <a
+          *ngFor="let provider of streamingProviders; trackBy: trackByProviderName"
+          class="provider-logo-link"
+          [attr.href]="provider.url || null"
+          [class.is-disabled]="!provider.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          [attr.aria-label]="provider.url ? ('Open on ' + provider.name) : null"
+        >
+          <img
+            class="provider-logo"
+            [src]="provider.logo"
+            [attr.alt]="provider.name"
+            (error)="onLogoError(provider)"
+            loading="lazy"
+            decoding="async"
+          />
+        </a>
+      </div>
+
+      <ng-template #noStreamingServices>
+        <p class="no-streaming-services">N/A</p>
+      </ng-template>
+    </div>
+
+    <!-- Ratings -->
+    <div class="ratings">
+      <!-- IMDb Rating -->
+      <div class="ratings-item imdb-rating">
+        <a class="logo-link"
+          [attr.href]="imdbUrl || null"
+          [class.is-disabled]="!imdbUrl"
+          target="_blank" 
+          rel="noopener noreferrer"
+          aria-label="Open on IMDb"
+        >
+          <img 
+            class="imdb-img"
+            src="https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg"
+            alt="IMDb" 
+          />
+        </a>
+        <p class="score">{{ imdbRating }}</p>
+      </div>
+
+      <!-- Rotten Tomatoes Rating -->
+      <div class="ratings-item rotten-tomatoes-rating">
+        <a class="logo-link"
+          [attr.href]="rottenTomatoesUrl || null"
+          [class.is-disabled]="!rottenTomatoesUrl"
+          target="_blank" 
+          rel="noopener noreferrer"
+          aria-label="Open on Rotten Tomatoes"
+        >
+          <img 
+            class="rotten-tomatoes-img"
+            src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Rotten_Tomatoes_logo.svg"
+            alt="Rotten Tomatoes"
+          />
+        </a>
+        <p class="score">{{ rottenTomatoesRating }}</p>
+      </div>
+
+      <!-- Metacritic Rating -->
+      <div class="ratings-item metacritic-rating">
+        <a class="logo-link"
+          [attr.href]="metacriticUrl || null"
+          [class.is-disabled]="!metacriticUrl"
+          target="_blank" 
+          rel="noopener noreferrer"
+          aria-label="Open on Metacritic"
+        >
+          <img 
+            class="metacritic-img"
+            src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Metacritic_logo_original.svg"
+            alt="Metacritic" 
+          />
+        </a>
+        <p class="score">{{ metacriticRating }}</p>
+      </div>
+
+      <!-- TMDb Rating -->
+      <div class="ratings-item tmdb-rating">
+        <a class="logo-link"
+          [attr.href]="TmdbUrl || null"
+          [class.is-disabled]="!TmdbUrl"
+          target="_blank" 
+          rel="noopener noreferrer"
+          aria-label="Open on Tmdb"
+        >
+          <img 
+            class="tmdb-img"
+            src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.svg"
+            alt="TMDb" 
+          />
+        </a>
+        <p class="score">{{ tvSeriesDetails.vote_average.toFixed(1) }}/10</p>
+      </div>
+    </div>
+
+    <!-- Rate Button (placeholder for now) -->
+    <button 
+      type="button" 
+      class="rate-button" 
+      (click)="onRateThisFilm()"
+      [class.disabled]="!canRateFilm()"
+      [disabled]="!canRateFilm()"
+      [attr.title]="runtimeRateButtonTitle()"
+    >
+      <span *ngIf="isCheckingRating()">Checking...</span>
+      <span *ngIf="!isCheckingRating() && !hasAlreadyRated() && isReleased">Rate "{{ tvSeriesDetails.name }}"</span>
+      <span *ngIf="!isCheckingRating() && hasAlreadyRated() && isReleased">Already Rated</span>
+      <span *ngIf="!isReleased">Not Released Yet</span>
+    </button>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- ✅ PERSON VIEW -->
+<!-- ============================================ -->
+<div class="container person-container" *ngIf="!loading && !error && personDetails && type === 'person'">
+  <div class="left-information">
+    <div class="information">
+      <!-- Birthday -->
+      <p class="row" *ngIf="personDetails.birthday">
+        <span class="label">Birthday:</span>
+        <span class="value">{{ formatBirthday(personDetails.birthday) }} ({{ personAge }})</span>
+      </p>
+
+      <!-- Deathday -->
+      <p class="row" *ngIf="personDetails.deathday">
+        <span class="label">Died:</span>
+        <span class="value">{{ formatBirthday(personDetails.deathday) }}</span>
+      </p>
+
+      <!-- Place of Birth -->
+      <p class="row" *ngIf="personDetails.place_of_birth">
+        <span class="label">Place of Birth:</span>
+        <span class="value">{{ personDetails.place_of_birth }}</span>
+      </p>
+
+      <!-- Biography -->
+      <p class="row">
+        <span class="label">Biography:</span>
+        <span class="value">{{ personDetails.biography || 'No biography available.' }}</span>
+      </p>
+
+      <!-- Homepage -->
+      <div class="homepage-link" *ngIf="personDetails.homepage">
+        <a [href]="personDetails.homepage" target="_blank" rel="noopener noreferrer">
+          Official Website
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="right-information">
+    <!-- Person Profile Image -->
+    <div class="person-information">
+      <div class="film-left">
+        <div class="film-scroll">
+          <!-- Name -->
+          <p class="title" (click)="goToPersonHomepage()" [style.cursor]="personDetails.homepage ? 'pointer' : 'default'">{{ personDetails.name }}</p>
+
+          <!-- Gender -->
+          <p class="release">{{ personGender }}</p>
+
+          <!-- Known For -->
+          <p class="release" *ngIf="personDetails.known_for_department">{{ personDetails.known_for_department }} </p>
+        </div>
+      </div>
+
+      <!-- Profile Image -->
+      <img
+        class="film-poster"
+        [src]="personProfileSrc"
+        [attr.alt]="personDetails.name + ' profile'"
+        (error)="setFallback($event)"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+
+    <div class="cast-crew">
+      <div class="person-tabs" *ngIf="showPersonTabs">
+        <button 
+          class="tab-btn" 
+          [class.active]="activePersonTab === 'cast'"
+          (click)="switchPersonTab('cast')"
+          *ngIf="castCredits.length > 0"
+        >
+          Cast ({{ castCredits.length }})
+        </button>
+        
+        <button 
+          class="tab-btn" 
+          [class.active]="activePersonTab === 'crew'"
+          (click)="switchPersonTab('crew')"
+          *ngIf="crewCredits.length > 0"
+        >
+          Crew ({{ crewCredits.length }})
+        </button>
+      </div>
+
+      <div class="scroll-information">
+        <!-- ✅ Cast Tab -->
+        <div class="person-credits-grid" *ngIf="activePersonTab === 'cast'">
+          <app-cast-film
+            *ngFor="let credit of castCredits"
+            [item]="credit"
+          ></app-cast-film>
+        </div>
+
+        <!-- ✅ Crew Tab -->
+        <div class="person-credits-grid" *ngIf="activePersonTab === 'crew'">
+          <app-crew-film
+            *ngFor="let credit of crewCredits"
+            [item]="credit"
+          ></app-crew-film>
+        </div>
+      </div>
     </div>
   </div>
 </div>

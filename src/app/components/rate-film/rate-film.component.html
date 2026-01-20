@@ -21,18 +21,17 @@
     </app-rate-item>
   </div>
 
-  <div class="right-side" *ngIf="film as f">
-    <div class="film-information">
+  <div class="right-side">
+    <div class="film-information" *ngIf="type === 'movie'">
       <div class="film-text">
-        <p class="title">{{ f.title }}</p>
-        <p class="release" *ngIf="f.released && isMovie">{{ fixRelease(f.released) }}</p>
-        <p class="release" *ngIf="f.year && isSeries">{{ displayYear(f.year) }}</p>
+        <p class="title">{{ activeMovie?.title }}</p>
+        <p class="release" *ngIf="activeMovie?.release_date">{{ formatReleaseDate(activeMovie?.release_date) }}</p>
 
         <div class="meta">
-          <span class="badge" *ngIf="f.rated">{{ f.rated }}</span>
+          <span class="badge" *ngIf="activeMovie?.rated">{{ activeMovie?.rated }}</span>
 
-          <span class="badge" *ngIf="(f.genre || '').length">
-            {{ (f.genre || '').split(', ').join(' • ') }}
+          <span class="badge" *ngIf="(genresText || '').length">
+            {{ (genresText || '').split(', ').join(' • ') }}
           </span>
         </div>
 
@@ -52,7 +51,43 @@
       <img
         class="film-poster"
         [src]="posterSrc"
-        [attr.alt]="f.title || 'Poster'"
+        [attr.alt]="activeMovie?.title || 'Poster'"
+        (error)="setFallback($event)"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+
+    <div class="film-information" *ngIf="type === 'series'">
+      <div class="film-text">
+        <p class="title">{{ activeSeries?.name }}</p>
+        <p class="release" *ngIf="activeSeries?.first_air_date">{{ formatReleaseDate(activeSeries!.first_air_date) }}</p>
+
+        <div class="meta">
+          <span class="badge" *ngIf="activeSeries?.rated">{{ activeSeries?.rated }}</span>
+
+          <span class="badge" *ngIf="(genresText || '').length">
+            {{ (genresText || '').split(', ').join(' • ') }}
+          </span>
+        </div>
+
+        <div class="counts">
+          <div class="count">
+            <div class="count-num">{{ count1Num }}</div>
+            <div class="count-label">{{ count1Label }}</div>
+          </div>
+          
+          <div class="count">
+            <div class="count-num">{{ count2Num }}</div>
+            <div class="count-label">{{ count2Label }}</div>
+          </div>
+        </div>
+      </div>
+
+      <img
+        class="film-poster"
+        [src]="posterSrc"
+        [attr.alt]="activeSeries?.name || 'Poster'"
         (error)="setFallback($event)"
         loading="lazy"
         decoding="async"

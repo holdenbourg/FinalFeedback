@@ -1,5 +1,5 @@
-<article class="film-details-card" tabindex="0" [attr.aria-label]="displayTitle + (displayYear ? ' (' + displayYear + ')' : '')" [routerLink]="['/details', item.media_type, item.id]"
->  <div class="film-poster-wrap">
+<article class="film-details-card" tabindex="0" [attr.aria-label]="displayTitle + (displayYear ? ' (' + displayYear + ')' : '')" [routerLink]="['/details', item.media_type, item.id]">
+  <div class="film-poster-wrap">
     <img
       class="film-poster"
       [src]="posterSrc"
@@ -12,6 +12,7 @@
 
   <div class="film-details">
     <p class="film-title">{{ displayTitle }}</p>
+    <p class="film-character">{{ item.character }}</p>
     <p class="film-release-year">{{ displayDate }}</p>
     <p class="film-type">{{ displayType }}</p>
   </div>

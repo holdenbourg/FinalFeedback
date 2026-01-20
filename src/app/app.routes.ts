@@ -2,7 +2,6 @@ import { Routes } from '@angular/router';
 import { LoginRegisterComponent } from './components/login-register/login-register.component';
 import { HomeComponent } from './components/home/home.component';
 import { SearchComponent } from './components/search/search.component';
-import { FilmInformationComponent } from './components/film-information/film-information.component';
 import { RateFilmComponent } from './components/rate-film/rate-film.component';
 import { EditFilmRatingComponent } from './components/edit-film-rating/edit-film-rating.component';
 import { LibraryComponent } from './components/library/library.component';
@@ -28,9 +27,6 @@ export const routes: Routes = [
     { path: 'search/:type', component: SearchComponent, canActivate: [AuthGuard] }, // all | movies | series | people | users
 
     { path: 'details/:type/:id', component: DetailsComponent, canActivate: [AuthGuard]  },
-
-    { path: 'movie/:imdbId', component: FilmInformationComponent, canActivate: [AuthGuard] },
-    { path: 'series/:imdbId', component: FilmInformationComponent, canActivate: [AuthGuard] },
 
     { path: 'rate/:type/:imdbId', component: RateFilmComponent, canActivate: [AuthGuard] }, // movies | series
 

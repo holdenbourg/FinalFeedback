@@ -1,4 +1,5 @@
-<article class="film-details-card" tabindex="0" [attr.aria-label]="displayName">
+<article class="film-details-card" tabindex="0" [attr.aria-label]="displayName" [routerLink]="['/details', item.media_type, item.id]"
+>
   <div class="film-poster-wrap">
     <img
       class="film-poster"

@@ -11,7 +11,7 @@ export interface FilmData {
   criteria: MovieCriteria | SeriesCriteria;
   rating: number;
   dateRated: string;
-  releaseDate: string | null;
+  releaseDate: Date | null;
   rated: string | null;  // PG, PG-13, R, TV-MA, etc.
   genres: string[];
 }

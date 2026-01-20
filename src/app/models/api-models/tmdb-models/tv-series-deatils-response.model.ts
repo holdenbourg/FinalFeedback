@@ -7,7 +7,7 @@ import { ProductionCountryModel } from "./production-country.model"
 import { SeasonModel } from "./season.model"
 import { SpokenLanguageModel } from "./spoken-language.model"
 
-export interface TvDetailsResponseModel {
+export interface TvSeriesDetailsResponseModel {
     adult: boolean,
     backdrop_path: string,
     created_by: CreatedByModel[],
@@ -19,9 +19,9 @@ export interface TvDetailsResponseModel {
     in_production: boolean,
     languages: string[],
     last_air_date: Date | null,
-    last_episode_to_air: LastEpisodeToAirModel,
+    last_episode_to_air: LastEpisodeToAirModel | null,
     name: string,
-    next_episode_to_air: string | null,
+    next_episode_to_air: LastEpisodeToAirModel | null,
     networks: NetworkModel[],
     number_of_episodes: number,
     number_of_seasons: number,
