@@ -9,12 +9,12 @@ export type Orientation = 'portrait' | 'landscape';
   providedIn: 'root'
 })
 export class DeviceService {
-  // Reactive signals for device state
-  public deviceType = signal<DeviceType>(this.detectDeviceType());
-  public orientation = signal<Orientation>(this.detectOrientation());
-  public isTouchDevice = signal<boolean>(this.detectTouch());
-  public screenWidth = signal<number>(window.innerWidth);
-  public screenHeight = signal<number>(window.innerHeight);
+  // ✅ Initialize with default values first
+  public deviceType = signal<DeviceType>('desktop');
+  public orientation = signal<Orientation>('portrait');
+  public isTouchDevice = signal<boolean>(false);
+  public screenWidth = signal<number>(1920);
+  public screenHeight = signal<number>(1080);
 
   // Breakpoints (matching CSS)
   private readonly breakpoints = {
@@ -27,6 +27,9 @@ export class DeviceService {
   };
 
   constructor() {
+    // ✅ Update state after signals are initialized
+    this.updateDeviceState();
+
     // Listen for window resize
     fromEvent(window, 'resize')
       .pipe(debounceTime(150))
@@ -35,14 +38,12 @@ export class DeviceService {
     // Listen for orientation change
     fromEvent(window, 'orientationchange')
       .subscribe(() => this.updateDeviceState());
-
-    // Initial detection
-    this.updateDeviceState();
   }
 
   private updateDeviceState() {
     this.deviceType.set(this.detectDeviceType());
     this.orientation.set(this.detectOrientation());
+    this.isTouchDevice.set(this.detectTouch());
     this.screenWidth.set(window.innerWidth);
     this.screenHeight.set(window.innerHeight);
   }
@@ -104,9 +105,9 @@ export class DeviceService {
   getFontSizeMultiplier(): number {
     const width = this.screenWidth();
     
-    if (width < this.breakpoints.mobileLandscape) return 0.875; // 87.5% for mobile
-    if (width < this.breakpoints.desktop) return 1; // 100% for tablet
-    return 1.125; // 112.5% for desktop
+    if (width < this.breakpoints.mobileLandscape) return 0.875;
+    if (width < this.breakpoints.desktop) return 1;
+    return 1.125;
   }
 
   // Check if viewport is at least a certain size

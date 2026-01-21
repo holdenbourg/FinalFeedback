@@ -95,15 +95,9 @@
   </ul>
 </nav>
 
-<div class="container" [class.active]="!sidebarService.sidebarActive()">
+<div class="container" [class.active]="!sidebarService.sidebarActive()" [class.no-anim]="sidebarService.suppressAnim()">
   <div class="policy-container">
     <!-- USE SHARED CONTENT COMPONENT -->
     <app-privacy-policy-content></app-privacy-policy-content>
   </div>
 </div>
-
-<app-logout-modal 
-  *ngIf="showLogoutModal"
-  (confirm)="onLogout()"
-  (cancel)="showLogoutModal = false">
-</app-logout-modal>

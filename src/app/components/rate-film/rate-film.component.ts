@@ -59,8 +59,6 @@ export class RateFilmComponent implements OnInit {
     this.imdbId = this.activatedRoute.snapshot.params['imdbId'];
     this.type = this.activatedRoute.snapshot.params['type'];
 
-    this.addRandomStartPointForRows();
-
     if (this.type === 'movie') {
       const cached = this.filmCache.getApiCache<MovieDetailsPageModel>(this.imdbId);
       if (cached) {
@@ -164,15 +162,6 @@ export class RateFilmComponent implements OnInit {
     }
 
     return genres.map((genre) => genre.name);
-  }
-
-  addRandomStartPointForRows() {
-    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
-      const durStr = getComputedStyle(el).animationDuration;
-      const dur = parseFloat(durStr.split(',')[0]) || 140;
-
-      el.style.animationDelay = `${-(Math.random() * dur)}s`;
-    });
   }
   
   private readonly tmdbImgBase = 'https://image.tmdb.org/t/p';

@@ -1,61 +1,62 @@
-<!-- Mobile Layout: Bottom Tab Bar -->
-<div class="mobile-layout">
-    <!-- Main Content Area -->
-    <main class="mobile-content">
-        <router-outlet></router-outlet>
-    </main>
+<!-- Mobile Layout: ONLY Background + Bottom Nav -->
 
-    <!-- Bottom Navigation Bar -->
-    <nav class="bottom-nav">
-        <button 
-        class="nav-item"
-        [class.active]="isActive('/library')"
-        (click)="navigateTo('/library')"
-        aria-label="Library"
-        >
-        <i class='bx bx-list-ul'></i>
-        <span class="nav-label">Library</span>
-        </button>
+<!-- ✅ BACKGROUND ROWS -->
+<div class="poster-rows" aria-hidden="true">
+  <div class="row r1"><div class="inner"></div></div>
+  <div class="row r2"><div class="inner"></div></div>
+  <div class="row r3"><div class="inner"></div></div>
+  <div class="row r4"><div class="inner"></div></div>
+  <div class="row r5"><div class="inner"></div></div>
+  <div class="row r6"><div class="inner"></div></div>
+  <div class="row r7"><div class="inner"></div></div>
+  <div class="row r8"><div class="inner"></div></div>
+  <div class="row r9"><div class="inner"></div></div>
+  <div class="row r10"><div class="inner"></div></div>
+</div>
 
-        <button 
+<!-- ✅ BOTTOM NAVIGATION BAR -->
+<nav class="bottom-nav">
+    <button 
         class="nav-item"
         [class.active]="isActive('/search')"
         (click)="navigateTo('/search/all')"
-        aria-label="Search"
-        >
+        aria-label="Search">
         <i class='bx bx-search'></i>
-        <span class="nav-label">Search</span>
-        </button>
+    </button>
 
-        <button 
+    <button 
+        class="nav-item"
+        [class.active]="isActive('/library')"
+        (click)="navigateTo('/library')"
+        aria-label="Library">
+        <i class='bx bx-list-ul'></i>
+    </button>
+
+    <button 
         class="nav-item home-button"
         [class.active]="isActive('/home')"
         (click)="navigateTo('/home')"
-        aria-label="Home"
-        >
+        aria-label="Home">
         <i class='bx bx-home-alt'></i>
-        <span class="nav-label">Home</span>
-        </button>
+    </button>
 
-        <button 
+    <button 
         class="nav-item"
         [class.active]="isActive('/messages')"
         (click)="navigateTo('/messages')"
-        aria-label="Messages"
-        >
+        aria-label="Messages">
         <i class='bx bx-message-rounded'></i>
-        <span class="nav-label">Messages</span>
         <span class="badge" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
-        </button>
+    </button>
 
-        <button 
+    <button 
         class="nav-item"
         [class.active]="isActive('/account')"
         (click)="navigateTo('/account/posts')"
-        aria-label="Account"
-        >
+        aria-label="Account">
         <i class='bx bx-user'></i>
-        <span class="nav-label">Account</span>
-        </button>
-    </nav>
-    </div>
+    </button>
+</nav>
+
+<!-- ✅ JUST ROUTER OUTLET - No wrapper -->
+<router-outlet></router-outlet>

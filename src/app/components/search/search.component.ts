@@ -52,9 +52,7 @@ export class SearchComponent implements OnInit {
   public inputFocused = false;
 
 
-  ngOnInit() {
-    this.addRandomStartPointForRows();
-    
+  ngOnInit() {    
     // ✅ Clear results immediately when type changes
     this.route.paramMap.subscribe(pm => {
       const newType = (pm.get('type') as SearchType) ?? 'all';
@@ -130,14 +128,6 @@ export class SearchComponent implements OnInit {
 
 
   /// -======================================-  Helper Methods  -======================================- \\\
-  addRandomStartPointForRows() {
-    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
-      const durStr = getComputedStyle(el).animationDuration;
-      const dur = parseFloat(durStr.split(',')[0]) || 140;
-
-      el.style.animationDelay = `${-(Math.random() * dur)}s`;
-    });
-  }
 
 
   /// -======================================-  Responsive Sidebar  -======================================- \\\

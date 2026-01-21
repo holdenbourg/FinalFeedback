@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
-
 * {
   margin: 0;
   padding: 0;
@@ -11,7 +9,6 @@
   position: fixed;
   inset: 0;
   display: block;
-  background: #000;
   overflow: hidden;
 }
 :host::before {
@@ -23,68 +20,45 @@
   background: rgba(0,0,0, var(--bg-dim, 0.8));
 }
 
-.poster-rows {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  display: grid;
-  grid-template-rows: repeat(10, 1fr);
-}
-.poster-rows .row { 
-  position: relative; 
-  overflow: hidden; 
-}
-.poster-rows .row .inner {
-  position: absolute; 
-  top: 0; 
-  left: 0;
-  width: 200%; 
-  height: 100%;
-  background-size: 50% 100%;
-  background-repeat: repeat-x;
-  will-change: transform;
-  animation-fill-mode: both;
-}
-
-@keyframes marquee-right {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-
-.poster-rows .r1  .inner { background-image: url('/assets/images/background-rows/row1.png'),  url('/assets/images/background-rows/row1.png');  animation: marquee-right 194s linear infinite; }
-.poster-rows .r2  .inner { background-image: url('/assets/images/background-rows/row2.png'),  url('/assets/images/background-rows/row2.png');  animation: marquee-right 134s linear infinite; }
-.poster-rows .r3  .inner { background-image: url('/assets/images/background-rows/row3.png'),  url('/assets/images/background-rows/row3.png');  animation: marquee-right 189s linear infinite; }
-.poster-rows .r4  .inner { background-image: url('/assets/images/background-rows/row4.png'),  url('/assets/images/background-rows/row4.png');  animation: marquee-right 128s linear infinite; }
-.poster-rows .r5  .inner { background-image: url('/assets/images/background-rows/row5.png'),  url('/assets/images/background-rows/row5.png');  animation: marquee-right 143s linear infinite; }
-.poster-rows .r6  .inner { background-image: url('/assets/images/background-rows/row6.png'),  url('/assets/images/background-rows/row6.png');  animation: marquee-right 165s linear infinite; }
-.poster-rows .r7  .inner { background-image: url('/assets/images/background-rows/row7.png'),  url('/assets/images/background-rows/row7.png');  animation: marquee-right 181s linear infinite; }
-.poster-rows .r8  .inner { background-image: url('/assets/images/background-rows/row8.png'),  url('/assets/images/background-rows/row8.png');  animation: marquee-right 189s linear infinite; }
-.poster-rows .r9  .inner { background-image: url('/assets/images/background-rows/row9.png'),  url('/assets/images/background-rows/row9.png');  animation: marquee-right 125s linear infinite; }
-.poster-rows .r10 .inner { background-image: url('/assets/images/background-rows/row10.png'), url('/assets/images/background-rows/row10.png'); animation: marquee-right 137s linear infinite; }
-
-@media (prefers-reduced-motion: reduce) {
-  .poster-rows .row .inner { animation: none !important; }
-}
-
 
 /* ----- Container ----- */
 .container {
-  z-index: 1; position: absolute; left: 40px; right: 40px; top: 40px; bottom: 40px;
-  display: flex; flex-direction: column; justify-content: space-between;
+  z-index: 1; 
+  position: absolute; 
+  left: 20px; 
+  right: 20px; 
+  top: 20px; 
+  bottom: 20px;
+  display: flex; 
+  flex-direction: column; 
+  justify-content: space-between;
 }
 
 .film-information {
-  display: flex; width: 100%; height: 56%;
-  border: .2vw solid #fff; border-radius: 5px; backdrop-filter: blur(3px);
+  display: flex; 
+  width: 100%; 
+  height: 56%;
+  border: .2vw solid #fff; 
+  border-radius: 10px; 
+  backdrop-filter: blur(3px); 
 }
 
-.film-poster { margin: 10px; border-radius: 5px; height: auto; width: auto; }
+.film-poster { 
+  margin: 10px; 
+  border-radius: 5px; 
+  height: auto; 
+  width: auto; 
+}
 
 .film-text {
-  display: flex; flex-direction: column;
-  margin-top: 15px; margin-left: 20px; color: #fff;
-  line-height: 2.25vw; font-size: 1.82vw; font-weight: 500;
+  display: flex; 
+  flex-direction: column;
+  margin-top: 15px; 
+  margin-left: 20px; 
+  color: #fff;
+  line-height: 2.25vw; 
+  font-size: 1.82vw; 
+  font-weight: 500;
 }
 
 .film-left {
@@ -166,24 +140,51 @@
 }
 
 .date-rated {
-  position: absolute; right: 20px; bottom: 10px; text-align: right;
-  font-size: 1.8vw; color: #fff; font-weight: 500;
+  position: absolute; 
+  right: 20px; 
+  bottom: 10px; 
+  text-align: right;
+  font-size: 1.8vw; 
+  color: #fff; 
+  font-weight: 500;
 }
 
 .bottom-half {
-  display: flex; flex-direction: column; width: 100%; height: 40.5%;
-  border: .2vw solid #fff; border-radius: 5px; backdrop-filter: blur(3px);
-  justify-content: space-between; padding: 40px 0 30px;
+  display: flex; 
+  flex-direction: column; 
+  width: 100%; 
+  height: 40.5%;
+  border: .2vw solid #fff; 
+  border-radius: 10px; 
+  backdrop-filter: blur(3px);
+  justify-content: space-between; 
+  padding: 40px 0 30px;
 }
 
 .ratings {
-  display: flex; flex-direction: row; justify-content: space-between;
-  color: #fff; font-size: 2.6vw; font-weight: 600; padding: 0 4.2vw;
+  display: flex; 
+  flex-direction: row; 
+  justify-content: space-between;
+  color: #fff; 
+  font-size: 2.6vw; 
+  font-weight: 600; 
+  padding: 0 4.2vw;
 }
 
-.rating { display: flex; flex-direction: column; align-items: center; }
-.edit-ratings { display: flex; flex-direction: row; justify-content: center; }
-.edit-ratings p { transform: translateY(-5%); }
+.rating { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+}
+
+.edit-ratings { 
+  display: flex; 
+  flex-direction: row; 
+  justify-content: center; 
+}
+.edit-ratings p { 
+  transform: translateY(-5%); 
+}
 .edit-ratings a {
   cursor: pointer;
   transition: 0.2s;
@@ -191,7 +192,9 @@
 .edit-ratings a:hover {
   transform: scale(1.1);
 }
-.edit-ratings a i { color: #fff; }
+.edit-ratings a i { 
+  color: #fff; 
+}
 
 .button {
   width: 40%; 
@@ -304,9 +307,16 @@
   font-variant-numeric: tabular-nums;
 }
 
-.change-from { opacity: 0.8; }
-.change-sep  { opacity: 0.7; padding-bottom: 4px;}
-.change-to   { font-weight: 700; }
+.change-from { 
+  opacity: 0.8; 
+}
+.change-sep  { 
+  opacity: 0.7;
+  padding-bottom: 4px;
+}
+.change-to   { 
+  font-weight: 700; 
+}
 
 .modal-actions { 
   padding-top: 12px;

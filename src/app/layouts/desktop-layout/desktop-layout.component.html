@@ -1,63 +1,111 @@
-<!-- Desktop Layout: Sidebar + Content -->
-<div class="desktop-layout">
-    <!-- Sidebar (your existing sidebar) -->
-    <nav class="sidebar" 
-            [class.active]="sidebarService.sidebarActive()" 
-            [class.no-anim]="sidebarService.suppressAnim()">
-        <div class="logo-menu">
+<!-- Desktop Layout: Background + Sidebar ONLY -->
+<!-- Let each component handle its own container -->
+
+<!-- ✅ BACKGROUND ROWS -->
+<div class="poster-rows" aria-hidden="true">
+  <div class="row r1"><div class="inner"></div></div>
+  <div class="row r2"><div class="inner"></div></div>
+  <div class="row r3"><div class="inner"></div></div>
+  <div class="row r4"><div class="inner"></div></div>
+  <div class="row r5"><div class="inner"></div></div>
+  <div class="row r6"><div class="inner"></div></div>
+  <div class="row r7"><div class="inner"></div></div>
+  <div class="row r8"><div class="inner"></div></div>
+  <div class="row r9"><div class="inner"></div></div>
+  <div class="row r10"><div class="inner"></div></div>
+</div>
+
+<!-- ✅ SIDEBAR -->
+<nav class="sidebar" [class.active]="sidebarService.sidebarActive()" [class.no-anim]="sidebarService.suppressAnim()" *ngIf="showSidebar()">
+    <div class="logo-menu">
         <h2 class="logo">What2Watch</h2>
         <i class="bx bx-menu toggle-button" (click)="sidebarService.toggle()"></i>
-        </div>
+    </div>
 
-        <ul class="list">
-        <li class="list-item">
+    <ul class="list">
+        <li class="list-item" [class.active]="isActive('/home')">
             <a (click)="routingService.navigateToHome()">
-            <i class="bx bx-home-alt"></i>
-            <span class="link-name">Home</span>
+                <i class="bx bx-home-alt"></i>
+                <span class="link-name" [style.--i]="getNavDelay()[0]">Home</span>
             </a>
         </li>
 
-        <li class="list-item">
+        <li class="list-item" [class.active]="isActive('/search')">
             <a (click)="routingService.navigateToSearchAll()">
-            <i class="bx bx-search"></i>
-            <span class="link-name">Search</span>
+                <i class="bx bx-search"></i>
+                <span class="link-name" [style.--i]="getNavDelay()[1]">Search</span>
             </a>
         </li>
 
-        <li class="list-item">
+        <li class="list-item" [class.active]="isActive('/library')">
             <a (click)="routingService.navigateToLibrary()">
-            <i class='bx bx-list-ul'></i>
-            <span class="link-name">Library</span>
+                <i class='bx bx-list-ul'></i>
+                <span class="link-name" [style.--i]="getNavDelay()[2]">Library</span>
             </a>
         </li>
 
-        <li class="list-item">
+        <li class="list-item" [class.active]="isActive('/summary')">
             <a (click)="routingService.navigateToSummary()">
-            <i class='bx bx-bar-chart-alt-2'></i>
-            <span class="link-name">Summary</span>
+                <i class='bx bx-bar-chart-alt-2'></i>
+                <span class="link-name" [style.--i]="getNavDelay()[3]">Summary</span>
             </a>
         </li>
 
-        <li class="list-item">
+        <li class="list-item" [class.active]="isActive('/account')">
             <a (click)="routingService.navigateToAccountsPosts(currentUser()!.username)">
-            <i class="bx bx-user"></i>
-            <span class="link-name">Account</span>
+                <i class="bx bx-user"></i>
+                <span class="link-name" [style.--i]="getNavDelay()[4]">Account</span>
             </a>
         </li>
 
-        <li class="list-item">
+        <li class="list-item" [class.active]="isSettingsActive()">
             <a (click)="routingService.navigateToSettings()">
-            <i class="bx bx-cog"></i>
-            <span class="link-name">Settings</span>
+                <i class="bx bx-cog"></i>
+                <span class="link-name" [style.--i]="getNavDelay()[5]">Settings</span>
             </a>
         </li>
-        </ul>
-    </nav>
 
-    <!-- Main Content -->
-    <main class="content" 
-            [class.active]="sidebarService.sidebarActive() === false" 
-            [class.no-anim]="sidebarService.suppressAnim()">
-        <router-outlet></router-outlet>
-    </main>
-</div>
+        <ng-container *ngIf="isSettingsActive()">
+            <li class="settings-item" [class.active]="isActiveSettings('/settings/account-info')">
+                <a (click)="routingService.navigateToSettings()">
+                    <i class='bx bx-info-circle'></i>
+                    <span class="link-name" [style.--i]="getNavDelay()[5]">Account Info</span>
+                </a>
+            </li>
+
+            <li class="settings-item" [class.active]="isActiveSettings('/settings/privacy')">
+                <a (click)="routingService.navigateToPrivacy()">
+                    <i class='bx bx-shield-quarter'></i>
+                    <span class="link-name" [style.--i]="getNavDelay()[5]">Privacy</span>
+                </a>
+            </li>
+
+            <li class="settings-item" [class.active]="isActiveSettings('/settings/privacy-policy')">
+                <a (click)="routingService.navigateToPrivacyPolicy()">
+                    <i class='bx bx-clipboard'></i>  
+                    <span class="link-name" [style.--i]="getNavDelay()[5]">Privacy Policy</span>
+                </a>
+            </li>
+
+            <li class="settings-item">
+                <a (click)="showLogoutModal = true">
+                    <i class='bx bx-exit'></i>
+                    <span class="link-name" [style.--i]="getNavDelay()[5]">Log Out</span>
+                </a>
+            </li>
+        </ng-container>
+
+        <li class="username" *ngIf="currentUser() as cu">
+            <p class="link-name" [style.--i]="getNavDelay()[6]">Signed in as:</p>
+            <p class="link-name" [style.--i]="getNavDelay()[6]">{{ cu.username }}</p>
+        </li>
+    </ul>
+</nav>
+
+<router-outlet></router-outlet>
+
+<app-logout-modal 
+  *ngIf="showLogoutModal"
+  (confirm)="onLogout()"
+  (cancel)="showLogoutModal = false">
+</app-logout-modal>

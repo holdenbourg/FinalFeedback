@@ -145,7 +145,6 @@ export class LibraryComponent implements OnInit, AfterViewInit {
     this.usersService.getCurrentUserProfile()
       .then(async (u) => {
         this.currentUser.set(u);
-        this.addRandomStartPointForRows();
 
         if (u) {
           const [movies, series] = await Promise.all([
@@ -173,7 +172,6 @@ export class LibraryComponent implements OnInit, AfterViewInit {
         this.currentUser.set(null);
         this.allRatedMovies.set([]);
         this.allRatedSeries.set([]);
-        this.addRandomStartPointForRows();
         this.isLoadingRatings.set(false);
       });
 
@@ -239,15 +237,6 @@ export class LibraryComponent implements OnInit, AfterViewInit {
 
 
   /// ---------------------------------------- Helpers ----------------------------------------  \\\
-  addRandomStartPointForRows() {
-    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
-      const durStr = getComputedStyle(el).animationDuration;
-      const dur = parseFloat(durStr.split(',')[0]) || 140;
-
-      el.style.animationDelay = `${-(Math.random() * dur)}s`;
-    });
-  }
-
   get hasAnyRatings(): boolean {
     return this.allRatedMovies().length > 0 || this.allRatedSeries().length > 0;
   }

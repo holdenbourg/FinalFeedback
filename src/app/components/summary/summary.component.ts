@@ -136,9 +136,7 @@ export class SummaryComponent implements OnInit {
     }
   });
 
-  async ngOnInit() {
-    this.addRandomStartPointForRows();
-    
+  async ngOnInit() {    
     try {
       // Load user and ratings
       const u = await this.usersService.getCurrentUserProfile();
@@ -327,14 +325,6 @@ export class SummaryComponent implements OnInit {
   }
 
   // ---------- Helpers ----------
-  addRandomStartPointForRows() {
-    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
-      const durStr = getComputedStyle(el).animationDuration;
-      const dur = parseFloat(durStr.split(',')[0]) || 140;
-      el.style.animationDelay = `${-(Math.random() * dur)}s`;
-    });
-  }
-
   round(n: number): number { 
     return Math.round(n); 
   }

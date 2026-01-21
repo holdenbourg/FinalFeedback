@@ -25,8 +25,6 @@ export class SettingsPrivacyPolicyComponent implements OnInit {
   showLogoutModal = false;
 
   async ngOnInit() {
-    this.addRandomStartPointForRows();
-
     // Load current user
     const current = await this.usersService.getCurrentUserProfile();
     this.currentUser.set(current);
@@ -41,13 +39,5 @@ export class SettingsPrivacyPolicyComponent implements OnInit {
     } catch (err) {
       console.error('Logout error:', err);
     }
-  }
-
-  addRandomStartPointForRows() {
-    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
-      const durStr = getComputedStyle(el).animationDuration;
-      const dur = parseFloat(durStr.split(',')[0]) || 140;
-      el.style.animationDelay = `${-(Math.random() * dur)}s`;
-    });
   }
 }

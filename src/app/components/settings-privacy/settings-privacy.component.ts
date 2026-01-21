@@ -39,9 +39,7 @@ export class SettingsPrivacyComponent implements OnDestroy {
   errorMessage = signal<string>('');
   private messageTimeout: any = null;
   
-  async ngOnInit() {
-    this.addRandomStartPointForRows();
-    
+  async ngOnInit() {    
     // Load current user
     const current = await this.usersService.getCurrentUserProfile();
     this.currentUser.set(current);
@@ -176,13 +174,5 @@ export class SettingsPrivacyComponent implements OnDestroy {
       clearTimeout(this.messageTimeout);
       this.messageTimeout = null;
     }
-  }
-  
-  addRandomStartPointForRows() {
-    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
-      const durStr = getComputedStyle(el).animationDuration;
-      const dur = parseFloat(durStr.split(',')[0]) || 140;
-      el.style.animationDelay = `${-(Math.random() * dur)}s`;
-    });
   }
 }

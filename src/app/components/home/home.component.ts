@@ -53,8 +53,6 @@ export class HomeComponent implements OnInit {
 
 
   async ngOnInit() {
-    this.addRandomStartPointForRows();
-
     this.usersService.getCurrentUserProfile()
       .then(u => this.currentUser.set(u))
       .catch(err => {
@@ -186,15 +184,6 @@ export class HomeComponent implements OnInit {
     } else if (this.mode === 'memory' && !this.loadingMemory()) {
       this.fetchMemoryBatch().then(() => this.revealMoreFromCache());
     }
-  }
-
-  addRandomStartPointForRows() {
-    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
-      const durStr = getComputedStyle(el).animationDuration;
-      const dur = parseFloat(durStr.split(',')[0]) || 140;
-
-      el.style.animationDelay = `${-(Math.random() * dur)}s`;
-    });
   }
 
   @HostListener('window:resize', ['$event'])

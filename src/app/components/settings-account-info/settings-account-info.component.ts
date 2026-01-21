@@ -74,9 +74,7 @@ export class SettingsAccountInfoComponent implements OnInit, OnDestroy {
   showDeleteAccountModal = false;
   isDeletingAccount = signal(false);
   
-  async ngOnInit() {
-    this.addRandomStartPointForRows();
-    
+  async ngOnInit() {    
     // Load current user
     const current = await this.usersService.getCurrentUserProfile();
     this.currentUser.set(current);
@@ -554,13 +552,5 @@ export class SettingsAccountInfoComponent implements OnInit, OnDestroy {
       clearTimeout(this.messageTimeout);
       this.messageTimeout = null;
     }
-  }
-  
-  addRandomStartPointForRows() {
-    document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
-      const durStr = getComputedStyle(el).animationDuration;
-      const dur = parseFloat(durStr.split(',')[0]) || 140;
-      el.style.animationDelay = `${-(Math.random() * dur)}s`;
-    });
   }
 }

@@ -1,108 +1,139 @@
-.mobile-layout {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden;
-  }
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
 
-  .mobile-content {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: env(safe-area-inset-bottom, 0); /* iOS safe area */
-  }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
 
-  /* Bottom Navigation Bar */
-  .bottom-nav {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    background: rgba(0, 0, 0, 0.95);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 0.5rem 0;
-    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0)); /* iOS notch */
-    position: sticky;
-    bottom: 0;
-    z-index: 100;
-    backdrop-filter: blur(10px);
-  }
+/* ❌ REMOVE :host styles - those belong in child components */
 
-  .nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.6);
-    cursor: pointer;
-    padding: 0.5rem 0.75rem;
-    min-width: 60px;
-    position: relative;
-    transition: all 0.2s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
+/* ============================================ */
+/* BACKGROUND ROWS */
+/* ============================================ */
+.poster-rows {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  display: grid;
+  grid-template-rows: repeat(10, 1fr);
+}
 
-  .nav-item i {
-    font-size: 1.5rem;
-    transition: transform 0.2s ease;
-  }
+.poster-rows .row {
+  position: relative;
+  overflow: hidden;
+}
 
-  .nav-label {
-    font-size: 0.7rem;
-    font-weight: 500;
-    text-transform: capitalize;
-  }
+.poster-rows .row .inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  background-size: 50% 100%;
+  background-repeat: repeat-x;
+  will-change: transform;
+  animation-fill-mode: both;
+}
 
-  /* Active state */
-  .nav-item.active {
-    color: #fff;
-  }
+@keyframes marquee-right {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
 
-  .nav-item.active i {
-    transform: scale(1.1);
-  }
+.poster-rows .r1  .inner { background-image: url('/assets/images/background-rows/row1.png'),  url('/assets/images/background-rows/row1.png');  animation: marquee-right 194s linear infinite; }
+.poster-rows .r2  .inner { background-image: url('/assets/images/background-rows/row2.png'),  url('/assets/images/background-rows/row2.png');  animation: marquee-right 134s linear infinite; }
+.poster-rows .r3  .inner { background-image: url('/assets/images/background-rows/row3.png'),  url('/assets/images/background-rows/row3.png');  animation: marquee-right 189s linear infinite; }
+.poster-rows .r4  .inner { background-image: url('/assets/images/background-rows/row4.png'),  url('/assets/images/background-rows/row4.png');  animation: marquee-right 128s linear infinite; }
+.poster-rows .r5  .inner { background-image: url('/assets/images/background-rows/row5.png'),  url('/assets/images/background-rows/row5.png');  animation: marquee-right 143s linear infinite; }
+.poster-rows .r6  .inner { background-image: url('/assets/images/background-rows/row6.png'),  url('/assets/images/background-rows/row6.png');  animation: marquee-right 165s linear infinite; }
+.poster-rows .r7  .inner { background-image: url('/assets/images/background-rows/row7.png'),  url('/assets/images/background-rows/row7.png');  animation: marquee-right 181s linear infinite; }
+.poster-rows .r8  .inner { background-image: url('/assets/images/background-rows/row8.png'),  url('/assets/images/background-rows/row8.png');  animation: marquee-right 189s linear infinite; }
+.poster-rows .r9  .inner { background-image: url('/assets/images/background-rows/row9.png'),  url('/assets/images/background-rows/row9.png');  animation: marquee-right 125s linear infinite; }
+.poster-rows .r10 .inner { background-image: url('/assets/images/background-rows/row10.png'), url('/assets/images/background-rows/row10.png'); animation: marquee-right 137s linear infinite; }
 
-  /* Home button special styling (center, larger) */
-  .home-button {
-    position: relative;
-  }
+@media (prefers-reduced-motion: reduce) {
+  .poster-rows .row .inner { animation: none !important; }
+}
 
-  .home-button i {
-    font-size: 1.75rem;
-  }
+/* ============================================ */
+/* BOTTOM NAVIGATION BAR */
+/* ============================================ */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: transparent;
+  backdrop-filter: blur(3px);
+  box-shadow: 0 0 10px rgba(0, 0, 0, .2);
+  border-top: .15vh solid rgba(255, 255, 255, .2);
+  padding: 0.5rem 0;
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0));
+}
 
-  /* Touch feedback */
-  .nav-item:active {
-    transform: scale(0.95);
-  }
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 1rem 0.75rem;
+  min-width: 60px;
+  position: relative;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
 
-  /* Notification badge */
-  .badge {
-    position: absolute;
-    top: 0.25rem;
-    right: 0.5rem;
-    background: #ff3b30;
-    color: white;
-    border-radius: 10px;
-    padding: 0.125rem 0.375rem;
-    font-size: 0.65rem;
-    font-weight: 600;
-    min-width: 18px;
-    text-align: center;
-  }
+.nav-item i {
+  font-size: 1.5rem;
+  transition: transform 0.2s ease;
+}
 
-  /* Ripple effect on tap */
-  @keyframes ripple {
-    0% {
-      transform: scale(0);
-      opacity: 0.6;
-    }
-    100% {
-      transform: scale(2);
-      opacity: 0;
-    }
-  }
+/* Active state */
+.nav-item.active {
+  color: #fff;
+}
+
+.nav-item.active i {
+  transform: scale(1.1);
+}
+
+/* Home button special styling */
+.home-button {
+  position: relative;
+}
+
+.home-button i {
+  font-size: 1.75rem;
+}
+
+/* Touch feedback */
+.nav-item:active {
+  transform: scale(0.95);
+}
+
+/* Notification badge */
+.badge {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.5rem;
+  background: #ff3b30;
+  color: white;
+  border-radius: 10px;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  min-width: 18px;
+  text-align: center;
+}

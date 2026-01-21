@@ -4,22 +4,26 @@ import { AuthService } from './core/auth.service';
 import { supabase } from './core/supabase.client';
 import { MobileLayoutComponent } from './layouts/mobile-layout/mobile-layout.component';
 import { DesktopLayoutComponent } from './layouts/desktop-layout/desktop-layout.component';
+import { DeviceService } from './services/device.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [MobileLayoutComponent, DesktopLayoutComponent],
+  imports: [CommonModule, MobileLayoutComponent, DesktopLayoutComponent],
   templateUrl: './app.component.html'
 })
 
 export class AppComponent implements OnInit {
   private authService = inject(AuthService);
+  public deviceService = inject(DeviceService); // ✅ ADD THIS LINE
 
   async ngOnInit() {
     // Clean up old flag
     localStorage.removeItem('w2w-remember-me');
     
     console.log('[App] Checking session validity...');
+    console.log('[App] Device info:', this.deviceService.getDeviceInfo()); // ✅ Debug log
     await this.checkSessionValidity();
   }
 
@@ -43,7 +47,7 @@ export class AppComponent implements OnInit {
     } else {
       console.log('[App] Session check passed - no action needed');
       
-      // ✅ ADD THIS: Verify user is actually logged in
+      // ✅ Verify user is actually logged in
       const { data: { session } } = await supabase.auth.getSession();
       console.log('[App] Current session:', session ? 'ACTIVE' : 'NONE');
     }

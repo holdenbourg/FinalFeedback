@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
-
 * {
   margin: 0;
   padding: 0;
@@ -10,13 +8,12 @@
 .rate-card {
   display: flex;
   flex-direction: column;
-  padding: 8px 28px 10px;
+  padding-top: 15px;
   width: 100%;
   height: 100%;
   color: #fff;
-  gap: .28vw;
+  gap: .8vw;
   transform: translateX(-2%);
-
 }
 
 .rating-question {
@@ -30,8 +27,8 @@
 .criteria-grid {
   display: grid;
   grid-template-columns: auto max-content;
-  column-gap: .9vw;
-  row-gap: .18vw;
+  column-gap: 0.8vw;
+  row-gap: .35vw;
   align-items: center;
   width: max-content;
   margin: 0 auto;
@@ -55,7 +52,7 @@
 .ratings {
   display: flex;
   align-items: center;
-  gap: 1.0vw;
+  gap: 1.35vw;
   justify-self: start;
 }
 
