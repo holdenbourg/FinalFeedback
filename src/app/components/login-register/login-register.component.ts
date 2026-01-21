@@ -60,7 +60,7 @@ export class LoginRegisterComponent implements OnInit {
     }
     
     ///==-  Restore checkbox preference   -==\\\
-    const preferRemember = localStorage.getItem('w2w-prefer-remember');
+    const preferRemember = localStorage.getItem('ff-prefer-remember');
     if (preferRemember !== null) {
       this.rememberMeChecked = preferRemember === 'true';
     }

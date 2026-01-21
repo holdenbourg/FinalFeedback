@@ -1,7 +1,3 @@
-<!-- Desktop Layout: Background + Sidebar ONLY -->
-<!-- Let each component handle its own container -->
-
-<!-- ✅ BACKGROUND ROWS -->
 <div class="poster-rows" aria-hidden="true">
   <div class="row r1"><div class="inner"></div></div>
   <div class="row r2"><div class="inner"></div></div>
@@ -18,7 +14,7 @@
 <!-- ✅ SIDEBAR -->
 <nav class="sidebar" [class.active]="sidebarService.sidebarActive()" [class.no-anim]="sidebarService.suppressAnim()" *ngIf="showSidebar()">
     <div class="logo-menu">
-        <h2 class="logo">What2Watch</h2>
+        <h2 class="logo">FinalFeedback</h2>
         <i class="bx bx-menu toggle-button" (click)="sidebarService.toggle()"></i>
     </div>
 
@@ -37,31 +33,45 @@
             </a>
         </li>
 
+        <li class="list-item" [class.active]="isActive('/messages')">
+            <a (click)="routingService.navigateToMessages()">
+                <i class='bx bx-message'></i>
+                <span class="link-name" [style.--i]="getNavDelay()[2]">Messages</span>
+            </a>
+        </li>
+
         <li class="list-item" [class.active]="isActive('/library')">
             <a (click)="routingService.navigateToLibrary()">
                 <i class='bx bx-list-ul'></i>
-                <span class="link-name" [style.--i]="getNavDelay()[2]">Library</span>
+                <span class="link-name" [style.--i]="getNavDelay()[3]">Library</span>
             </a>
         </li>
 
         <li class="list-item" [class.active]="isActive('/summary')">
             <a (click)="routingService.navigateToSummary()">
                 <i class='bx bx-bar-chart-alt-2'></i>
-                <span class="link-name" [style.--i]="getNavDelay()[3]">Summary</span>
+                <span class="link-name" [style.--i]="getNavDelay()[4]">Summary</span>
             </a>
         </li>
 
         <li class="list-item" [class.active]="isActive('/account')">
             <a (click)="routingService.navigateToAccountsPosts(currentUser()!.username)">
                 <i class="bx bx-user"></i>
-                <span class="link-name" [style.--i]="getNavDelay()[4]">Account</span>
+                <span class="link-name" [style.--i]="getNavDelay()[5]">Account</span>
+            </a>
+        </li>
+
+        <li class="list-item" [class.active]="isActive('/notifications')">
+            <a (click)="routingService.navigateToNotifications()">
+                <i class='bx bx-bell'></i>
+                <span class="link-name" [style.--i]="getNavDelay()[6]">Notifications</span>
             </a>
         </li>
 
         <li class="list-item" [class.active]="isSettingsActive()">
             <a (click)="routingService.navigateToSettings()">
                 <i class="bx bx-cog"></i>
-                <span class="link-name" [style.--i]="getNavDelay()[5]">Settings</span>
+                <span class="link-name" [style.--i]="getNavDelay()[7]">Settings</span>
             </a>
         </li>
 
@@ -69,35 +79,35 @@
             <li class="settings-item" [class.active]="isActiveSettings('/settings/account-info')">
                 <a (click)="routingService.navigateToSettings()">
                     <i class='bx bx-info-circle'></i>
-                    <span class="link-name" [style.--i]="getNavDelay()[5]">Account Info</span>
+                    <span class="link-name" [style.--i]="getNavDelay()[7]">Account Info</span>
                 </a>
             </li>
 
             <li class="settings-item" [class.active]="isActiveSettings('/settings/privacy')">
                 <a (click)="routingService.navigateToPrivacy()">
                     <i class='bx bx-shield-quarter'></i>
-                    <span class="link-name" [style.--i]="getNavDelay()[5]">Privacy</span>
+                    <span class="link-name" [style.--i]="getNavDelay()[7]">Privacy</span>
                 </a>
             </li>
 
             <li class="settings-item" [class.active]="isActiveSettings('/settings/privacy-policy')">
                 <a (click)="routingService.navigateToPrivacyPolicy()">
-                    <i class='bx bx-clipboard'></i>  
-                    <span class="link-name" [style.--i]="getNavDelay()[5]">Privacy Policy</span>
+                    <i class='bx bx-clipboard'></i>   
+                    <span class="link-name" [style.--i]="getNavDelay()[7]">Privacy Policy</span>
                 </a>
             </li>
 
             <li class="settings-item">
                 <a (click)="showLogoutModal = true">
                     <i class='bx bx-exit'></i>
-                    <span class="link-name" [style.--i]="getNavDelay()[5]">Log Out</span>
+                    <span class="link-name" [style.--i]="getNavDelay()[7]">Log Out</span>
                 </a>
             </li>
         </ng-container>
 
         <li class="username" *ngIf="currentUser() as cu">
-            <p class="link-name" [style.--i]="getNavDelay()[6]">Signed in as:</p>
-            <p class="link-name" [style.--i]="getNavDelay()[6]">{{ cu.username }}</p>
+            <p class="link-name" [style.--i]="getNavDelay()[8]">Signed in as:</p>
+            <p class="link-name" [style.--i]="getNavDelay()[8]">{{ cu.username }}</p>
         </li>
     </ul>
 </nav>

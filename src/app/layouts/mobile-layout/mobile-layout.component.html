@@ -15,7 +15,7 @@
 </div>
 
 <!-- ✅ BOTTOM NAVIGATION BAR -->
-<nav class="bottom-nav">
+<nav class="bottom-nav" *ngIf="showBottomNav()">
     <button 
         class="nav-item"
         [class.active]="isActive('/search')"

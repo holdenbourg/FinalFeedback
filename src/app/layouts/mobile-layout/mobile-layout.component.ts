@@ -18,8 +18,8 @@ export class MobileLayoutComponent implements OnInit {
   unreadCount = 0;
 
   ngOnInit() {
-    // ✅ Initialize background rows with random start points
-    this.addRandomStartPointForRows();
+    // ✅ Wait for DOM to be ready
+    this.addRandomStartPointForRows()
   }
 
   navigateTo(path: string) {
@@ -30,8 +30,18 @@ export class MobileLayoutComponent implements OnInit {
     return this.router.url.startsWith(path);
   }
 
-  // ✅ Background animation: Give each row a random starting position
-  private addRandomStartPointForRows() {
+  showBottomNav() {
+    if (this.router.url.startsWith('/home')) return true;
+    if (this.router.url.startsWith('/search')) return true;
+    if (this.router.url.startsWith('/library')) return true;
+    if (this.router.url.startsWith('/summary')) return true;
+    if (this.router.url.startsWith('/account')) return true;
+    if (this.router.url.startsWith('/settings')) return true;
+
+    return false;
+  }
+
+  addRandomStartPointForRows() {
     document.querySelectorAll<HTMLElement>('.poster-rows .row .inner').forEach(el => {
       const durStr = getComputedStyle(el).animationDuration;
       const dur = parseFloat(durStr.split(',')[0]) || 140;

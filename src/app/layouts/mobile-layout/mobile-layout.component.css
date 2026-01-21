@@ -24,24 +24,25 @@
 .poster-rows .row {
   position: relative;
   overflow: hidden;
+  margin-bottom: -1px;
 }
 
 .poster-rows .row .inner {
   position: absolute;
   top: 0;
   left: 0;
-  width: 200%;
+  width: 400%;
   height: 100%;
-  background-size: 50% 100%;
+  background-size: auto 100%;
   background-repeat: repeat-x;
   will-change: transform;
   animation-fill-mode: both;
 }
 
-@keyframes marquee-right {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
+  @keyframes marquee-right {
+    from { transform: translateX(0); }
+    to { transform: translateX(-25%); } /* 25% of 400% = 100% viewport width */
+  }
 
 .poster-rows .r1  .inner { background-image: url('/assets/images/background-rows/row1.png'),  url('/assets/images/background-rows/row1.png');  animation: marquee-right 194s linear infinite; }
 .poster-rows .r2  .inner { background-image: url('/assets/images/background-rows/row2.png'),  url('/assets/images/background-rows/row2.png');  animation: marquee-right 134s linear infinite; }

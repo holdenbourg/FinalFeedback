@@ -51,27 +51,33 @@ export class DesktopLayoutComponent implements OnInit {
   showSidebar(): boolean {
     if (this.router.url.startsWith('/home')) return true;
     if (this.router.url.startsWith('/search')) return true;
+    if (this.router.url.startsWith('/messages')) return true;
     if (this.router.url.startsWith('/library')) return true;
     if (this.router.url.startsWith('/summary')) return true;
     if (this.router.url.startsWith('/account')) return true;
+    if (this.router.url.startsWith('/notifications')) return true;
     if (this.router.url.startsWith('/settings')) return true;
 
     return false;
   }
 
   getNavDelay(): string[] {
-    const home = ['0', '1', '2', '3', '4', '5', '0'];
-    const search = ['1', '0', '1', '2', '3', '4', '0'];
-    const library = ['2', '1', '0', '1', '2', '3', '0'];
-    const summary = ['3', '2', '1', '0', '1', '2', '0'];
-    const account = ['4', '3', '2', '1', '0', '1', '0'];
-    const settings = ['5', '4', '3', '2', '1', '0', '0'];
+    const home = ['0', '1', '2', '3', '4', '5', '6', '7', '0'];
+    const search = ['1', '0', '1', '2', '3', '4', '5', '6', '0'];
+    const messages = ['2', '1', '0', '1', '2', '3', '4', '5', '0'];
+    const library = ['3', '2', '1', '0', '1', '2', '3', '4', '0'];
+    const summary = ['4', '3', '2', '1', '0', '1', '2', '3', '0'];
+    const account = ['5', '4', '3', '2', '1', '0', '1', '2', '0'];
+    const notifications = ['6', '5', '4', '3', '2', '1', '0', '1', '0'];
+    const settings = ['7', '6', '5', '4', '3', '2', '1', '0', '0'];
 
     if (this.router.url.startsWith('/home')) return home;
     if (this.router.url.startsWith('/search')) return search;
+    if (this.router.url.startsWith('/messages')) return messages;
     if (this.router.url.startsWith('/library')) return library;
     if (this.router.url.startsWith('/summary')) return summary;
     if (this.router.url.startsWith('/account')) return account;
+    if (this.router.url.startsWith('/notifications')) return notifications;
     if (this.router.url.startsWith('/settings')) return settings;
 
     return home;

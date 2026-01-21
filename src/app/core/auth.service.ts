@@ -92,7 +92,7 @@ export class AuthService {
     }
 
     // ✅ Clean up old flag
-    localStorage.removeItem('w2w-remember-me');
+    localStorage.removeItem('ff-remember-me');
     
     // ✅ ADD LOGGING
     console.log('[Auth] Remember Me:', rememberMe);
@@ -100,13 +100,13 @@ export class AuthService {
     
     if (rememberMe) {
       // User wants to stay logged in - clear session-only flags
-      sessionStorage.removeItem('w2w-session-active');
-      localStorage.removeItem('w2w-session-only');
+      sessionStorage.removeItem('ff-session-active');
+      localStorage.removeItem('ff-session-only');
       console.log('[Auth] Remember Me ON - cleared session-only flags');
     } else {
       // User wants session-only - set both flags
-      sessionStorage.setItem('w2w-session-active', Date.now().toString());
-      localStorage.setItem('w2w-session-only', 'true');
+      sessionStorage.setItem('ff-session-active', Date.now().toString());
+      localStorage.setItem('ff-session-only', 'true');
       console.log('[Auth] Remember Me OFF - set session-only flags');
     }
 
@@ -119,9 +119,9 @@ export class AuthService {
 
   async signOut() {
     await supabase.auth.signOut();
-    sessionStorage.removeItem('w2w-session-active');
-    localStorage.removeItem('w2w-session-only');
-    localStorage.removeItem('w2w-remember-me');
+    sessionStorage.removeItem('ff-session-active');
+    localStorage.removeItem('ff-session-only');
+    localStorage.removeItem('ff-remember-me');
   }
 
 

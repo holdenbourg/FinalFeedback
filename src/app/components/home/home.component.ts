@@ -8,6 +8,7 @@ import { PostModelWithAuthor } from '../../models/database-models/post.model';
 import { FeedService } from '../../services/feed.service';
 import { UsersService } from '../../services/users.service';
 import { UserModel } from '../../models/database-models/user.model';
+import { DeviceService } from '../../services/device.service';
 
 @Component({
   selector: 'app-home',
@@ -22,6 +23,7 @@ export class HomeComponent implements OnInit {
   readonly sidebarService = inject(SidebarService);
   readonly usersService = inject(UsersService);
   private feedService = inject(FeedService);
+  public deviceService = inject(DeviceService);
   private changeDetectorRef = inject(ChangeDetectorRef);
 
   public currentUser = signal<UserModel | null>(null);

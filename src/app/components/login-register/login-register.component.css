@@ -368,11 +368,11 @@
     transform: translateY(-50%) scale(1.08); 
 }
 
-.form-box.register .w2w-checkbox {
+.form-box.register .ff-checkbox {
   transform: translateY(-1px);
 }
 
-.w2w-checkbox {
+.ff-checkbox {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -396,9 +396,9 @@
   position: relative; top: 0;  /* belt & suspenders against any nudge */
 }
 
-.w2w-checkbox:checked { background-color: #fff; }
+.ff-checkbox:checked { background-color: #fff; }
 
-.w2w-checkbox:focus-visible {
+.ff-checkbox:focus-visible {
   outline: 2px solid rgba(255,255,255,0.5);
   outline-offset: 2px;
 }

@@ -15,6 +15,11 @@ export class RoutingService {
   navigateToHome() {
     this.router.navigate(['/home'], { replaceUrl: true });
   }
+
+  navigateToMessages() {
+    this.router.navigate(['/messages']);
+  }
+
   navigateToSearchAll(q?: string) {
     this.router.navigate(['/search', 'all'], { queryParams: { q: q || null } });
   }
@@ -87,6 +92,10 @@ export class RoutingService {
   }
   navigateToAccountsArchive(username: string) {
     this.navigateToAccount(username, 'archive');
+  }
+
+  navigateToNotifications() {
+    this.router.navigate(['/notifications']);
   }
   
   navigateToSettings() {

@@ -8,9 +8,9 @@ export class FilmCacheService {
   readonly DEFAULT_TTL_MS = 1000 * 60 * 60 * 24 * 2;        ///  2 days
   readonly DEFAULT_DRAFT_TTL_MS = 1000 * 60 * 60 * 24 * 7;  ///  7 days
 
-  private readonly API_PREFIX = 'w2w:api_cache:';
-  private readonly DRAFT_PREFIX = 'w2w:rating_draft:';
-  private readonly ORIGINAL_PREFIX = 'w2w:rating_original:';
+  private readonly API_PREFIX = 'ff:api_cache:';
+  private readonly DRAFT_PREFIX = 'ff:rating_draft:';
+  private readonly ORIGINAL_PREFIX = 'ff:rating_original:';
 
   ///  in-memory only (per app session)  \\
   private api = new Map<string, CacheEntry<any>>();

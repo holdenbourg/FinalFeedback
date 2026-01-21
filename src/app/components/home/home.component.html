@@ -1,4 +1,4 @@
-<div class="container" [class.active]="sidebarService.sidebarActive() === false">
+<div class="container" [class.active]="sidebarService.sidebarActive() === false || deviceService.isMobile()">
     <div class="feed-container">
         <p class="feed-title">Feed</p>
 

@@ -12,7 +12,7 @@ export class PrivacyPolicyContentComponent {
   @Input() showBackButton = true;
   
   lastUpdated = 'January 7, 2026';
-  companyName = 'What2Watch';
-  contactEmail = 'privacy@what2watch.org';
-  websiteUrl = 'https://what2watch.org';
+  companyName = 'FinalFeedback';
+  contactEmail = 'privacy@finalfeedback.com';
+  websiteUrl = 'https://finalfeedback.com';
 }

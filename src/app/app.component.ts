@@ -16,20 +16,20 @@ import { CommonModule } from '@angular/common';
 
 export class AppComponent implements OnInit {
   private authService = inject(AuthService);
-  public deviceService = inject(DeviceService); // ✅ ADD THIS LINE
+  public deviceService = inject(DeviceService);
 
   async ngOnInit() {
     // Clean up old flag
-    localStorage.removeItem('w2w-remember-me');
+    localStorage.removeItem('ff-remember-me');
     
     console.log('[App] Checking session validity...');
-    console.log('[App] Device info:', this.deviceService.getDeviceInfo()); // ✅ Debug log
+    console.log('[App] Device info:', this.deviceService.getDeviceInfo());
     await this.checkSessionValidity();
   }
 
   private async checkSessionValidity() {
-    const wasSessionOnly = localStorage.getItem('w2w-session-only');
-    const sessionActive = sessionStorage.getItem('w2w-session-active');
+    const wasSessionOnly = localStorage.getItem('ff-session-only');
+    const sessionActive = sessionStorage.getItem('ff-session-active');
     
     console.log('[App] wasSessionOnly:', wasSessionOnly);
     console.log('[App] sessionActive:', sessionActive);

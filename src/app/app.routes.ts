@@ -14,6 +14,8 @@ import { SettingsPrivacyComponent } from './components/settings-privacy/settings
 import { SettingsPrivacyPolicyComponent } from './components/settings-privacy-policy/settings-privacy-policy.component';
 import { PrivacyPolicyComponent } from './components/privacy-policy/privacy-policy.component';
 import { DetailsComponent } from './components/details/details.component';
+import { MessagesComponent } from './components/messages/messages.component';
+import { NotificationsComponent } from './components/notifications/notifications.component';
 
 
 export const routes: Routes = [
@@ -22,6 +24,8 @@ export const routes: Routes = [
     { path: 'privacy-policy', component: PrivacyPolicyComponent },
 
     { path: 'home', component: HomeComponent, canActivate: [AuthGuard] },
+
+    { path: 'messages', component: MessagesComponent, canActivate: [AuthGuard] },
 
     { path: 'search', redirectTo: 'search/movies', pathMatch: 'full' },
     { path: 'search/:type', component: SearchComponent, canActivate: [AuthGuard] }, // all | movies | series | people | users
@@ -39,6 +43,8 @@ export const routes: Routes = [
     { path: 'edit/:type/:postId', component: EditFilmRatingComponent, canActivate: [AuthGuard] },
 
     { path: 'account/:username', component: AccountComponent, canActivate: [AuthGuard] },
+
+    { path: 'notifications', component: NotificationsComponent, canActivate: [AuthGuard] },
 
     { path: 'settings/account-info', component: SettingsAccountInfoComponent, canActivate: [AuthGuard] },
     { path: 'settings/privacy', component: SettingsPrivacyComponent, canActivate: [AuthGuard] },
