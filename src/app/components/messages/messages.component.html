@@ -1,1 +1,456 @@
-<p>messages works!</p>
+<div class="container" [class.active]="sidebarService.sidebarActive() === false" [class.no-anim]="sidebarService.suppressAnim()">
+  <!-- Left Panel: Conversation List -->
+  <div class="conversations-panel">
+    <div class="panel-header">
+      <h2>Messages</h2>
+      <div class="header-actions-left">
+        <button class="recover-btn" (click)="openRecoverModal()" title="Recover deleted chats">
+          <i class='bx bx-history'></i>
+        </button>
+        <button class="new-chat-btn" (click)="showAddChatModal = true">
+          <i class='bx bx-edit-alt'></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-container">
+      <i class='bx bx-search'></i>
+      <input 
+        type="text" 
+        placeholder="Search messages..."
+        [(ngModel)]="searchTerm"
+        (input)="onSearchChange()"
+      />
+    </div>
+
+    <!-- Conversation List -->
+    <div class="conversation-list">
+      <!-- Loading state - ONLY on initial load -->
+      <div class="loading-state" *ngIf="!initialLoadComplete() && isLoadingConversations()">
+        <div class="shimmer-item" *ngFor="let i of [0,1,2,3]">
+          <div class="shimmer-avatar"></div>
+          <div class="shimmer-text">
+            <div class="shimmer-line"></div>
+            <div class="shimmer-line short"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty state - ONLY after initial load completes -->
+      <div class="empty-state" *ngIf="initialLoadComplete() && conversations().length === 0">
+        <i class='bx bx-message'></i>
+        <p>No conversations yet</p>
+        <button (click)="showAddChatModal = true">Start a conversation</button>
+      </div>
+
+      <!-- Conversations -->
+      <div 
+        class="conversation-item" 
+        *ngFor="let conv of conversations()"
+        [class.active]="activeConversationId() === conv.id"
+        [class.muted]="conv.is_muted"
+        (click)="selectConversation(conv)"
+      >
+        <div class="avatar-container">
+          <img [src]="getConversationAvatar(conv)" [alt]="getConversationName(conv)" class="avatar">
+          <span class="pin-indicator" *ngIf="conv.is_pinned">
+            <i class='bx bxs-pin'></i>
+          </span>
+        </div>
+        
+        <div class="conversation-info">
+          <div class="conversation-header">
+            <span class="name">{{ getConversationName(conv) }}</span>
+            <span class="time" *ngIf="conv.last_message">
+              {{ formatMessageTime(conv.last_message.created_at) }}
+            </span>
+          </div>
+          <div class="conversation-preview">
+            <span class="preview-text" *ngIf="conv.last_message">
+              {{ conv.last_message.content }}
+            </span>
+            <span class="preview-text empty" *ngIf="!conv.last_message">
+              No messages yet
+            </span>
+            <span class="unread-badge" *ngIf="conv.unread_count > 0">
+              {{ conv.unread_count > 99 ? '99+' : conv.unread_count }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Three dot menu -->
+        <button class="menu-trigger" (click)="toggleMenu($event, conv.id)">
+          <i class='bx bx-dots-vertical-rounded'></i>
+        </button>
+
+        <!-- Dropdown menu -->
+        <div class="conversation-menu" *ngIf="openMenuId === conv.id">
+          <button *ngIf="conv.is_group" (click)="onEditGroupChat($event, conv)">
+            <i class='bx bx-edit'></i>
+            Edit Group
+          </button>
+          <button (click)="onPinConversation($event, conv)">
+            <i class='bx' [class.bxs-pin]="conv.is_pinned" [class.bx-pin]="!conv.is_pinned"></i>
+            {{ conv.is_pinned ? 'Unpin' : 'Pin' }}
+          </button>
+          <button (click)="onMuteConversation($event, conv)">
+            <i class='bx' [class.bxs-bell-off]="conv.is_muted" [class.bx-bell]="!conv.is_muted"></i>
+            {{ conv.is_muted ? 'Unmute' : 'Mute' }}
+          </button>
+          <button *ngIf="conv.is_group" class="leave-btn" (click)="onLeaveGroup($event, conv)">
+            <i class='bx bx-log-out'></i>
+            Leave Group
+          </button>
+          <button class="delete-btn" (click)="onDeleteConversation($event, conv)">
+            <i class='bx bx-trash'></i>
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel: Active Conversation -->
+  <div class="chat-panel">
+    <!-- No conversation selected - ONLY show after initial load completes -->
+    <div class="no-conversation" *ngIf="initialLoadComplete() && !activeConversation()">
+      <i class='bx bx-message'></i>
+      <h3>Your Messages</h3>
+      <p>Send private messages to a friend or group</p>
+      <button (click)="showAddChatModal = true">Send message</button>
+    </div>
+
+    <!-- Active conversation -->
+    <ng-container *ngIf="activeConversation()">
+      <!-- Chat header -->
+      <div class="chat-header">
+        <img [src]="getConversationAvatar(activeConversation()!)" class="header-avatar">
+        <div class="header-info">
+          <h3>{{ getConversationName(activeConversation()!) }}</h3>
+          <span class="participant-count" *ngIf="activeConversation()!.is_group">
+            {{ getParticipantCount(activeConversation()!) }} members
+          </span>
+        </div>
+        <div class="header-actions">
+          <button *ngIf="activeConversation()!.is_muted" class="muted-indicator" title="Notifications muted">
+            <i class='bx bxs-bell-off'></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div class="messages-area" #messagesContainer>
+        <!-- Loading -->
+        <div class="loading-messages" *ngIf="isLoadingMessages()">
+          <i class='bx bx-loader-alt bx-spin'></i>
+        </div>
+
+        <!-- Empty state -->
+        <div class="no-messages" *ngIf="!isLoadingMessages() && messages().length === 0">
+          <p>No messages yet. Say hi!</p>
+        </div>
+
+        <!-- Message list -->
+        <div 
+          class="message" 
+          *ngFor="let msg of messages()"
+          [class.own]="isOwnMessage(msg)"
+          [class.other]="!isOwnMessage(msg)"
+        >
+          <img 
+            *ngIf="!isOwnMessage(msg)" 
+            [src]="msg.sender_avatar || '/assets/images/default-avatar.png'" 
+            class="message-avatar"
+          >
+          <div class="message-content">
+            <span class="sender-name" *ngIf="!isOwnMessage(msg) && activeConversation()!.is_group">
+              {{ msg.sender_username }}
+            </span>
+            <div class="message-bubble">
+              {{ msg.content }}
+            </div>
+            <span class="message-time">{{ formatMessageTime(msg.created_at) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div class="input-area">
+        <input 
+          type="text"
+          placeholder="Message..."
+          [(ngModel)]="messageInput"
+          (keyup.enter)="sendMessage()"
+        />
+        <button 
+          class="send-btn" 
+          (click)="sendMessage()"
+          [disabled]="!messageInput.trim()"
+        >
+          <i class='bx bx-send'></i>
+        </button>
+      </div>
+    </ng-container>
+  </div>
+</div>
+
+<!-- Add Chat Modal -->
+<app-add-chat-modal 
+  *ngIf="showAddChatModal"
+  (cancel)="showAddChatModal = false"
+  (create)="onCreateChat($event)"
+></app-add-chat-modal>
+
+<!-- Delete Conversation Modal -->
+<div
+  class="modal-backdrop"
+  *ngIf="showDeleteModal"
+  (click)="closeDeleteModal()"
+  aria-hidden="true">
+</div>
+
+<div
+  class="modal"
+  *ngIf="showDeleteModal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="deleteTitle"
+  (click)="$event.stopPropagation()">
+
+  <h3 id="deleteTitle" class="modal-title">
+    Delete this conversation?
+  </h3>
+
+  <p class="modal-body">
+    This will remove the conversation from your chat list. Other participants can still see it.
+  </p>
+
+  <div class="modal-actions">
+    <button type="button" class="btn btn-danger" (click)="confirmDeleteConversation()">
+      Yes, delete
+    </button>
+    <button type="button" class="btn btn-ghost" (click)="closeDeleteModal()">
+      Cancel
+    </button>
+  </div>
+</div>
+
+<!-- Edit Group Chat Modal -->
+<div
+  class="modal-backdrop"
+  *ngIf="showEditGroupModal"
+  (click)="closeEditGroupModal()"
+  aria-hidden="true">
+</div>
+
+<div
+  class="modal edit-group-modal"
+  *ngIf="showEditGroupModal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="editGroupTitle"
+  (click)="$event.stopPropagation()">
+
+  <h3 id="editGroupTitle" class="modal-title">
+    Edit Group Chat
+  </h3>
+  <p class="modal-subtitle">Changes will be visible to all group members</p>
+
+  <!-- Avatar Upload Section -->
+  <div 
+    class="group-avatar-drop-zone"
+    [class.dragging]="isDraggingOver()"
+    [class.uploading]="isUploadingGroupAvatar()"
+    (dragenter)="onDragEnter($event)"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)">
+    
+    <div class="group-avatar-section">
+      <img 
+        [src]="editGroupAvatarPreview || editingConversation()?.group_avatar_url || 'assets/images/default-group-avatar.png'" 
+        alt="Group avatar"
+        class="group-avatar-preview">
+      
+      <div class="avatar-upload-actions">
+        <label for="group-avatar-upload" class="btn btn-secondary-modal">
+          <i class='bx bx-upload'></i>
+          <span *ngIf="!isUploadingGroupAvatar()">Upload Photo</span>
+          <span *ngIf="isUploadingGroupAvatar()">Uploading...</span>
+        </label>
+        <input 
+          type="file" 
+          id="group-avatar-upload" 
+          accept="image/*"
+          (change)="onGroupAvatarSelected($event)"
+          [disabled]="isUploadingGroupAvatar()"
+          hidden>
+        <p class="helper-text">JPG, PNG, or GIF. Max 5MB.</p>
+        <p class="helper-text drag-hint">
+          <i class='bx bx-move'></i>
+          Or drag & drop here
+        </p>
+      </div>
+    </div>
+    
+    <!-- Drag Overlay -->
+    <div class="drag-overlay" *ngIf="isDraggingOver()">
+      <div class="drag-content">
+        <i class='bx bx-cloud-upload'></i>
+        <p class="drag-message">Drop photo here</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group Name Input -->
+  <div class="form-group">
+    <label for="groupName" class="form-label">Group Name</label>
+    <input 
+      type="text" 
+      id="groupName"
+      [(ngModel)]="editGroupName"
+      class="form-input"
+      placeholder="Enter group name..."
+      maxlength="50">
+    <span class="char-count">{{ editGroupName.length }}/50</span>
+  </div>
+
+  <div class="modal-actions">
+    <button 
+      type="button" 
+      class="btn btn-primary-modal" 
+      (click)="saveGroupChanges()"
+      [disabled]="!hasGroupChanges() || isSavingGroupChanges()">
+      <span *ngIf="!isSavingGroupChanges()">Save Changes</span>
+      <span *ngIf="isSavingGroupChanges()">Saving...</span>
+    </button>
+    <button type="button" class="btn btn-ghost" (click)="closeEditGroupModal()">
+      Cancel
+    </button>
+  </div>
+</div>
+
+<!-- Leave Group Modal -->
+<div
+  class="modal-backdrop"
+  *ngIf="showLeaveGroupModal"
+  (click)="closeLeaveGroupModal()"
+  aria-hidden="true">
+</div>
+
+<div
+  class="modal"
+  *ngIf="showLeaveGroupModal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="leaveGroupTitle"
+  (click)="$event.stopPropagation()">
+
+  <h3 id="leaveGroupTitle" class="modal-title">
+    Leave this group?
+  </h3>
+
+  <p class="modal-body">
+    Are you sure you want to leave <strong>{{ conversationToLeave?.display_name || 'this group' }}</strong>? 
+    You won't be able to see messages or participate in this conversation anymore.
+  </p>
+
+  <div class="modal-actions">
+    <button type="button" class="btn btn-danger" (click)="confirmLeaveGroup()">
+      Yes, leave group
+    </button>
+    <button type="button" class="btn btn-ghost" (click)="closeLeaveGroupModal()">
+      Cancel
+    </button>
+  </div>
+</div>
+
+<!-- Recover Chats Modal -->
+<div
+  class="modal-backdrop"
+  *ngIf="showRecoverModal"
+  (click)="closeRecoverModal()"
+  aria-hidden="true">
+</div>
+
+<div
+  class="modal recover-modal"
+  *ngIf="showRecoverModal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="recoverTitle"
+  (click)="$event.stopPropagation()">
+
+  <div class="modal-header-row">
+    <h3 id="recoverTitle" class="modal-title">Recover Deleted Chats</h3>
+    <button class="modal-close-btn" (click)="closeRecoverModal()">
+      <i class='bx bx-x'></i>
+    </button>
+  </div>
+
+  <!-- Loading state -->
+  <div class="recover-loading" *ngIf="isLoadingDeletedConversations()">
+    <i class='bx bx-loader-alt bx-spin'></i>
+    <p>Loading deleted chats...</p>
+  </div>
+
+  <!-- Empty state -->
+  <div class="recover-empty" *ngIf="!isLoadingDeletedConversations() && deletedConversations().length === 0">
+    <i class='bx bx-check-circle'></i>
+    <p>No deleted chats to recover</p>
+  </div>
+
+  <!-- Deleted conversations list -->
+  <div class="recover-list" *ngIf="!isLoadingDeletedConversations() && deletedConversations().length > 0">
+    <div 
+      class="recover-item" 
+      *ngFor="let conv of deletedConversations()"
+      (click)="onRecoverChat(conv)">
+      <img [src]="conv.display_avatar || '/assets/images/default-avatar.png'" class="recover-avatar">
+      <div class="recover-info">
+        <span class="recover-name">{{ conv.display_name }}</span>
+        <span class="recover-type">{{ conv.is_group ? 'Group chat' : 'Direct message' }}</span>
+      </div>
+      <button class="recover-action-btn">
+        <i class='bx bx-undo'></i>
+        Recover
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Recover Modal -->
+<div
+  class="modal-backdrop"
+  *ngIf="showConfirmRecoverModal"
+  (click)="closeConfirmRecoverModal()"
+  aria-hidden="true">
+</div>
+
+<div
+  class="modal"
+  *ngIf="showConfirmRecoverModal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="confirmRecoverTitle"
+  (click)="$event.stopPropagation()">
+
+  <h3 id="confirmRecoverTitle" class="modal-title">
+    Recover this chat?
+  </h3>
+
+  <p class="modal-body">
+    Are you sure you want to recover your conversation with <strong>{{ conversationToRecover?.display_name || 'this chat' }}</strong>? 
+    It will be added back to your chat list.
+  </p>
+
+  <div class="modal-actions">
+    <button type="button" class="btn btn-primary-modal" (click)="confirmRecoverChat()">
+      Yes, recover
+    </button>
+    <button type="button" class="btn btn-ghost" (click)="closeConfirmRecoverModal()">
+      Cancel
+    </button>
+  </div>
+</div>

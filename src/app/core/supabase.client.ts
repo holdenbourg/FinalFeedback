@@ -7,7 +7,6 @@ const noOpLock = async (_name: string, _acquireTimeout: number, fn: () => Promis
   return await fn();
 };
 
-// ✅ FIXED: Simplified single instance with explicit storage
 function createSupabaseClient() {
   if (typeof window === 'undefined') {
     // Server-side - no persistence
@@ -24,14 +23,13 @@ function createSupabaseClient() {
   return createClient(url, anonKey, {
     auth: {
       persistSession: true,
-      storage: window.localStorage,  // ✅ Explicit window.localStorage
+      storage: window.localStorage,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      storageKey: 'sb-auth-token',   // ✅ Custom key name
+      storageKey: 'sb-auth-token',
       lock: noOpLock,
     },
   });
 }
 
-// ✅ Export single instance
 export const supabase = createSupabaseClient();

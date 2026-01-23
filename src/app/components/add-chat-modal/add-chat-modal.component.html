@@ -1,0 +1,124 @@
+<div class="modal-overlay" (click)="onCancel()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>New Message</h2>
+      <i class='bx bx-x close-btn' (click)="onCancel()"></i>
+    </div>
+
+    <div class="modal-body">
+      <!-- Search bar with "To:" label like Instagram -->
+      <div class="search-container">
+        <span class="to-label">To:</span>
+        <input 
+          type="text" 
+          placeholder="Search..."
+          [(ngModel)]="searchTerm"
+          (input)="onSearchInput()"
+          class="search-input"
+        />
+      </div>
+
+      <!-- Selected users pills -->
+      <div class="selected-users" *ngIf="selectedUsers().length > 0">
+        <div class="user-pill" *ngFor="let user of selectedUsers()">
+          <img [src]="user.profile_picture_url || '/assets/images/default-avatar.png'" [alt]="user.username">
+          <span>{{ user.username }}</span>
+          <i class='bx bx-x' (click)="toggleUser(user)"></i>
+        </div>
+      </div>
+
+      <!-- User list -->
+      <div class="user-list">
+        <!-- SUGGESTED MODE (when not searching) -->
+        <ng-container *ngIf="!isSearchMode()">
+          <!-- Loading suggested -->
+          <div class="loading-section" *ngIf="isLoadingSuggested()">
+            <div class="shimmer-item" *ngFor="let i of [0,1,2,3,4]">
+              <div class="shimmer-avatar"></div>
+              <div class="shimmer-text">
+                <div class="shimmer-line"></div>
+                <div class="shimmer-line short"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Suggested users list -->
+          <ng-container *ngIf="!isLoadingSuggested()">
+            <h3 class="section-title" *ngIf="suggestedUsers().length > 0">Suggested</h3>
+            
+            <div 
+              class="user-item" 
+              *ngFor="let user of suggestedUsers()"
+              (click)="toggleUser(user)"
+              [class.selected]="isSelected(user)"
+            >
+              <img [src]="user.profile_picture_url || '/assets/images/default-avatar.png'" [alt]="user.username" class="avatar">
+              <div class="user-info">
+                <p class="username">{{ user.username }}</p>
+                <p class="name" *ngIf="user.first_name || user.last_name">
+                  {{ user.first_name }} {{ user.last_name }}
+                </p>
+              </div>
+              <div class="checkbox">
+                <i class='bx' [class.bxs-check-circle]="isSelected(user)" [class.bx-circle]="!isSelected(user)"></i>
+              </div>
+            </div>
+
+            <!-- No suggested users -->
+            <div class="no-results" *ngIf="suggestedUsers().length === 0">
+              <i class='bx bx-user-plus'></i>
+              <p>Follow people to see them here</p>
+            </div>
+          </ng-container>
+        </ng-container>
+
+        <!-- SEARCH MODE (when user has typed something) -->
+        <ng-container *ngIf="isSearchMode()">
+          <!-- Search results -->
+          <div 
+            class="user-item" 
+            *ngFor="let user of searchResults()"
+            (click)="toggleUser(user)"
+            [class.selected]="isSelected(user)"
+          >
+            <img [src]="user.profile_picture_url || '/assets/images/default-avatar.png'" [alt]="user.username" class="avatar">
+            <div class="user-info">
+              <p class="username">{{ user.username }}</p>
+              <p class="name" *ngIf="user.first_name || user.last_name">
+                {{ user.first_name }} {{ user.last_name }}
+              </p>
+            </div>
+            <div class="checkbox">
+              <i class='bx' [class.bxs-check-circle]="isSelected(user)" [class.bx-circle]="!isSelected(user)"></i>
+            </div>
+          </div>
+
+          <!-- Shimmer loading placeholders -->
+          <div class="shimmer-item" *ngFor="let i of getShimmerArray()">
+            <div class="shimmer-avatar"></div>
+            <div class="shimmer-text">
+              <div class="shimmer-line"></div>
+              <div class="shimmer-line short"></div>
+            </div>
+          </div>
+
+          <!-- No results found -->
+          <div class="no-results" *ngIf="searchResults().length === 0 && !isSearching() && shimmerCount() === 0">
+            <i class='bx bx-search-alt'></i>
+            <p>No accounts found</p>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button 
+        class="btn-chat" 
+        (click)="onCreate()"
+        [disabled]="selectedUsers().length === 0"
+      >
+        Chat
+      </button>
+    </div>
+  </div>
+</div>
