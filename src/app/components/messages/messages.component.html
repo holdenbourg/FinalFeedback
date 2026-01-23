@@ -2,7 +2,7 @@
   <!-- Left Panel: Conversation List -->
   <div class="conversations-panel">
     <div class="panel-header">
-      <h2>Messages</h2>
+      <h2>{{ currentUser()?.username }}</h2>
       <div class="header-actions-left">
         <button class="recover-btn" (click)="openRecoverModal()" title="Recover deleted chats">
           <i class='bx bx-history'></i>

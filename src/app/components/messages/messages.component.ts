@@ -7,6 +7,7 @@ import { AddChatModalComponent } from '../add-chat-modal/add-chat-modal.componen
 import { MessagesService, ConversationWithDetailsModel, MessageWithSenderModel } from '../../services/messages.service';
 import { supabase } from '../../core/supabase.client';
 import { SidebarService } from '../../services/sidebar.service';
+import { UserModel } from '../../models/database-models/user.model';
 
 @Component({
   selector: 'app-messages',
@@ -27,6 +28,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
   activeConversation = signal<ConversationWithDetailsModel | null>(null);
   activeConversationId = signal<string | null>(null);
   messages = signal<MessageWithSenderModel[]>([]);
+  public currentUser = signal<UserModel | null>(null);
   currentUserId = signal<string | null>(null);
 
   // UI state
@@ -95,7 +97,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
   }
 
   async ngOnInit() {
-    await this.loadCurrentUser();
+    const current = await this.usersService.getCurrentUserProfile();
+    this.currentUser.set(current);
+    this.currentUserId.set(current?.id || null);
     await this.loadConversations();
     
     // Mark initial load as complete - shimmers won't show after this
@@ -108,11 +112,6 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.unsubscribeFromConversation();
-  }
-
-  private async loadCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    this.currentUserId.set(user?.id || null);
   }
 
   async loadConversations() {
