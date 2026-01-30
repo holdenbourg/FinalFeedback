@@ -1,0 +1,110 @@
+<div class="modal-backdrop" (click)="onCancel()"></div>
+
+<div class="modal-container" (click)="$event.stopPropagation()">
+  <div class="modal-header">
+    <h3>Share {{ rating.title }}</h3>
+    <button class="close-btn" (click)="onCancel()">
+      <i class='bx bx-x'></i>
+    </button>
+  </div>
+
+  <!-- Rating Preview -->
+  <div class="rating-preview">
+    <img [src]="'https://image.tmdb.org/t/p/w154' + rating.poster_url" 
+         [alt]="rating.title"
+         class="preview-poster">
+    <div class="preview-info">
+      <h4>{{ rating.title }}</h4>
+      <div class="preview-meta">
+        <span class="rating-badge">⭐ {{ rating.rating.toFixed(1) }}/10</span>
+        <span class="type-badge" [class.movie]="rating.media_type === 'movie'">
+          {{ rating.media_type === 'movie' ? '🎬 Movie' : '📺 Series' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-container">
+    <i class='bx bx-search'></i>
+    <input 
+      type="text" 
+      placeholder="Search chats or people..."
+      [(ngModel)]="searchTerm"
+      autofocus>
+  </div>
+
+  <!-- Optional Message -->
+  <div class="message-container">
+    <textarea 
+      [(ngModel)]="messageText"
+      placeholder="Add a message... (optional)"
+      rows="2"
+      maxlength="500"></textarea>
+    <span class="char-count">{{ messageText.length }}/500</span>
+  </div>
+
+  <!-- Share Targets List -->
+  <div class="targets-container">
+    <!-- Loading -->
+    <div class="loading-state" *ngIf="isLoading()">
+      <i class='bx bx-loader-alt bx-spin'></i>
+      <p>Loading...</p>
+    </div>
+
+    <!-- Empty -->
+    <div class="empty-state" *ngIf="!isLoading() && shareTargets.length === 0">
+      <i class='bx bx-search-alt'></i>
+      <p>No results found</p>
+    </div>
+
+    <!-- Targets -->
+    <div class="targets-list" *ngIf="!isLoading() && shareTargets.length > 0">
+      <ng-container *ngFor="let target of shareTargets; let i = index">
+        <!-- Section Header -->
+        <div class="section-header" *ngIf="getSectionTitle(i)">
+          {{ getSectionTitle(i) }}
+        </div>
+
+        <!-- Target Item -->
+        <div 
+          class="target-item"
+          [class.selected]="isSelected(target.id)"
+          (click)="toggleSelection(target.id)">
+          
+          <img [src]="target.avatar" [alt]="target.name" class="target-avatar">
+          
+          <div class="target-info">
+            <span class="target-name">{{ target.name }}</span>
+            <span class="target-subtitle">{{ target.subtitle }}</span>
+          </div>
+
+          <div class="selection-indicator">
+            <i class='bx' [class.bx-circle]="!isSelected(target.id)" [class.bxs-check-circle]="isSelected(target.id)"></i>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="modal-footer">
+    <!-- Create Group Button (shows when 2+ users selected) -->
+    <button 
+      *ngIf="showCreateGroupButton"
+      class="btn btn-secondary"
+      (click)="onCreateGroupAndShare()">
+      <i class='bx bx-group'></i>
+      Create New Group
+    </button>
+
+    <!-- Send Button -->
+    <button 
+      class="btn btn-primary"
+      [disabled]="selectedCount === 0"
+      (click)="onShare()">
+      <i class='bx bx-send'></i>
+      Send {{ selectedCount > 0 ? '(' + selectedCount + ')' : '' }}
+    </button>
+  </div>
+</div>

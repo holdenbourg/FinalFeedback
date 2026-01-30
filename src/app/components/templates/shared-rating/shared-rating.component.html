@@ -1,0 +1,25 @@
+<div class="shared-rating">
+  <img [src]="posterUrl" 
+       [alt]="rating.title"
+       class="rating-poster">
+  
+  <div class="rating-details">
+    <!-- ✅ Show film title from rating -->
+    <h4>{{ rating.title }}</h4>
+    
+    <div class="rating-meta">
+      <!-- ✅ Show rating from rating data -->
+      <span class="rating-score">⭐ {{ displayRating }}/10</span>
+      
+      <!-- ✅ Show media type badge -->
+      <span class="media-type-badge" [class.movie]="rating.media_type === 'movie'" [class.series]="rating.media_type === 'series'">
+        {{ rating.media_type === 'movie' ? '🎬 Movie' : '📺 Series' }}
+      </span>
+    </div>
+    
+    <!-- ✅ Optional: Show release year -->
+    <div class="rating-year" *ngIf="rating.release_date">
+      {{ rating.release_date | date:'yyyy' }}
+    </div>
+  </div>
+</div>

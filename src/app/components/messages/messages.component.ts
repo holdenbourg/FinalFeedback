@@ -4,30 +4,42 @@ import { FormsModule } from '@angular/forms';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { UsersService } from '../../services/users.service';
 import { AddChatModalComponent } from '../add-chat-modal/add-chat-modal.component';
-import { MessagesService, ConversationWithDetailsModel, MessageWithSenderModel } from '../../services/messages.service';
 import { supabase } from '../../core/supabase.client';
 import { SidebarService } from '../../services/sidebar.service';
 import { UserModel } from '../../models/database-models/user.model';
+import { ConversationParticipantModel, ConversationWithDetailsModel, MessageWithSenderModel } from '../../models/helper-models/message.model';
+import { MessagesService } from '../../services/messages.service';
+import { MessageModel } from '../../models/database-models/message.model';
+import { ConversationModel, ConversationsService } from '../../services/conversations.service';
+import { MessageComponent } from '../templates/message/message.component';
 
 @Component({
   selector: 'app-messages',
   standalone: true,
-  imports: [CommonModule, FormsModule, AddChatModalComponent],
+  imports: [CommonModule, FormsModule, AddChatModalComponent, MessageComponent],
   templateUrl: './messages.component.html',
   styleUrl: './messages.component.css'
 })
 export class MessagesComponent implements OnInit, OnDestroy {
-  @ViewChild('messagesContainer') private messagesContainer?: ElementRef;
+  // Message loading
+  messages = signal<MessageModel[]>([]);
+  isLoadingMessages = signal(false);
+  hasMoreMessages = signal(true);
+  messageCount = 0;
+  private realtimeChannel: any;
 
+  // Scroll detection
+  @ViewChild('messagesContainer') messagesContainer!: ElementRef;
+  private isLoadingMore = false;
   private messagesService = inject(MessagesService);
   private usersService = inject(UsersService);
   public sidebarService = inject(SidebarService);
+  private conversationsService = inject(ConversationsService);
 
   // State
   conversations = signal<ConversationWithDetailsModel[]>([]);
   activeConversation = signal<ConversationWithDetailsModel | null>(null);
   activeConversationId = signal<string | null>(null);
-  messages = signal<MessageWithSenderModel[]>([]);
   public currentUser = signal<UserModel | null>(null);
   currentUserId = signal<string | null>(null);
 
@@ -36,7 +48,6 @@ export class MessagesComponent implements OnInit, OnDestroy {
   messageInput = '';
   showAddChatModal = false;
   isLoadingConversations = signal(false);
-  isLoadingMessages = signal(false);
   
   // Track if initial page load is complete (for shimmer display)
   initialLoadComplete = signal(false);
@@ -111,70 +122,282 @@ export class MessagesComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.unsubscribeFromConversation();
+    if (this.realtimeChannel) {
+      this.messagesService.unsubscribe(this.realtimeChannel);
+    }
   }
 
-  async loadConversations() {
-    if (!this.currentUserId()) return;
 
-    this.isLoadingConversations.set(true);
+  // ✅ Change parameter type from ConversationModel to ConversationWithDetailsModel
+  async selectConversation(conv: ConversationWithDetailsModel) {
+    if (this.realtimeChannel) {
+      this.messagesService.unsubscribe(this.realtimeChannel);
+    }
+
+    this.activeConversationId.set(conv.id);
+    this.activeConversation.set(conv);
+
+    await this.loadInitialMessages(conv.id);
+    await this.conversationsService.markAsRead(conv.id);
+    this.subscribeToMessages(conv.id);
+
+    setTimeout(() => this.scrollToBottom(), 100);
+  }
+
+  async loadInitialMessages(conversationId: string) {
+    this.isLoadingMessages.set(true);
+    try {
+      const { messages, hasMore } = await this.messagesService.getInitialMessages(conversationId);
+      this.messages.set(messages);
+      this.messageCount = messages.length;
+      this.hasMoreMessages.set(hasMore);
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+    } finally {
+      this.isLoadingMessages.set(false);
+    }
+  }
+
+  async loadOlderMessages() {
+    if (this.isLoadingMore || !this.hasMoreMessages() || !this.activeConversationId()) {
+      return;
+    }
+
+    this.isLoadingMore = true;
+    const previousScrollHeight = this.messagesContainer.nativeElement.scrollHeight;
 
     try {
-      const convs = await this.messagesService.getUserConversations(this.currentUserId()!);
-      this.conversations.set(convs);
+      const { messages: olderMessages, hasMore } = await this.messagesService.loadOlderMessages(
+        this.activeConversationId()!,
+        this.messageCount
+      );
+
+      if (olderMessages.length > 0) {
+        // Prepend older messages
+        this.messages.update(current => [...olderMessages, ...current]);
+        this.messageCount += olderMessages.length;
+        this.hasMoreMessages.set(hasMore);
+
+        // Maintain scroll position
+        setTimeout(() => {
+          const newScrollHeight = this.messagesContainer.nativeElement.scrollHeight;
+          this.messagesContainer.nativeElement.scrollTop = newScrollHeight - previousScrollHeight;
+        }, 0);
+      }
     } catch (error) {
-      console.error('Error loading conversations:', error);
+      console.error('Failed to load older messages:', error);
+    } finally {
+      this.isLoadingMore = false;
+    }
+  }
+
+  onScroll(event: Event) {
+    const element = event.target as HTMLElement;
+    
+    // Check if scrolled near top (load more)
+    if (element.scrollTop < 100) {
+      this.loadOlderMessages();
+    }
+  }
+
+  subscribeToMessages(conversationId: string) {
+    this.realtimeChannel = this.messagesService.subscribeToMessages(
+      conversationId,
+      (newMessage) => {
+        // Add new message
+        this.messages.update(current => [...current, newMessage]);
+        this.messageCount++;
+
+        // Animate new message
+        setTimeout(() => {
+          const element = document.getElementById(`message-${newMessage.id}`);
+          if (element) {
+            element.classList.add('slide-in');
+          }
+        }, 0);
+
+        // Scroll to bottom if user is near bottom
+        setTimeout(() => {
+          const container = this.messagesContainer.nativeElement;
+          const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+          
+          if (isNearBottom) {
+            this.scrollToBottom();
+          }
+        }, 100);
+      }
+    );
+  }
+
+  async sendMessage() {
+    if (!this.messageInput.trim() || !this.activeConversationId()) return;
+
+    const content = this.messageInput;
+    this.messageInput = '';
+
+    // ✅ Define tempMessage in proper scope
+    const tempMessage: MessageModel = {
+      id: 'temp-' + Date.now(),
+      conversation_id: this.activeConversationId()!,
+      sender_id: this.currentUser()!.id,
+      content: content,
+      created_at: new Date(),
+      updated_at: null,
+      is_deleted: false,
+      deleted_at: null,
+      reply_to_message_id: null,
+      shared_rating_id: null,
+      sender: this.currentUser()!,
+      sending: true  // ✅ Optimistic UI flag
+    };
+
+    try {
+      // Add temp message
+      this.messages.update(current => [...current, tempMessage]);
+      this.scrollToBottom();
+
+      // Send to server
+      const sentMessage = await this.messagesService.sendTextMessage(
+        this.activeConversationId()!,
+        content
+      );
+
+      // Replace temp with real message
+      this.messages.update(current => 
+        current.map(m => m.id === tempMessage.id ? sentMessage : m)
+      );
+
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      // Remove temp message on error
+      this.messages.update(current => 
+        current.filter(m => m.id !== tempMessage.id)
+      );
+    }
+  }
+
+  private scrollToBottom() {
+    if (this.messagesContainer) {
+      const container = this.messagesContainer.nativeElement;
+      container.scrollTop = container.scrollHeight;
+    }
+  }
+  
+  async loadConversations() {
+    this.isLoadingConversations.set(true);
+    try {
+      const convos = await this.conversationsService.getConversations();
+      const me = this.currentUserId();
+
+      const mapped: ConversationWithDetailsModel[] = await Promise.all(
+        convos.map(async (c) => {
+          // Load participants for DM avatar/name fallback
+          const users = await this.conversationsService.getParticipants(c.id);
+
+          const participants: ConversationParticipantModel[] = (users || []).map(u => ({
+            id: `${c.id}:${u.id}`,              // fake-but-stable id for UI purposes
+            conversation_id: c.id,
+            user_id: u.id,
+            joined_at: c.created_at.toISOString(), // fallback
+            is_muted: false,                     // fallback unless you actually store per-user mute
+            username: u.username,
+            profile_picture_url: u.profile_picture_url
+          }));
+
+          const otherUser = !c.is_group
+            ? participants.find(p => p.user_id !== me)
+            : undefined;
+
+          const displayName =
+            c.is_group
+              ? (c.display_name || 'Group chat')
+              : (otherUser?.username || 'Direct message');
+
+          const displayAvatar =
+            c.is_group
+              ? (c.group_avatar_url ||
+                participants.find(p => p.profile_picture_url)?.profile_picture_url ||
+                undefined)
+              : (otherUser?.profile_picture_url || undefined);
+
+          return {
+            id: c.id,
+            is_group: c.is_group,
+            display_name: displayName,
+            display_avatar: displayAvatar,
+            group_avatar_url: c.group_avatar_url || undefined,
+            created_at: c.created_at.toISOString(),
+            updated_at: c.created_at.toISOString(),
+            created_by: '',
+            is_pinned: c.is_pinned,
+            is_muted: c.is_muted,
+            unread_count: c.unread_count,
+            last_message: c.last_message ? ({
+              id: '',
+              conversation_id: c.id,
+              sender_id: c.last_message.sender_id,
+              content: c.last_message.content,
+              created_at: c.last_message.created_at.toISOString(),
+              updated_at: null,
+              is_deleted: false,
+              deleted_at: null,
+              is_edited: false
+            } as any) : undefined,
+            participants
+          };
+        })
+      );
+
+      this.conversations.set(mapped);
+
+      if (!this.initialLoadComplete()) this.initialLoadComplete.set(true);
+
+      if (mapped.length > 0 && !this.activeConversationId()) {
+        await this.selectConversation(mapped[0]);
+      }
+    } catch (error) {
+      console.error('Failed to load conversations:', error);
     } finally {
       this.isLoadingConversations.set(false);
     }
   }
 
   async onSearchChange() {
-    if (!this.currentUserId()) return;
-
-    if (!this.searchTerm.trim()) {
+    if (this.searchTerm.trim().length === 0) {
       await this.loadConversations();
       return;
     }
-
-    this.isLoadingConversations.set(true);
-
-    try {
-      const results = await this.messagesService.searchConversations(
-        this.currentUserId()!,
-        this.searchTerm
-      );
-      this.conversations.set(results);
-    } catch (error) {
-      console.error('Error searching conversations:', error);
-    } finally {
-      this.isLoadingConversations.set(false);
-    }
-  }
-
-  async selectConversation(conv: ConversationWithDetailsModel) {
-    this.activeConversation.set(conv);
-    this.activeConversationId.set(conv.id);
-    this.openMenuId = null;
-
-    this.unsubscribeFromConversation();
-
-    await this.loadMessages(conv.id);
-    await this.messagesService.markConversationAsRead(conv.id, this.currentUserId()!);
-
-    this.subscribeToConversation(conv.id);
-
-    const updatedConvs = this.conversations().map(c => 
-      c.id === conv.id ? { ...c, unread_count: 0 } : c
+    
+    // Simple local search
+    const allConvos = await this.conversationsService.getConversations();
+    const filtered = allConvos.filter(c => 
+      c.display_name?.toLowerCase().includes(this.searchTerm.toLowerCase())
     );
-    this.conversations.set(updatedConvs);
+    
+    const mapped: ConversationWithDetailsModel[] = filtered.map(c => ({
+      id: c.id,
+      is_group: c.is_group,
+      display_name: c.display_name,
+      display_avatar: c.group_avatar_url,
+      group_avatar_url: c.group_avatar_url,
+      created_at: c.created_at.toISOString(),
+      updated_at: c.created_at.toISOString(),
+      created_by: '',
+      is_pinned: c.is_pinned,
+      is_muted: c.is_muted,
+      unread_count: c.unread_count,
+      last_message: undefined,
+      participants: []
+    }));
+    
+    this.conversations.set(mapped);
   }
 
   private async loadMessages(conversationId: string) {
     this.isLoadingMessages.set(true);
 
     try {
-      const msgs = await this.messagesService.getConversationMessages(conversationId);
+      const { messages: msgs } = await this.messagesService.getInitialMessages(conversationId);
       this.messages.set(msgs);
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -186,9 +409,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
   private subscribeToConversation(conversationId: string) {
     console.log('[Messages] Subscribing to conversation:', conversationId);
     
-    this.conversationSubscription = this.messagesService.subscribeToConversation(
+    this.conversationSubscription = this.messagesService.subscribeToMessages(
       conversationId,
-      async (newMessage) => {
+      async (newMessage: MessageModel) => {
         console.log('[Messages] Real-time message received:', newMessage.id);
         
         const existingIds = this.messages().map(m => m.id);
@@ -198,16 +421,20 @@ export class MessagesComponent implements OnInit, OnDestroy {
         }
 
         const sender = await this.usersService.getUserProfileById(newMessage.sender_id);
-        const messageWithSender: MessageWithSenderModel = {
-          ...newMessage,
-          sender_username: sender?.username,
-          sender_avatar: sender?.profile_picture_url || '/assets/images/default-avatar.png'
-        };
-
-        this.messages.set([...this.messages(), messageWithSender]);
+        const messageWithSender = await this.messagesService.getMessage(newMessage.id);
+        if (messageWithSender) {
+          // Ensure it has all required MessageModel fields
+          const fullMessage: MessageModel = {
+            ...messageWithSender,
+            shared_rating_id: messageWithSender.shared_rating_id || null,
+            reply_to_message_id: messageWithSender.reply_to_message_id || null
+          } as MessageModel;
+          
+          this.messages.set([...this.messages(), fullMessage]);
+        }
 
         if (this.activeConversationId() === conversationId) {
-          await this.messagesService.markConversationAsRead(conversationId, this.currentUserId()!);
+          await this.conversationsService.markAsRead(conversationId);
         }
       }
     );
@@ -220,40 +447,6 @@ export class MessagesComponent implements OnInit, OnDestroy {
     }
   }
 
-  async sendMessage() {
-    if (!this.messageInput.trim() || !this.activeConversationId() || !this.currentUserId()) {
-      return;
-    }
-
-    const content = this.messageInput.trim();
-    this.messageInput = '';
-
-    try {
-      const sentMessage = await this.messagesService.sendMessage(
-        this.activeConversationId()!,
-        this.currentUserId()!,
-        content
-      );
-
-      if (sentMessage) {
-        const currentUser = await this.usersService.getCurrentUserProfile();
-        const messageWithSender: MessageWithSenderModel = {
-          ...sentMessage,
-          sender_username: currentUser?.username,
-          sender_avatar: currentUser?.profile_picture_url || '/assets/images/default-avatar.png'
-        };
-
-        const existingIds = this.messages().map(m => m.id);
-        if (!existingIds.includes(sentMessage.id)) {
-          this.messages.set([...this.messages(), messageWithSender]);
-        }
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      this.messageInput = content;
-    }
-  }
-
   async onCreateChat(userIds: string[]) {
     if (!this.currentUserId() || userIds.length === 0) return;
 
@@ -261,11 +454,19 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
     try {
       const isGroup = userIds.length > 1;
-      const conversation = await this.messagesService.createConversation(
-        this.currentUserId()!,
-        userIds,
-        isGroup
-      );
+      let conversation: any;
+
+      if (isGroup) {
+        const convId = await this.conversationsService.createGroup(
+          userIds,
+          'New Group'
+        );
+        conversation = { id: convId };
+      } else {
+        // For DM, event.participants should have exactly 1 user
+        const convId = await this.conversationsService.createDM(userIds[0]);
+        conversation = { id: convId };
+      }
 
       if (conversation) {
         await this.loadConversations();
@@ -310,40 +511,43 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   async onPinConversation(event: MouseEvent, conv: ConversationWithDetailsModel) {
     event.stopPropagation();
-    this.openMenuId = null;
+    this.closeMenu();
 
-    if (!this.currentUserId()) return;
+    try {
+      const newState = !(conv.is_pinned ?? false);
+      await this.conversationsService.togglePin(conv.id, newState);
 
-    const newPinnedState = await this.messagesService.togglePin(conv.id, this.currentUserId()!);
-    
-    // Update local state
-    const updatedConvs = this.conversations().map(c => 
-      c.id === conv.id ? { ...c, is_pinned: newPinnedState } : c
-    );
-
-    // Re-sort: pinned first
-    updatedConvs.sort((a, b) => {
-      if (a.is_pinned && !b.is_pinned) return -1;
-      if (!a.is_pinned && b.is_pinned) return 1;
-      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-    });
-
-    this.conversations.set(updatedConvs);
+      this.conversations.update(current => {
+        const updated = current.map(c => 
+          c.id === conv.id ? { ...c, is_pinned: newState } : c
+        );
+        return updated.sort((a, b) => {
+          if (a.is_pinned && !b.is_pinned) return -1;
+          if (!a.is_pinned && b.is_pinned) return 1;
+          return 0;
+        });
+      });
+    } catch (error) {
+      console.error('Failed to pin conversation:', error);
+    }
   }
 
   async onMuteConversation(event: MouseEvent, conv: ConversationWithDetailsModel) {
     event.stopPropagation();
-    this.openMenuId = null;
+    this.closeMenu();
 
-    if (!this.currentUserId()) return;
+    try {
+      const newState = !(conv.is_muted ?? false);
+      await this.conversationsService.toggleMute(conv.id, newState);
 
-    const newMutedState = await this.messagesService.toggleMute(conv.id, this.currentUserId()!);
-    
-    // Update local state
-    const updatedConvs = this.conversations().map(c => 
-      c.id === conv.id ? { ...c, is_muted: newMutedState } : c
-    );
-    this.conversations.set(updatedConvs);
+      this.conversations.update(current =>
+        current.map(c => 
+          c.id === conv.id ? { ...c, is_muted: newState } : c
+        )
+      );
+    } catch (error) {
+      console.error('Failed to mute conversation:', error);
+    }
   }
 
   async onDeleteConversation(event: MouseEvent, conv: ConversationWithDetailsModel) {
@@ -363,28 +567,30 @@ export class MessagesComponent implements OnInit, OnDestroy {
   }
 
   async confirmDeleteConversation() {
-    if (!this.conversationToDelete || !this.currentUserId()) return;
+    if (!this.conversationToDelete) return;
 
-    const conv = this.conversationToDelete;
+    const convId = this.conversationToDelete.id;
     this.closeDeleteModal();
 
-    const success = await this.messagesService.deleteConversation(conv.id);
-    
-    if (success) {
-      // Remove from local state
-      const updatedConvs = this.conversations().filter(c => c.id !== conv.id);
-      this.conversations.set(updatedConvs);
+    try {
+      await this.conversationsService.deleteConversation(convId);
 
-      // If deleted conversation was active, select the first available
-      if (this.activeConversationId() === conv.id) {
-        if (updatedConvs.length > 0) {
-          await this.selectConversation(updatedConvs[0]);
-        } else {
-          this.activeConversation.set(null);
-          this.activeConversationId.set(null);
-          this.messages.set([]);
+      this.conversations.update(current => 
+        current.filter(c => c.id !== convId)
+      );
+
+      if (this.activeConversationId() === convId) {
+        this.activeConversation.set(null);
+        this.activeConversationId.set(null);
+        this.messages.set([]);
+
+        const remaining = this.conversations();
+        if (remaining.length > 0) {
+          await this.selectConversation(remaining[0]);
         }
       }
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
     }
   }
 
@@ -408,44 +614,66 @@ export class MessagesComponent implements OnInit, OnDestroy {
   }
 
   async confirmLeaveGroup() {
-    if (!this.conversationToLeave || !this.currentUserId()) return;
-
+    if (!this.conversationToLeave) return;
+    
     const convId = this.conversationToLeave.id;
     this.closeLeaveGroupModal();
-
-    const success = await this.messagesService.leaveGroup(convId);
-
-    if (success) {
-      // Remove from local state
-      const updatedConvs = this.conversations().filter(c => c.id !== convId);
-      this.conversations.set(updatedConvs);
-
-      // If left conversation was active, select the first available
+    
+    try {
+      // TODO: Implement leaveGroup in ConversationsService
+      // For now, just delete locally
+      await this.conversationsService.deleteConversation(convId);
+      
+      this.conversations.update(current => 
+        current.filter(c => c.id !== convId)
+      );
+      
       if (this.activeConversationId() === convId) {
-        if (updatedConvs.length > 0) {
-          await this.selectConversation(updatedConvs[0]);
-        } else {
-          this.activeConversation.set(null);
-          this.activeConversationId.set(null);
-          this.messages.set([]);
+        this.activeConversation.set(null);
+        this.activeConversationId.set(null);
+        this.messages.set([]);
+        
+        const remaining = this.conversations();
+        if (remaining.length > 0) {
+          await this.selectConversation(remaining[0]);
         }
       }
+    } catch (error) {
+      console.error('Failed to leave group:', error);
     }
   }
 
   // ============================================
   // RECOVER DELETED CHATS
   // ============================================
-
   async openRecoverModal() {
     this.showRecoverModal = true;
     this.isLoadingDeletedConversations.set(true);
-
+    
     try {
-      const deleted = await this.messagesService.getDeletedConversations(this.currentUserId()!);
+      // ✅ Use ConversationsService
+      const convos = await this.conversationsService.getDeletedConversations();
+      
+      // Map to ConversationWithDetailsModel
+      const deleted: ConversationWithDetailsModel[] = convos.map(c => ({
+        id: c.id,
+        is_group: c.is_group,
+        display_name: c.display_name,
+        display_avatar: c.group_avatar_url,
+        group_avatar_url: c.group_avatar_url,
+        created_at: c.created_at.toISOString(),
+        updated_at: c.created_at.toISOString(),
+        created_by: '',
+        is_pinned: false,
+        is_muted: false,
+        unread_count: 0,
+        last_message: undefined,
+        participants: []
+      }));
+      
       this.deletedConversations.set(deleted);
     } catch (error) {
-      console.error('Error loading deleted conversations:', error);
+      console.error('Failed to load deleted conversations:', error);
     } finally {
       this.isLoadingDeletedConversations.set(false);
     }
@@ -467,25 +695,29 @@ export class MessagesComponent implements OnInit, OnDestroy {
   }
 
   async confirmRecoverChat() {
-    if (!this.conversationToRecover || !this.currentUserId()) return;
-
-    const conv = this.conversationToRecover;
-    this.closeConfirmRecoverModal();
-
-    const success = await this.messagesService.undeleteConversation(conv.id);
+    if (!this.conversationToRecover) return;
     
-    if (success) {
+    const convId = this.conversationToRecover.id;
+    this.closeConfirmRecoverModal();
+    
+    try {
+      // ✅ Use ConversationsService
+      await this.conversationsService.recoverConversation(convId);
+      
       // Remove from deleted list
-      const updatedDeleted = this.deletedConversations().filter(c => c.id !== conv.id);
-      this.deletedConversations.set(updatedDeleted);
-
-      // Reload active conversations to include the recovered one
+      this.deletedConversations.update(current => 
+        current.filter(c => c.id !== convId)
+      );
+      
+      // Reload conversations to show recovered one
       await this.loadConversations();
-
-      // If no more deleted conversations, close the modal
-      if (updatedDeleted.length === 0) {
+      
+      // Close recover modal if no more deleted conversations
+      if (this.deletedConversations().length === 0) {
         this.closeRecoverModal();
       }
+    } catch (error) {
+      console.error('Failed to recover conversation:', error);
     }
   }
 
@@ -500,8 +732,8 @@ export class MessagesComponent implements OnInit, OnDestroy {
     if (!conv.is_group) return;
 
     this.editingConversation.set(conv);
-    this.editGroupName = conv.group_name || '';
-    this.originalGroupName = conv.group_name || '';
+    this.editGroupName = conv.group_name || conv.display_name || '';
+    this.originalGroupName = conv.group_name || conv.display_name || '';
     this.originalGroupAvatar = conv.group_avatar_url || '';
     this.editGroupAvatarPreview = null;
     this.editGroupAvatarFile = null;
@@ -529,38 +761,25 @@ export class MessagesComponent implements OnInit, OnDestroy {
   async saveGroupChanges() {
     const conv = this.editingConversation();
     if (!conv) return;
-
+    
     this.isSavingGroupChanges.set(true);
-
+    
     try {
-      // Upload new avatar if selected
-      if (this.editGroupAvatarFile) {
-        const uploadResult = await this.messagesService.uploadGroupAvatar(conv.id, this.editGroupAvatarFile);
-        if (!uploadResult.success) {
-          console.error('Failed to upload group avatar:', uploadResult.error);
-        }
-      }
-
-      // Update group name if changed
-      const newName = this.editGroupName.trim();
-      if (newName !== this.originalGroupName && newName.length >= 2) {
-        await this.messagesService.updateGroupDetails(conv.id, { group_name: newName });
-      }
-
-      // Reload conversations to get updated data
-      await this.loadConversations();
-
-      // Update active conversation if it was the edited one
-      if (this.activeConversationId() === conv.id) {
-        const updatedConv = this.conversations().find(c => c.id === conv.id);
-        if (updatedConv) {
-          this.activeConversation.set(updatedConv);
-        }
-      }
-
+      // TODO: Implement uploadGroupAvatar and updateGroupDetails
+      console.log('Save group changes:', conv.id);
+      
+      // Update local state
+      this.conversations.update(current =>
+        current.map(c => 
+          c.id === conv.id 
+            ? { ...c, display_name: this.editGroupName, group_avatar_url: this.editGroupAvatarPreview || c.group_avatar_url }
+            : c
+        )
+      );
+      
       this.closeEditGroupModal();
     } catch (error) {
-      console.error('Error saving group changes:', error);
+      console.error('Failed to save group changes:', error);
     } finally {
       this.isSavingGroupChanges.set(false);
     }
@@ -642,14 +861,6 @@ export class MessagesComponent implements OnInit, OnDestroy {
   // ============================================
   // HELPERS
   // ============================================
-
-  private scrollToBottom() {
-    if (this.messagesContainer) {
-      const element = this.messagesContainer.nativeElement;
-      element.scrollTop = element.scrollHeight;
-    }
-  }
-
   getConversationName(conv: ConversationWithDetailsModel): string {
     return conv.display_name || 'Loading...';
   }
@@ -660,10 +871,6 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   getMessageSenderName(message: MessageWithSenderModel): string {
     return message.sender_username || 'Unknown';
-  }
-
-  getParticipantCount(conv: ConversationWithDetailsModel): number {
-    return conv.participant_ids.length;
   }
 
   formatMessageTime(timestamp: string): string {
@@ -684,5 +891,71 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   isOwnMessage(message: MessageWithSenderModel): boolean {
     return message.sender_id === this.currentUserId();
+  }
+
+
+  // ===== MESSAGE EVENT HANDLERS =====
+  startReply(message: MessageModel) {
+    console.log('Reply to message:', message.id);
+    // TODO: Implement reply functionality
+  }
+
+  startEdit(message: MessageModel) {
+    console.log('Edit message:', message.id);
+    this.messageInput = message.content || '';
+    // TODO: Store editing message ID
+  }
+
+  confirmDeleteMessage(message: MessageModel) {
+    if (confirm('Delete this message?')) {
+      this.deleteMessage(message.id);
+    }
+  }
+
+  async deleteMessage(messageId: string) {
+    try {
+      await this.messagesService.deleteMessage(messageId);
+      this.messages.update(current => 
+        current.filter(m => m.id !== messageId)
+      );
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+    }
+  }
+
+  navigateToRating(ratingId: string) {
+    console.log('Navigate to rating:', ratingId);
+    // TODO: Navigate to rating detail page
+    // this.router.navigate(['/rating', ratingId]);
+  }
+
+  trackByMessageId(index: number, message: MessageModel): string {
+    return message.id;
+  }
+
+  // ===== FIX GET PARTICIPANT COUNT =====
+  getParticipantCount(conv: ConversationWithDetailsModel): number {
+    return conv.participants?.length || 0;
+  }
+
+  closeMenu() {
+    this.openMenuId = null;
+  }
+
+  /**
+   * ✅ Determine if avatar should be shown for this message
+   */
+  shouldShowAvatar(index: number): boolean {
+    const msgs = this.messages();
+    const currentMsg = msgs[index];
+    
+    // Always show on last message
+    if (index === msgs.length - 1) {
+      return true;
+    }
+    
+    // Show if next message is from a different sender
+    const nextMsg = msgs[index + 1];
+    return currentMsg.sender_id !== nextMsg.sender_id;
   }
 }

@@ -696,4 +696,42 @@ export class UsersService {
       };
     }
   }
+
+  async getFollowers(): Promise<any[]> {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('followers')
+      .select(`
+        follower:users!followers_follower_id_fkey (
+          id,
+          username,
+          profile_picture_url
+        )
+      `)
+      .eq('followed_id', user.id);
+
+    if (error) throw error;
+    return (data || []).map((f: any) => f.follower);
+  }
+
+  async getFollowing(): Promise<any[]> {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('followers')
+      .select(`
+        followed:users!followers_followed_id_fkey (
+          id,
+          username,
+          profile_picture_url
+        )
+      `)
+      .eq('follower_id', user.id);
+
+    if (error) throw error;
+    return (data || []).map((f: any) => f.followed);
+  }
 }

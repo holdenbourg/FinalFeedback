@@ -14,6 +14,10 @@ import { RatingsService, PostRating, MovieCriteria, SeriesCriteria } from '../..
 import { AuthService } from '../../../core/auth.service';
 import { UserModel } from '../../../models/database-models/user.model';
 import { UsersService } from '../../../services/users.service';
+import { MessagesService } from '../../../services/messages.service';
+import { RatingModel } from '../../../models/database-models/rating.model';
+import { ConversationsService } from '../../../services/conversations.service';
+import { ShareRatingModalComponent } from '../../share-rating-modal/share-rating-modal.component';
 
 type UiComment = {
   commentId: string;
@@ -43,7 +47,7 @@ type UiReply = {
 @Component({
   selector: 'app-feed-post',
   standalone: true,
-  imports: [CommonModule, FormsModule, CommentComponent, ReplyComponent],
+  imports: [CommonModule, FormsModule, CommentComponent, ReplyComponent, ShareRatingModalComponent],
   templateUrl: './feed-post.component.html',
   styleUrls: ['./feed-post.component.css'],
 })
@@ -62,6 +66,8 @@ export class FeedPostComponent implements OnInit, OnChanges {
   private commentModerationService = inject(CommentModerationService);
   private tagsService = inject(TagsService);
   private ratingsService = inject(RatingsService);
+  private messagesService = inject(MessagesService);
+  private conversationsService = inject(ConversationsService);
   private changeDetectorRef = inject(ChangeDetectorRef);
 
   posterSrc = '';
@@ -746,8 +752,61 @@ export class FeedPostComponent implements OnInit, OnChanges {
     }
   }
 
-  onShare() {
-    //! Needs to be implemented
+// Add property
+showShareModal = false;
+postRatingForShare: RatingModel | null = null;
+
+  // Update onShare method
+  async onShare() {
+    // Get rating for this post
+    if (!this.postRating) {
+      console.error('No rating data available');
+      return;
+    }
+
+    this.postRatingForShare = this.postRating;
+    this.showShareModal = true;
+  }
+
+  // Handle share
+  async onShareComplete(event: { conversationIds: string[], userIds: string[], message?: string }) {
+    if (!this.postRatingForShare) return;
+
+    try {
+      // Share to existing conversations
+      for (const convId of event.conversationIds) {
+        await this.messagesService.shareRating(
+          convId,
+          this.postRatingForShare.id,
+          event.message
+        );
+      }
+
+      // Share to users (create DMs)
+      for (const userId of event.userIds) {
+        // Create or get DM conversation
+        const convId = await this.conversationsService.createDM(userId);
+        
+        // Share rating
+        await this.messagesService.shareRating(
+          convId,
+          this.postRatingForShare.id,
+          event.message
+        );
+      }
+
+      // Show success feedback
+      this.showShareModal = false;
+      alert('Rating shared successfully!');  // Replace with better UI
+    } catch (error) {
+      console.error('Failed to share rating:', error);
+      alert('Failed to share rating');
+    }
+  }
+
+  onCancelShare() {
+    this.showShareModal = false;
+    this.postRatingForShare = null;
   }
 
   onSave() {

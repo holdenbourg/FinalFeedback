@@ -1,0 +1,226 @@
+/* message.component.css */
+
+.message-wrapper {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.25rem; /* Tighter spacing for message chains */
+  max-width: 70%;
+  position: relative;
+}
+
+/* ✅ Alignment based on sender */
+.message-wrapper.own-message {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.message-wrapper:not(.own-message) {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+/* ✅ Message bubble colors */
+.message-bubble {
+  border-radius: 18px;
+  padding: 0.75rem;
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+/* Own messages: Blue with white text */
+.own-message .message-bubble {
+  background: #007aff;
+  color: white;
+}
+
+/* Other messages: Dark gray with white text */
+.message-wrapper:not(.own-message) .message-bubble {
+  background: #3a3a3c;
+  color: white;
+}
+
+.message-bubble.has-reply {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+/* ✅ Profile picture (only on last message in chain) */
+.profile-picture {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  position: absolute;
+  bottom: 0;
+}
+
+/* Own message: picture on right */
+.own-message .profile-picture {
+  right: -36px;
+}
+
+/* Other message: picture on left */
+.message-wrapper:not(.own-message) .profile-picture {
+  left: -36px;
+}
+
+/* ✅ Add margin to last message in chain to account for profile picture */
+.message-wrapper.show-avatar {
+  margin-bottom: 1rem; /* Extra space after chains */
+}
+
+/* ✅ Replied message preview (dimmed, above main message) */
+.replied-message-preview {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  margin-bottom: 0.25rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  opacity: 0.7;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.replied-message-preview:hover {
+  opacity: 0.85;
+}
+
+.reply-bar {
+  width: 3px;
+  background: currentColor;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.reply-content {
+  flex: 1;
+  min-width: 0;
+  color: white;
+}
+
+.reply-username {
+  font-weight: 600;
+  color: #007aff;
+  display: block;
+  margin-bottom: 0.125rem;
+}
+
+.reply-text {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ✅ Reply rating indicator styles */
+.reply-rating-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.reply-rating-indicator i {
+  font-size: 1rem;
+  color: #007aff;
+}
+
+.reply-rating-indicator span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reply-rating-score {
+  color: #ffd700;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* ✅ Message text */
+.message-text {
+  word-wrap: break-word;
+  line-height: 1.4;
+  color: white;
+}
+
+.edited-badge {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  margin-left: 0.5rem;
+  font-style: italic;
+}
+
+.message-footer {
+  margin-top: 0.25rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.timestamp {
+  font-size: 0.7rem;
+  opacity: 0.6;
+  color: white;
+}
+
+/* ✅ Actions (shown on hover) */
+.message-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.message-wrapper:hover .message-actions {
+  opacity: 1;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.25rem;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn:hover {
+  color: white;
+}
+
+.action-btn.danger:hover {
+  color: #ff3b30;
+}
+
+/* ✅ Mobile optimizations */
+@media (max-width: 768px) {
+  .message-wrapper {
+    max-width: 85%;
+  }
+  
+  .message-actions {
+    opacity: 1; /* Always show on mobile */
+  }
+  
+  .profile-picture {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .own-message .profile-picture {
+    right: -30px;
+  }
+  
+  .message-wrapper:not(.own-message) .profile-picture {
+    left: -30px;
+  }
+}

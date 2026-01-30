@@ -1,0 +1,76 @@
+<!-- message.component.html -->
+<div class="message-wrapper" 
+     [class.own-message]="isOwnMessage"
+     [class.show-avatar]="showAvatar">
+  
+  <!-- ✅ STEP 1: Show replied message (if replying) -->
+  <div class="replied-message-preview" *ngIf="hasReply">
+    <div class="reply-bar"></div>
+    <div class="reply-content">
+      <span class="reply-username">&#64;{{ message.replied_message?.sender?.username }}</span>
+      
+      <!-- Show text if replied message has text -->
+      <p class="reply-text" *ngIf="message.replied_message?.content">
+        {{ message.replied_message?.content }}
+      </p>
+      
+      <!-- ✅ Show "Shared a rating" if replied message has a shared rating -->
+      <div class="reply-rating-indicator" *ngIf="message.replied_message?.shared_rating">
+        <i class='bx bx-movie'></i>
+        <span>{{ message.replied_message?.shared_rating?.title }}</span>
+        <span class="reply-rating-score">⭐ {{ message.replied_message?.shared_rating?.rating?.toFixed(1) }}</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- ✅ STEP 2: Show main message bubble -->
+  <div class="message-bubble" [class.has-reply]="hasReply">
+    
+    <!-- Show text content -->
+    <div class="message-text" *ngIf="hasTextContent">
+      {{ message.content }}
+      <span class="edited-badge" *ngIf="isEdited">(edited)</span>
+    </div>
+    
+    <!-- ✅ Show shared rating -->
+    <app-shared-rating 
+      *ngIf="hasSharedRating"
+      [rating]="message.shared_rating!"
+      (click)="viewRating.emit(message.shared_rating_id!)">
+    </app-shared-rating>
+    
+    <!-- Timestamp -->
+    <div class="message-footer">
+      <span class="timestamp">{{ message.created_at | date:'short' }}</span>
+    </div>
+  </div>
+  
+  <!-- ✅ Profile picture (only shown if showAvatar is true) -->
+  <img *ngIf="showAvatar" 
+       [src]="avatarUrl" 
+       [alt]="message.sender?.username"
+       class="profile-picture">
+  
+  <!-- ✅ STEP 3: Show action buttons -->
+  <div class="message-actions">
+    <button (click)="reply.emit(message)" class="action-btn" title="Reply">
+      <i class='bx bx-reply'></i>
+    </button>
+    
+    <!-- ✅ Only show edit for text messages -->
+    <button *ngIf="isOwnMessage && hasTextContent" 
+            (click)="edit.emit(message)" 
+            class="action-btn"
+            title="Edit">
+      <i class='bx bx-edit'></i>
+    </button>
+    
+    <!-- ✅ Show delete for all own messages -->
+    <button *ngIf="isOwnMessage" 
+            (click)="delete.emit(message)" 
+            class="action-btn danger"
+            title="Delete">
+      <i class='bx bx-trash'></i>
+    </button>
+  </div>
+</div>

@@ -73,7 +73,7 @@
             <span class="preview-text empty" *ngIf="!conv.last_message">
               No messages yet
             </span>
-            <span class="unread-badge" *ngIf="conv.unread_count > 0">
+            <span class="unread-badge" *ngIf="conv.unread_count && conv.unread_count > 0">
               {{ conv.unread_count > 99 ? '99+' : conv.unread_count }}
             </span>
           </div>
@@ -139,9 +139,14 @@
         </div>
       </div>
 
-      <!-- Messages -->
-      <div class="messages-area" #messagesContainer>
-        <!-- Loading -->
+      <div class="messages-area"  #messagesContainer (scroll)="onScroll($event)">
+        <!-- Load more indicator -->
+        <div class="load-more-indicator" *ngIf="hasMoreMessages() && messages().length > 0">
+          <i class='bx bx-loader-alt bx-spin'></i>
+          <span>Loading older messages...</span>
+        </div>
+
+        <!-- Loading initial -->
         <div class="loading-messages" *ngIf="isLoadingMessages()">
           <i class='bx bx-loader-alt bx-spin'></i>
         </div>
@@ -151,28 +156,19 @@
           <p>No messages yet. Say hi!</p>
         </div>
 
-        <!-- Message list -->
-        <div 
-          class="message" 
-          *ngFor="let msg of messages()"
-          [class.own]="isOwnMessage(msg)"
-          [class.other]="!isOwnMessage(msg)"
-        >
-          <img 
-            *ngIf="!isOwnMessage(msg)" 
-            [src]="msg.sender_avatar || '/assets/images/default-avatar.png'" 
-            class="message-avatar"
-          >
-          <div class="message-content">
-            <span class="sender-name" *ngIf="!isOwnMessage(msg) && activeConversation()!.is_group">
-              {{ msg.sender_username }}
-            </span>
-            <div class="message-bubble">
-              {{ msg.content }}
-            </div>
-            <span class="message-time">{{ formatMessageTime(msg.created_at) }}</span>
-          </div>
-        </div>
+        <!-- ✅ NEW: Use message component -->
+        <app-message
+          *ngFor="let msg of messages(); let i = index; trackBy: trackByMessageId"
+          [id]="'message-' + msg.id"
+          [message]="msg"
+          [isOwnMessage]="msg.sender_id === currentUser()?.id"
+          [showAvatar]="shouldShowAvatar(i)"
+          [class.sending]="msg.sending"
+          (reply)="startReply($event)"
+          (edit)="startEdit($event)"
+          (delete)="confirmDeleteMessage($event)"
+          (viewRating)="navigateToRating($event)">
+        </app-message>
       </div>
 
       <!-- Input area -->
