@@ -3,9 +3,26 @@
 .message-wrapper {
   display: flex;
   flex-direction: column;
-  margin-bottom: 0.25rem; /* Tighter spacing for message chains */
+  margin-bottom: 0.25rem;
   max-width: 70%;
   position: relative;
+}
+
+/* ✅ Bubble + actions sit side-by-side */
+.bubble-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Own messages: actions on left, bubble on right */
+.own-message .bubble-row {
+  flex-direction: row;
+}
+
+/* Other messages: bubble on left, actions on right */
+.message-wrapper:not(.own-message) .bubble-row {
+  flex-direction: row-reverse;
 }
 
 /* ✅ Alignment based on sender */
@@ -40,8 +57,7 @@
 }
 
 .message-bubble.has-reply {
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
+  border-radius: 18px;
 }
 
 /* ✅ Profile picture (only on last message in chain) */
@@ -167,13 +183,13 @@
   color: white;
 }
 
-/* ✅ Actions (shown on hover) */
+/* ✅ Actions (shown on hover, inline with bubble) */
 .message-actions {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
+  gap: 0.25rem;
   opacity: 0;
   transition: opacity 0.2s;
+  flex-shrink: 0;
 }
 
 .message-wrapper:hover .message-actions {
@@ -183,10 +199,10 @@
 .action-btn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.4);
   cursor: pointer;
-  font-size: 1.2rem;
-  padding: 0.25rem;
+  font-size: 1rem;
+  padding: 0.15rem;
   transition: color 0.2s;
   display: flex;
   align-items: center;

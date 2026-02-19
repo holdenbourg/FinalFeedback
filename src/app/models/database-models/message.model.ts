@@ -8,8 +8,6 @@ export interface MessageModel {
   content: string | null;
   created_at: Date;
   updated_at: Date | null;
-  is_deleted: boolean;
-  deleted_at: Date | null;
   reply_to_message_id: string | null;
   replied_message?: MessageModel;
   shared_rating_id: string | null;

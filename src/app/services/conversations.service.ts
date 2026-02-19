@@ -50,7 +50,7 @@ export class ConversationsService {
         .from('messages')
         .select('content, created_at, sender_id')
         .eq('conversation_id', conv.id)
-        .eq('is_deleted', false)
+
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
@@ -64,7 +64,7 @@ export class ConversationsService {
           .from('messages')
           .select('*', { count: 'exact', head: true })
           .eq('conversation_id', conv.id)
-          .eq('is_deleted', false)
+  
           .neq('sender_id', user.id)
           .gt('created_at', lastReadAt);
         
@@ -338,7 +338,7 @@ export class ConversationsService {
         .from('messages')
         .select('content, created_at, sender_id')
         .eq('conversation_id', conv.id)
-        .eq('is_deleted', false)
+
         .order('created_at', { ascending: false })
         .limit(1)
         .single();

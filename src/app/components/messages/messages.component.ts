@@ -52,6 +52,12 @@ export class MessagesComponent implements OnInit, OnDestroy {
   // Track if initial page load is complete (for shimmer display)
   initialLoadComplete = signal(false);
 
+  // Reply state
+  replyingToMessage = signal<MessageModel | null>(null);
+
+  // Edit state
+  editingMessageId = signal<string | null>(null);
+
   // Menu state
   openMenuId: string | null = null;
 
@@ -136,6 +142,8 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
     this.activeConversationId.set(conv.id);
     this.activeConversation.set(conv);
+    this.cancelReply();
+    this.cancelEdit();
 
     await this.loadInitialMessages(conv.id);
     await this.conversationsService.markAsRead(conv.id);
@@ -233,9 +241,31 @@ export class MessagesComponent implements OnInit, OnDestroy {
     if (!this.messageInput.trim() || !this.activeConversationId()) return;
 
     const content = this.messageInput;
-    this.messageInput = '';
+    const replyToId = this.replyingToMessage()?.id || null;
+    const replyingTo = this.replyingToMessage();
+    const editingId = this.editingMessageId();
 
-    // ✅ Define tempMessage in proper scope
+    this.messageInput = '';
+    this.cancelReply();
+
+    // Handle edit mode
+    if (editingId) {
+      try {
+        await this.messagesService.editMessage(editingId, content);
+        this.messages.update(current =>
+          current.map(m => m.id === editingId
+            ? { ...m, content, updated_at: new Date() }
+            : m
+          )
+        );
+        this.editingMessageId.set(null);
+      } catch (error) {
+        console.error('Failed to edit message:', error);
+      }
+      return;
+    }
+
+    // Define tempMessage
     const tempMessage: MessageModel = {
       id: 'temp-' + Date.now(),
       conversation_id: this.activeConversationId()!,
@@ -243,12 +273,11 @@ export class MessagesComponent implements OnInit, OnDestroy {
       content: content,
       created_at: new Date(),
       updated_at: null,
-      is_deleted: false,
-      deleted_at: null,
-      reply_to_message_id: null,
+      reply_to_message_id: replyToId,
+      replied_message: replyingTo || undefined,
       shared_rating_id: null,
       sender: this.currentUser()!,
-      sending: true  // ✅ Optimistic UI flag
+      sending: true
     };
 
     try {
@@ -256,21 +285,22 @@ export class MessagesComponent implements OnInit, OnDestroy {
       this.messages.update(current => [...current, tempMessage]);
       this.scrollToBottom();
 
-      // Send to server
+      // Send to server (with reply ID if replying)
       const sentMessage = await this.messagesService.sendTextMessage(
         this.activeConversationId()!,
-        content
+        content,
+        replyToId || undefined
       );
 
       // Replace temp with real message
-      this.messages.update(current => 
+      this.messages.update(current =>
         current.map(m => m.id === tempMessage.id ? sentMessage : m)
       );
 
     } catch (error) {
       console.error('Failed to send message:', error);
       // Remove temp message on error
-      this.messages.update(current => 
+      this.messages.update(current =>
         current.filter(m => m.id !== tempMessage.id)
       );
     }
@@ -339,8 +369,6 @@ export class MessagesComponent implements OnInit, OnDestroy {
               content: c.last_message.content,
               created_at: c.last_message.created_at.toISOString(),
               updated_at: null,
-              is_deleted: false,
-              deleted_at: null,
               is_edited: false
             } as any) : undefined,
             participants
@@ -896,14 +924,31 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   // ===== MESSAGE EVENT HANDLERS =====
   startReply(message: MessageModel) {
-    console.log('Reply to message:', message.id);
-    // TODO: Implement reply functionality
+    this.replyingToMessage.set(message);
+    this.editingMessageId.set(null);
+    setTimeout(() => {
+      const input = document.querySelector('.input-area input') as HTMLInputElement;
+      if (input) input.focus();
+    }, 0);
+  }
+
+  cancelReply() {
+    this.replyingToMessage.set(null);
   }
 
   startEdit(message: MessageModel) {
-    console.log('Edit message:', message.id);
+    this.editingMessageId.set(message.id);
+    this.replyingToMessage.set(null);
     this.messageInput = message.content || '';
-    // TODO: Store editing message ID
+    setTimeout(() => {
+      const input = document.querySelector('.input-area input') as HTMLInputElement;
+      if (input) input.focus();
+    }, 0);
+  }
+
+  cancelEdit() {
+    this.editingMessageId.set(null);
+    this.messageInput = '';
   }
 
   confirmDeleteMessage(message: MessageModel) {

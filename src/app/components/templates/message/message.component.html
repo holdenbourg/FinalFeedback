@@ -23,54 +23,47 @@
     </div>
   </div>
   
-  <!-- ✅ STEP 2: Show main message bubble -->
-  <div class="message-bubble" [class.has-reply]="hasReply">
-    
-    <!-- Show text content -->
-    <div class="message-text" *ngIf="hasTextContent">
-      {{ message.content }}
-      <span class="edited-badge" *ngIf="isEdited">(edited)</span>
+  <!-- ✅ STEP 2: Bubble + actions row -->
+  <div class="bubble-row">
+    <!-- Action buttons (shown on inside of message) -->
+    <div class="message-actions">
+      <button (click)="reply.emit(message)" class="action-btn" title="Reply">
+        <i class='bx bx-reply'></i>
+      </button>
+      <button *ngIf="isOwnMessage && hasTextContent"
+              (click)="edit.emit(message)"
+              class="action-btn"
+              title="Edit">
+        <i class='bx bx-edit'></i>
+      </button>
+      <button *ngIf="isOwnMessage"
+              (click)="delete.emit(message)"
+              class="action-btn danger"
+              title="Delete">
+        <i class='bx bx-trash'></i>
+      </button>
     </div>
-    
-    <!-- ✅ Show shared rating -->
-    <app-shared-rating 
-      *ngIf="hasSharedRating"
-      [rating]="message.shared_rating!"
-      (click)="viewRating.emit(message.shared_rating_id!)">
-    </app-shared-rating>
-    
-    <!-- Timestamp -->
-    <div class="message-footer">
-      <span class="timestamp">{{ message.created_at | date:'short' }}</span>
+
+    <!-- Message bubble -->
+    <div class="message-bubble" [class.has-reply]="hasReply">
+      <div class="message-text" *ngIf="hasTextContent">
+        {{ message.content }}
+        <span class="edited-badge" *ngIf="isEdited">(edited)</span>
+      </div>
+      <app-shared-rating
+        *ngIf="hasSharedRating"
+        [rating]="message.shared_rating!"
+        (click)="viewRating.emit(message.shared_rating_id!)">
+      </app-shared-rating>
+      <div class="message-footer">
+        <span class="timestamp">{{ message.created_at | date:'short' }}</span>
+      </div>
     </div>
   </div>
-  
+
   <!-- ✅ Profile picture (only shown if showAvatar is true) -->
-  <img *ngIf="showAvatar" 
-       [src]="avatarUrl" 
+  <img *ngIf="showAvatar"
+       [src]="avatarUrl"
        [alt]="message.sender?.username"
        class="profile-picture">
-  
-  <!-- ✅ STEP 3: Show action buttons -->
-  <div class="message-actions">
-    <button (click)="reply.emit(message)" class="action-btn" title="Reply">
-      <i class='bx bx-reply'></i>
-    </button>
-    
-    <!-- ✅ Only show edit for text messages -->
-    <button *ngIf="isOwnMessage && hasTextContent" 
-            (click)="edit.emit(message)" 
-            class="action-btn"
-            title="Edit">
-      <i class='bx bx-edit'></i>
-    </button>
-    
-    <!-- ✅ Show delete for all own messages -->
-    <button *ngIf="isOwnMessage" 
-            (click)="delete.emit(message)" 
-            class="action-btn danger"
-            title="Delete">
-      <i class='bx bx-trash'></i>
-    </button>
-  </div>
 </div>

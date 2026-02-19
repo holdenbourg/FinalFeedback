@@ -29,8 +29,6 @@ export interface MessageModel {
   content: string;
   created_at: string;
   updated_at: string;
-  is_deleted: boolean;
-  deleted_at?: string;
   reply_to_message_id?: string;
 }
 

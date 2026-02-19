@@ -171,16 +171,39 @@
         </app-message>
       </div>
 
+      <!-- Reply/Edit indicator -->
+      <div class="reply-indicator" *ngIf="replyingToMessage()">
+        <div class="reply-indicator-content">
+          <i class='bx bx-reply'></i>
+          <span>Replying to <strong>{{ replyingToMessage()?.sender?.username }}</strong></span>
+          <span class="reply-preview" *ngIf="replyingToMessage()?.content">{{ replyingToMessage()?.content }}</span>
+        </div>
+        <button class="cancel-reply-btn" (click)="cancelReply()">
+          <i class='bx bx-x'></i>
+        </button>
+      </div>
+
+      <div class="edit-indicator" *ngIf="editingMessageId()">
+        <div class="reply-indicator-content">
+          <i class='bx bx-edit'></i>
+          <span>Editing message</span>
+        </div>
+        <button class="cancel-reply-btn" (click)="cancelEdit()">
+          <i class='bx bx-x'></i>
+        </button>
+      </div>
+
       <!-- Input area -->
       <div class="input-area">
-        <input 
+        <input
           type="text"
-          placeholder="Message..."
+          [placeholder]="editingMessageId() ? 'Edit message...' : 'Message...'"
           [(ngModel)]="messageInput"
           (keyup.enter)="sendMessage()"
+          (keyup.escape)="editingMessageId() ? cancelEdit() : cancelReply()"
         />
-        <button 
-          class="send-btn" 
+        <button
+          class="send-btn"
           (click)="sendMessage()"
           [disabled]="!messageInput.trim()"
         >

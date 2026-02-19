@@ -23,8 +23,7 @@ export class MessagesService {
     const { count } = await supabase
       .from('messages')
       .select('*', { count: 'exact', head: true })
-      .eq('conversation_id', conversationId)
-      .eq('is_deleted', false);
+      .eq('conversation_id', conversationId);
 
     const totalMessages = count || 0;
 
@@ -37,23 +36,6 @@ export class MessagesService {
           id,
           username,
           profile_picture_url
-        ),
-        replied_message:messages!reply_to_message_id (
-          id,
-          content,
-          shared_rating_id,
-          sender:users!sender_id (
-            id,
-            username,
-            profile_picture_url
-          ),
-          shared_rating:ratings (
-            id,
-            title,
-            rating,
-            poster_url,
-            media_type
-          )
         ),
         shared_rating:ratings (
           id,
@@ -71,14 +53,23 @@ export class MessagesService {
         )
       `)
       .eq('conversation_id', conversationId)
-      .eq('is_deleted', false)
       .order('created_at', { ascending: false })  // Most recent first
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
 
+    const messages = (data || []).reverse() as MessageModel[];
+
+    // Resolve replied messages from the loaded batch
+    const messageMap = new Map(messages.map(m => [m.id, m]));
+    for (const msg of messages) {
+      if (msg.reply_to_message_id && messageMap.has(msg.reply_to_message_id)) {
+        msg.replied_message = messageMap.get(msg.reply_to_message_id);
+      }
+    }
+
     return {
-      messages: (data || []).reverse() as MessageModel[],  // Reverse to show oldest first
+      messages,
       hasMore: (offset + limit) < totalMessages
     };
   }
@@ -203,7 +194,7 @@ export class MessagesService {
   }
 
   /**
-   * ✅ Delete message (soft delete)
+   * ✅ Delete message (hard delete)
    */
   async deleteMessage(messageId: string): Promise<void> {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -211,11 +202,7 @@ export class MessagesService {
 
     const { error } = await supabase
       .from('messages')
-      .update({
-        is_deleted: true,
-        deleted_at: new Date().toISOString(),
-        content: null
-      })
+      .delete()
       .eq('id', messageId)
       .eq('sender_id', user.id);
 
