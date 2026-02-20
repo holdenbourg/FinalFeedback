@@ -262,6 +262,6 @@
 <app-share-rating-modal
   *ngIf="showShareModal && postRatingForShare"
   [rating]="postRatingForShare"
-  (share)="onShareComplete($event)"
+  (share)="onShareComplete()"
   (cancel)="onCancelShare()">
 </app-share-rating-modal>

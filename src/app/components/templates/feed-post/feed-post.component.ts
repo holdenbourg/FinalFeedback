@@ -768,40 +768,10 @@ postRatingForShare: RatingModel | null = null;
     this.showShareModal = true;
   }
 
-  // Handle share
-  async onShareComplete(event: { conversationIds: string[], userIds: string[], message?: string }) {
-    if (!this.postRatingForShare) return;
-
-    try {
-      // Share to existing conversations
-      for (const convId of event.conversationIds) {
-        await this.messagesService.shareRating(
-          convId,
-          this.postRatingForShare.id,
-          event.message
-        );
-      }
-
-      // Share to users (create DMs)
-      for (const userId of event.userIds) {
-        // Create or get DM conversation
-        const convId = await this.conversationsService.createDM(userId);
-        
-        // Share rating
-        await this.messagesService.shareRating(
-          convId,
-          this.postRatingForShare.id,
-          event.message
-        );
-      }
-
-      // Show success feedback
-      this.showShareModal = false;
-      alert('Rating shared successfully!');  // Replace with better UI
-    } catch (error) {
-      console.error('Failed to share rating:', error);
-      alert('Failed to share rating');
-    }
+  // Handle share complete (modal handles sending internally, just close)
+  onShareComplete() {
+    this.showShareModal = false;
+    this.postRatingForShare = null;
   }
 
   onCancelShare() {

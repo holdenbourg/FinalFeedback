@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, inject, signal, effect, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, inject, signal, computed, effect, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RealtimeChannel } from '@supabase/supabase-js';
@@ -12,11 +12,13 @@ import { MessagesService } from '../../services/messages.service';
 import { MessageModel } from '../../models/database-models/message.model';
 import { ConversationModel, ConversationsService } from '../../services/conversations.service';
 import { MessageComponent } from '../templates/message/message.component';
+import { PostDetailModalComponent } from '../post-detail-modal/post-detail-modal.component';
+import { PostWithRating } from '../../models/helper-models/post-with-ratings.interface';
 
 @Component({
   selector: 'app-messages',
   standalone: true,
-  imports: [CommonModule, FormsModule, AddChatModalComponent, MessageComponent],
+  imports: [CommonModule, FormsModule, AddChatModalComponent, MessageComponent, PostDetailModalComponent],
   templateUrl: './messages.component.html',
   styleUrl: './messages.component.css'
 })
@@ -87,6 +89,14 @@ export class MessagesComponent implements OnInit, OnDestroy {
   isUploadingGroupAvatar = signal(false);
   isSavingGroupChanges = signal(false);
 
+  // Post detail modal state
+  chatPosts = signal<PostWithRating[]>([]);
+  selectedPostIndex = signal<number>(0);
+  showPostModal = signal(false);
+  selectedPost = computed(() => this.chatPosts()[this.selectedPostIndex()] ?? null);
+  canNavigatePrevious = computed(() => this.selectedPostIndex() > 0);
+  canNavigateNext = computed(() => this.selectedPostIndex() < this.chatPosts().length - 1);
+
   // Drag and drop state
   isDraggingOver = signal(false);
   private dragCounter = 0;
@@ -99,7 +109,8 @@ export class MessagesComponent implements OnInit, OnDestroy {
     effect(() => {
       const msgs = this.messages();
       if (msgs.length > 0) {
-        setTimeout(() => this.scrollToBottom(), 100);
+        // Use requestAnimationFrame to scroll after DOM renders
+        requestAnimationFrame(() => this.scrollToBottom());
       }
     });
   }
@@ -148,8 +159,6 @@ export class MessagesComponent implements OnInit, OnDestroy {
     await this.loadInitialMessages(conv.id);
     await this.conversationsService.markAsRead(conv.id);
     this.subscribeToMessages(conv.id);
-
-    setTimeout(() => this.scrollToBottom(), 100);
   }
 
   async loadInitialMessages(conversationId: string) {
@@ -292,9 +301,12 @@ export class MessagesComponent implements OnInit, OnDestroy {
         replyToId || undefined
       );
 
-      // Replace temp with real message
+      // Replace temp with real message, preserving replied_message from temp
       this.messages.update(current =>
-        current.map(m => m.id === tempMessage.id ? sentMessage : m)
+        current.map(m => m.id === tempMessage.id
+          ? { ...sentMessage, replied_message: tempMessage.replied_message }
+          : m
+        )
       );
 
     } catch (error) {
@@ -457,7 +469,15 @@ export class MessagesComponent implements OnInit, OnDestroy {
             shared_rating_id: messageWithSender.shared_rating_id || null,
             reply_to_message_id: messageWithSender.reply_to_message_id || null
           } as MessageModel;
-          
+
+          // Resolve replied_message from existing messages
+          if (fullMessage.reply_to_message_id) {
+            const repliedMsg = this.messages().find(m => m.id === fullMessage.reply_to_message_id);
+            if (repliedMsg) {
+              fullMessage.replied_message = repliedMsg;
+            }
+          }
+
           this.messages.set([...this.messages(), fullMessage]);
         }
 
@@ -515,26 +535,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   toggleMenu(event: MouseEvent, convId: string) {
     event.stopPropagation();
-    
-    if (this.openMenuId === convId) {
-      this.openMenuId = null;
-      return;
-    }
-    
-    this.openMenuId = convId;
-    
-    // Position the menu near the clicked button
-    setTimeout(() => {
-      const menu = document.querySelector('.conversation-menu') as HTMLElement;
-      const trigger = event.target as HTMLElement;
-      const triggerRect = trigger.closest('.menu-trigger')?.getBoundingClientRect();
-      
-      if (menu && triggerRect) {
-        // Position to the left of the trigger button
-        menu.style.right = `${window.innerWidth - triggerRect.left + 8}px`;
-        menu.style.top = `${triggerRect.top}px`;
-      }
-    }, 0);
+    this.openMenuId = this.openMenuId === convId ? null : convId;
   }
 
   async onPinConversation(event: MouseEvent, conv: ConversationWithDetailsModel) {
@@ -968,10 +969,153 @@ export class MessagesComponent implements OnInit, OnDestroy {
     }
   }
 
-  navigateToRating(ratingId: string) {
-    console.log('Navigate to rating:', ratingId);
-    // TODO: Navigate to rating detail page
-    // this.router.navigate(['/rating', ratingId]);
+  async navigateToRating(ratingId: string) {
+    // Collect all shared ratings from loaded messages
+    const messagesWithRatings = this.messages().filter(m => m.shared_rating);
+    if (messagesWithRatings.length === 0) return;
+
+    const ratingIds = messagesWithRatings.map(m => m.shared_rating!.id);
+
+    // Fetch posts for these ratings (posts table only has: id, author_id, poster_url, caption, visibility, created_at, rating_id)
+    const { data: posts, error: postsError } = await supabase
+      .from('posts')
+      .select('*')
+      .in('rating_id', ratingIds);
+
+    if (postsError || !posts || posts.length === 0) return;
+
+    const postIds = posts.map(p => p.id);
+    const authorIds = [...new Set(posts.map(p => p.author_id))];
+
+    // Batch fetch authors, like counts, and comment counts in parallel (same pattern as account component)
+    const [authorsRes, likeCounts, commentCounts] = await Promise.all([
+      supabase.from('users').select('*').in('id', authorIds),
+      this.getLikeCountsForPosts(postIds),
+      this.getCommentCountsForPosts(postIds),
+    ]);
+
+    const authorsMap = new Map<string, UserModel>(
+      (authorsRes.data || []).map(a => [a.id, a as UserModel])
+    );
+
+    // Build PostWithRating list from messages that have matching posts
+    const postsMap = new Map(posts.map(p => [p.rating_id, p]));
+    const chatPostsList: PostWithRating[] = [];
+
+    for (const msg of messagesWithRatings) {
+      const rating = msg.shared_rating!;
+      const post = postsMap.get(rating.id);
+      if (!post) continue;
+
+      const author = authorsMap.get(post.author_id);
+      if (!author) continue;
+
+      chatPostsList.push({
+        post: {
+          id: post.id,
+          author_id: post.author_id,
+          poster_url: rating.poster_url,
+          caption: post.caption,
+          visibility: post.visibility,
+          like_count: likeCounts.get(post.id) || 0,
+          save_count: 0,
+          comment_count: commentCounts.get(post.id) || 0,
+          tag_count: 0,
+          created_at: post.created_at,
+        },
+        rating: rating,
+        author: author,
+        taggedUsers: [],
+      });
+    }
+
+    if (chatPostsList.length === 0) return;
+
+    // Find the index of the clicked rating
+    const clickedIndex = chatPostsList.findIndex(p => p.rating.id === ratingId);
+
+    this.chatPosts.set(chatPostsList);
+    this.selectedPostIndex.set(clickedIndex >= 0 ? clickedIndex : 0);
+    this.showPostModal.set(true);
+  }
+
+  private async getLikeCountsForPosts(postIds: string[]): Promise<Map<string, number>> {
+    if (postIds.length === 0) return new Map();
+    const { data } = await supabase
+      .from('likes')
+      .select('target_id')
+      .eq('target_type', 'post')
+      .in('target_id', postIds);
+    const counts = new Map<string, number>();
+    (data || []).forEach((like: any) => {
+      counts.set(like.target_id, (counts.get(like.target_id) || 0) + 1);
+    });
+    return counts;
+  }
+
+  private async getCommentCountsForPosts(postIds: string[]): Promise<Map<string, number>> {
+    if (postIds.length === 0) return new Map();
+    const { data } = await supabase
+      .from('comments')
+      .select('post_id')
+      .in('post_id', postIds);
+    const counts = new Map<string, number>();
+    (data || []).forEach((comment: any) => {
+      counts.set(comment.post_id, (counts.get(comment.post_id) || 0) + 1);
+    });
+    return counts;
+  }
+
+  closePostModal() {
+    this.showPostModal.set(false);
+  }
+
+  navigateToPreviousPost() {
+    if (this.canNavigatePrevious()) {
+      this.selectedPostIndex.update(i => i - 1);
+    }
+  }
+
+  navigateToNextPost() {
+    if (this.canNavigateNext()) {
+      this.selectedPostIndex.update(i => i + 1);
+    }
+  }
+
+  onModalPostUpdated(event: { index: number; likeCount: number }) {
+    this.chatPosts.update(posts => {
+      const updated = [...posts];
+      if (updated[event.index]) {
+        updated[event.index] = {
+          ...updated[event.index],
+          post: { ...updated[event.index].post, like_count: event.likeCount }
+        };
+      }
+      return updated;
+    });
+  }
+
+  onModalPostDeleted(event: { postId: string; ratingId: string }) {
+    this.chatPosts.update(posts => posts.filter(p => p.post.id !== event.postId));
+    if (this.chatPosts().length === 0) {
+      this.closePostModal();
+    } else if (this.selectedPostIndex() >= this.chatPosts().length) {
+      this.selectedPostIndex.set(this.chatPosts().length - 1);
+    }
+  }
+
+  onModalVisibilityChanged(event: { postId: string; visibility: 'public' | 'archived' }) {
+    this.chatPosts.update(posts => {
+      const updated = [...posts];
+      const idx = updated.findIndex(p => p.post.id === event.postId);
+      if (idx >= 0) {
+        updated[idx] = {
+          ...updated[idx],
+          post: { ...updated[idx].post, visibility: event.visibility }
+        };
+      }
+      return updated;
+    });
   }
 
   trackByMessageId(index: number, message: MessageModel): string {

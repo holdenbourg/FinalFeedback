@@ -1,18 +1,20 @@
-import { Component, EventEmitter, Input, OnInit, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, OnDestroy, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged, filter } from 'rxjs/operators';
 import { ConversationsService, ConversationModel } from '../../services/conversations.service';
 import { UsersService } from '../../services/users.service';
+import { MessagesService } from '../../services/messages.service';
 import { RatingModel } from '../../models/database-models/rating.model';
+import { supabase } from '../../core/supabase.client';
 
 interface ShareTarget {
   id: string;
   type: 'conversation' | 'user';
   name: string;
   avatar: string;
-  subtitle?: string;  // For users: username, for convos: "Group chat" or "Direct message"
-  isGroup?: boolean;
-  lastActivity?: Date;
+  subtitle?: string;
 }
 
 @Component({
@@ -22,111 +24,262 @@ interface ShareTarget {
   templateUrl: './share-rating-modal.component.html',
   styleUrl: './share-rating-modal.component.css'
 })
-export class ShareRatingModalComponent implements OnInit {
+export class ShareRatingModalComponent implements OnInit, OnDestroy {
   @Input() rating!: RatingModel;
   @Output() cancel = new EventEmitter<void>();
-  @Output() share = new EventEmitter<{ conversationIds: string[], userIds: string[], message?: string }>();
+  @Output() share = new EventEmitter<void>();
 
   constructor(
     private conversationsService: ConversationsService,
-    private usersService: UsersService
+    private usersService: UsersService,
+    private messagesService: MessagesService
   ) {}
 
   // State
   searchTerm = '';
-  isLoading = signal(false);
-  selectedTargets = signal<Set<string>>(new Set());
   messageText = '';
+  isLoading = signal(true);
+  isSending = signal(false);
+  showSuccess = signal(false);
+  isSearchMode = signal(false);
+  isSearching = signal(false);
+  shimmerCount = signal(0);
+
+  // Selection
+  selectedTargets = signal<Set<string>>(new Set());
+  // Track type per target for send logic
+  private targetTypeMap = new Map<string, 'conversation' | 'user'>();
 
   // Data
-  conversations = signal<ConversationModel[]>([]);
-  followers = signal<any[]>([]);
-  following = signal<any[]>([]);
+  private currentUserId: string | null = null;
+  conversations = signal<ShareTarget[]>([]);
+  suggestedUsers = signal<ShareTarget[]>([]);
+  searchResults = signal<ShareTarget[]>([]);
 
-  // Computed
+  // All suggested for filtering
+  private allSuggested: ShareTarget[] = [];
+  private allConversations: ShareTarget[] = [];
+
+  // Debounce
+  private searchSubject = new Subject<string>();
+  private searchSubscription?: Subscription;
+
   get selectedCount(): number {
     return this.selectedTargets().size;
   }
 
-  get shareTargets(): ShareTarget[] {
-    const targets: ShareTarget[] = [];
-    const search = this.searchTerm.toLowerCase();
-
-    // ✅ Section 1: Recent Conversations (sorted by activity)
-    const recentConvos = this.conversations()
-      .filter(c => !search || c.display_name?.toLowerCase().includes(search))
-      .map(c => ({
-        id: c.id,
-        type: 'conversation' as const,
-        name: c.display_name || 'Direct Message',
-        avatar: c.group_avatar_url || '/assets/images/default-avatar.png',
-        subtitle: c.is_group ? 'Group chat' : 'Direct message',
-        isGroup: c.is_group,
-        lastActivity: c.last_message?.created_at || c.created_at
-      }));
-
-    targets.push(...recentConvos);
-
-    // ✅ Section 2: Following (users you follow)
-    const followingUsers = this.following()
-      .filter(u => !search || u.username.toLowerCase().includes(search))
-      .map(u => ({
-        id: u.id,
-        type: 'user' as const,
-        name: u.username,
-        avatar: u.profile_picture_url || '/assets/images/default-avatar.png',
-        subtitle: u.username
-      }));
-
-    targets.push(...followingUsers);
-
-    // ✅ Section 3: Followers
-    const followerUsers = this.followers()
-      .filter(u => !search || u.username.toLowerCase().includes(search))
-      .filter(u => !this.following().some(f => f.id === u.id))  // Exclude if already in following
-      .map(u => ({
-        id: u.id,
-        type: 'user' as const,
-        name: u.username,
-        avatar: u.profile_picture_url || '/assets/images/default-avatar.png',
-        subtitle: u.username
-      }));
-
-    targets.push(...followerUsers);
-
-    return targets;
-  }
-
-  get showCreateGroupButton(): boolean {
-    // Show if 2+ users selected (not conversations)
-    const selectedUsers = Array.from(this.selectedTargets())
-      .filter(id => this.shareTargets.find(t => t.id === id && t.type === 'user'));
-    return selectedUsers.length >= 2;
-  }
-
   async ngOnInit() {
+    const { data: { user } } = await supabase.auth.getUser();
+    this.currentUserId = user?.id || null;
+
+    // Set up debounced database search
+    this.searchSubscription = this.searchSubject
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged(),
+        filter(term => term.length > 0)
+      )
+      .subscribe(term => this.performDatabaseSearch(term));
+
     await this.loadData();
   }
 
-  async loadData() {
+  ngOnDestroy() {
+    this.searchSubscription?.unsubscribe();
+    this.searchSubject.complete();
+  }
+
+  private async loadData() {
     this.isLoading.set(true);
     try {
-      // Load conversations sorted by activity
+      // Load conversations
       const convos = await this.conversationsService.getConversationsByActivity();
-      this.conversations.set(convos);
 
-      // Load followers and following
-      const [followersData, followingData] = await Promise.all([
-        this.usersService.getFollowers(),
-        this.usersService.getFollowing()
+      // Resolve DM participant names/avatars
+      await this.resolveDmNames(convos);
+
+      // Build conversation targets
+      this.allConversations = convos.map(c => {
+        this.targetTypeMap.set(c.id, 'conversation');
+        const lastMsg = c.last_message?.content;
+        return {
+          id: c.id,
+          type: 'conversation' as const,
+          name: c.display_name || 'Direct Message',
+          avatar: c.group_avatar_url || '/assets/images/default-avatar.png',
+          subtitle: lastMsg || (c.is_group ? 'Group chat' : 'Direct message'),
+        };
+      });
+      this.conversations.set(this.allConversations);
+
+      // Load followers + following from follows table (same as add-chat-modal)
+      const [followerRes, followingRes] = await Promise.all([
+        supabase.from('follows').select('follower_id').eq('followee_id', this.currentUserId!),
+        supabase.from('follows').select('followee_id').eq('follower_id', this.currentUserId!)
       ]);
 
-      this.followers.set(followersData);
-      this.following.set(followingData);
+      const userIds = new Set<string>();
+      if (followerRes.data) {
+        followerRes.data.forEach((f: any) => userIds.add(f.follower_id));
+      }
+      if (followingRes.data) {
+        followingRes.data.forEach((f: any) => userIds.add(f.followee_id));
+      }
+
+      // Fetch user profiles
+      const profiles = await Promise.all(
+        Array.from(userIds).map(id => this.usersService.getUserProfileById(id))
+      );
+
+      const suggested: ShareTarget[] = [];
+      for (const u of profiles) {
+        if (u) {
+          this.targetTypeMap.set(u.id, 'user');
+          suggested.push({
+            id: u.id,
+            type: 'user',
+            name: u.username,
+            avatar: u.profile_picture_url || '/assets/images/default-avatar.png',
+            subtitle: u.username,
+          });
+        }
+      }
+
+      this.allSuggested = suggested;
+      this.suggestedUsers.set(suggested);
     } catch (error) {
       console.error('Failed to load share data:', error);
     } finally {
       this.isLoading.set(false);
+    }
+  }
+
+  private async resolveDmNames(convos: ConversationModel[]) {
+    if (!this.currentUserId) return;
+
+    const dmConvos = convos.filter(c => !c.is_group);
+    if (dmConvos.length === 0) return;
+
+    const { data: convoData } = await supabase
+      .from('conversations')
+      .select('id, participant_ids')
+      .in('id', dmConvos.map(c => c.id));
+
+    const otherUserIds: string[] = [];
+    const convoParticipantMap = new Map<string, string>();
+
+    for (const c of convoData || []) {
+      const otherId = (c.participant_ids as string[]).find((id: string) => id !== this.currentUserId);
+      if (otherId) {
+        otherUserIds.push(otherId);
+        convoParticipantMap.set(c.id, otherId);
+      }
+    }
+
+    if (otherUserIds.length === 0) return;
+
+    const { data: users } = await supabase
+      .from('users')
+      .select('id, username, profile_picture_url')
+      .in('id', otherUserIds);
+
+    const usersMap = new Map((users || []).map(u => [u.id, u]));
+
+    for (const conv of convos) {
+      if (!conv.is_group) {
+        const otherId = convoParticipantMap.get(conv.id);
+        if (otherId) {
+          const otherUser = usersMap.get(otherId);
+          if (otherUser) {
+            conv.display_name = otherUser.username;
+            conv.group_avatar_url = otherUser.profile_picture_url;
+          }
+        }
+      }
+    }
+  }
+
+  onSearchInput() {
+    const term = this.searchTerm.trim().toLowerCase();
+
+    if (!term) {
+      // Clear search mode - show conversations + suggested
+      this.isSearchMode.set(false);
+      this.searchResults.set([]);
+      this.shimmerCount.set(0);
+      this.isSearching.set(false);
+      this.conversations.set(this.allConversations);
+      this.suggestedUsers.set(this.allSuggested);
+      return;
+    }
+
+    // Enter search mode
+    this.isSearchMode.set(true);
+
+    // Immediately filter conversations + suggested (instant feedback)
+    const filteredConvos = this.allConversations.filter(c =>
+      c.name.toLowerCase().includes(term)
+    );
+    const filteredSuggested = this.allSuggested.filter(u =>
+      u.name.toLowerCase().includes(term)
+    );
+
+    this.searchResults.set([...filteredConvos, ...filteredSuggested]);
+
+    // Show shimmer placeholders for incoming DB results
+    this.shimmerCount.set(3);
+    this.isSearching.set(true);
+
+    // Trigger debounced database search
+    this.searchSubject.next(term);
+  }
+
+  private async performDatabaseSearch(term: string) {
+    if (!this.currentUserId) {
+      this.shimmerCount.set(0);
+      this.isSearching.set(false);
+      return;
+    }
+
+    try {
+      const dbUsers = await this.usersService.searchUsersExcludingBlockedAndSelf(
+        term, this.currentUserId, 20, 0
+      );
+
+      // Re-filter with current term (may have changed during debounce)
+      const currentTerm = this.searchTerm.trim().toLowerCase();
+      const filteredConvos = this.allConversations.filter(c =>
+        c.name.toLowerCase().includes(currentTerm)
+      );
+      const filteredSuggested = this.allSuggested.filter(u =>
+        u.name.toLowerCase().includes(currentTerm)
+      );
+
+      // Filter out users already in suggested from DB results
+      const existingIds = new Set([
+        ...filteredConvos.map(c => c.id),
+        ...filteredSuggested.map(u => u.id)
+      ]);
+
+      const otherUsers: ShareTarget[] = (dbUsers || [])
+        .filter(u => !existingIds.has(u.id))
+        .map(u => {
+          this.targetTypeMap.set(u.id, 'user');
+          return {
+            id: u.id,
+            type: 'user' as const,
+            name: u.username,
+            avatar: u.profile_picture_url || '/assets/images/default-avatar.png',
+            subtitle: u.username,
+          };
+        });
+
+      this.searchResults.set([...filteredConvos, ...filteredSuggested, ...otherUsers]);
+    } catch (error) {
+      console.error('Failed to search users:', error);
+    } finally {
+      this.shimmerCount.set(0);
+      this.isSearching.set(false);
     }
   }
 
@@ -144,53 +297,33 @@ export class ShareRatingModalComponent implements OnInit {
     return this.selectedTargets().has(targetId);
   }
 
-  getSectionTitle(index: number): string | null {
-    if (index === 0 && this.conversations().length > 0) {
-      return 'Recent Chats';
-    }
-    
-    const convoCount = this.conversations().length;
-    if (index === convoCount && this.following().length > 0) {
-      return 'Following';
-    }
-    
-    const followingCount = this.following().length;
-    if (index === convoCount + followingCount && this.followers().length > 0) {
-      return 'Followers';
-    }
-    
-    return null;
+  getShimmerArray(): number[] {
+    return Array(this.shimmerCount()).fill(0).map((_, i) => i);
   }
 
   async onShare() {
     const selected = Array.from(this.selectedTargets());
-    const conversationIds = selected.filter(id => 
-      this.shareTargets.find(t => t.id === id && t.type === 'conversation')
-    );
-    const userIds = selected.filter(id => 
-      this.shareTargets.find(t => t.id === id && t.type === 'user')
-    );
+    const conversationIds = selected.filter(id => this.targetTypeMap.get(id) === 'conversation');
+    const userIds = selected.filter(id => this.targetTypeMap.get(id) === 'user');
 
-    this.share.emit({
-      conversationIds,
-      userIds,
-      message: this.messageText.trim() || undefined
-    });
-  }
+    this.isSending.set(true);
+    try {
+      for (const convId of conversationIds) {
+        await this.messagesService.shareRating(convId, this.rating.id, this.messageText.trim() || undefined);
+      }
 
-  async onCreateGroupAndShare() {
-    // Get selected user IDs
-    const userIds = Array.from(this.selectedTargets())
-      .filter(id => this.shareTargets.find(t => t.id === id && t.type === 'user'));
+      for (const userId of userIds) {
+        const convId = await this.conversationsService.createDM(userId);
+        await this.messagesService.shareRating(convId, this.rating.id, this.messageText.trim() || undefined);
+      }
 
-    if (userIds.length < 2) return;
-
-    // For now, just emit as user IDs - parent component will handle group creation
-    this.share.emit({
-      conversationIds: [],
-      userIds,
-      message: this.messageText.trim() || undefined
-    });
+      this.isSending.set(false);
+      this.showSuccess.set(true);
+      setTimeout(() => this.share.emit(), 1000);
+    } catch (error) {
+      console.error('Failed to share rating:', error);
+      this.isSending.set(false);
+    }
   }
 
   onCancel() {

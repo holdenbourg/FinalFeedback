@@ -22,6 +22,13 @@
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   animation: slideUp 0.3s ease;
+  overflow: hidden;
+}
+
+.modal-container *,
+.modal-container *::before,
+.modal-container *::after {
+  box-sizing: border-box;
 }
 
 @keyframes fadeIn {
@@ -38,6 +45,44 @@
     transform: translate(-50%, -50%);
     opacity: 1;
   }
+}
+
+/* Success Overlay */
+.success-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: rgba(26, 26, 26, 0.95);
+  border-radius: 12px;
+  animation: successFadeIn 0.3s ease;
+}
+
+.success-overlay i {
+  font-size: 3.5rem;
+  color: #22c55e;
+  animation: successPop 0.4s ease;
+}
+
+.success-overlay span {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+@keyframes successFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes successPop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 /* Header */
@@ -209,7 +254,7 @@
 .char-count {
   position: absolute;
   right: 1.75rem;
-  bottom: 1.25rem;
+  bottom: 1.5rem;
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.4);
 }
@@ -369,6 +414,49 @@
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.15);
   transform: translateY(-1px);
+}
+
+/* Shimmer loading placeholders */
+.shimmer-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+}
+
+.shimmer-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #262626 0%, #3a3a3a 50%, #262626 100%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.shimmer-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shimmer-line {
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #262626 0%, #3a3a3a 50%, #262626 100%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  width: 70%;
+}
+
+.shimmer-line.short {
+  width: 40%;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
 }
 
 /* Scrollbar */

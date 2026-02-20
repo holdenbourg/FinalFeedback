@@ -80,12 +80,13 @@
         </div>
 
         <!-- Three dot menu -->
-        <button class="menu-trigger" (click)="toggleMenu($event, conv.id)">
-          <i class='bx bx-dots-vertical-rounded'></i>
-        </button>
+        <div class="menu-anchor">
+          <button class="menu-trigger" (click)="toggleMenu($event, conv.id)">
+            <i class='bx bx-dots-vertical-rounded'></i>
+          </button>
 
-        <!-- Dropdown menu -->
-        <div class="conversation-menu" *ngIf="openMenuId === conv.id">
+          <!-- Dropdown menu -->
+          <div class="conversation-menu" *ngIf="openMenuId === conv.id">
           <button *ngIf="conv.is_group" (click)="onEditGroupChat($event, conv)">
             <i class='bx bx-edit'></i>
             Edit Group
@@ -106,6 +107,7 @@
             <i class='bx bx-trash'></i>
             Delete
           </button>
+        </div>
         </div>
       </div>
     </div>
@@ -146,10 +148,13 @@
           <span>Loading older messages...</span>
         </div>
 
-        <!-- Loading initial -->
-        <div class="loading-messages" *ngIf="isLoadingMessages()">
+        <!-- Loading initial (inline at top) -->
+        <div class="loading-messages" *ngIf="isLoadingMessages() && messages().length === 0">
           <i class='bx bx-loader-alt bx-spin'></i>
         </div>
+
+        <!-- Spacer pushes messages to bottom -->
+        <div class="messages-spacer"></div>
 
         <!-- Empty state -->
         <div class="no-messages" *ngIf="!isLoadingMessages() && messages().length === 0">
@@ -473,3 +478,19 @@
     </button>
   </div>
 </div>
+
+<!-- Post Detail Modal (for shared ratings in chat) -->
+<app-post-detail-modal
+  *ngIf="showPostModal() && selectedPost()"
+  [post]="selectedPost()!"
+  [currentIndex]="selectedPostIndex()"
+  [totalPosts]="chatPosts().length"
+  [canNavigatePrevious]="canNavigatePrevious()"
+  [canNavigateNext]="canNavigateNext()"
+  (close)="closePostModal()"
+  (navigatePrevious)="navigateToPreviousPost()"
+  (navigateNext)="navigateToNextPost()"
+  (postUpdated)="onModalPostUpdated($event)"
+  (postDeleted)="onModalPostDeleted($event)"
+  (postVisibilityChanged)="onModalVisibilityChanged($event)">
+</app-post-detail-modal>

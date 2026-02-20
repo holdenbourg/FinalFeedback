@@ -1,6 +1,12 @@
 <div class="modal-backdrop" (click)="onCancel()"></div>
 
 <div class="modal-container" (click)="$event.stopPropagation()">
+  <!-- Success overlay -->
+  <div class="success-overlay" *ngIf="showSuccess()">
+    <i class='bx bx-check-circle'></i>
+    <span>Sent!</span>
+  </div>
+
   <div class="modal-header">
     <h3>Share {{ rating.title }}</h3>
     <button class="close-btn" (click)="onCancel()">
@@ -10,7 +16,7 @@
 
   <!-- Rating Preview -->
   <div class="rating-preview">
-    <img [src]="'https://image.tmdb.org/t/p/w154' + rating.poster_url" 
+    <img [src]="'https://image.tmdb.org/t/p/w154' + rating.poster_url"
          [alt]="rating.title"
          class="preview-poster">
     <div class="preview-info">
@@ -27,16 +33,17 @@
   <!-- Search -->
   <div class="search-container">
     <i class='bx bx-search'></i>
-    <input 
-      type="text" 
+    <input
+      type="text"
       placeholder="Search chats or people..."
       [(ngModel)]="searchTerm"
+      (input)="onSearchInput()"
       autofocus>
   </div>
 
   <!-- Optional Message -->
   <div class="message-container">
-    <textarea 
+    <textarea
       [(ngModel)]="messageText"
       placeholder="Add a message... (optional)"
       rows="2"
@@ -44,67 +51,100 @@
     <span class="char-count">{{ messageText.length }}/500</span>
   </div>
 
-  <!-- Share Targets List -->
+  <!-- Targets List -->
   <div class="targets-container">
-    <!-- Loading -->
+    <!-- Loading initial data -->
     <div class="loading-state" *ngIf="isLoading()">
       <i class='bx bx-loader-alt bx-spin'></i>
       <p>Loading...</p>
     </div>
 
-    <!-- Empty -->
-    <div class="empty-state" *ngIf="!isLoading() && shareTargets.length === 0">
-      <i class='bx bx-search-alt'></i>
-      <p>No results found</p>
-    </div>
-
-    <!-- Targets -->
-    <div class="targets-list" *ngIf="!isLoading() && shareTargets.length > 0">
-      <ng-container *ngFor="let target of shareTargets; let i = index">
-        <!-- Section Header -->
-        <div class="section-header" *ngIf="getSectionTitle(i)">
-          {{ getSectionTitle(i) }}
+    <!-- SUGGESTED MODE (not searching) -->
+    <ng-container *ngIf="!isLoading() && !isSearchMode()">
+      <!-- Recent Chats -->
+      <div class="section-header" *ngIf="conversations().length > 0">Recent Chats</div>
+      <div
+        class="target-item"
+        *ngFor="let target of conversations()"
+        [class.selected]="isSelected(target.id)"
+        (click)="toggleSelection(target.id)">
+        <img [src]="target.avatar" [alt]="target.name" class="target-avatar">
+        <div class="target-info">
+          <span class="target-name">{{ target.name }}</span>
+          <span class="target-subtitle">{{ target.subtitle }}</span>
         </div>
-
-        <!-- Target Item -->
-        <div 
-          class="target-item"
-          [class.selected]="isSelected(target.id)"
-          (click)="toggleSelection(target.id)">
-          
-          <img [src]="target.avatar" [alt]="target.name" class="target-avatar">
-          
-          <div class="target-info">
-            <span class="target-name">{{ target.name }}</span>
-            <span class="target-subtitle">{{ target.subtitle }}</span>
-          </div>
-
-          <div class="selection-indicator">
-            <i class='bx' [class.bx-circle]="!isSelected(target.id)" [class.bxs-check-circle]="isSelected(target.id)"></i>
-          </div>
+        <div class="selection-indicator">
+          <i class='bx' [class.bx-circle]="!isSelected(target.id)" [class.bxs-check-circle]="isSelected(target.id)"></i>
         </div>
-      </ng-container>
-    </div>
+      </div>
+
+      <!-- Suggested Users -->
+      <div class="section-header" *ngIf="suggestedUsers().length > 0">Suggested</div>
+      <div
+        class="target-item"
+        *ngFor="let target of suggestedUsers()"
+        [class.selected]="isSelected(target.id)"
+        (click)="toggleSelection(target.id)">
+        <img [src]="target.avatar" [alt]="target.name" class="target-avatar">
+        <div class="target-info">
+          <span class="target-name">{{ target.name }}</span>
+          <span class="target-subtitle">{{ target.subtitle }}</span>
+        </div>
+        <div class="selection-indicator">
+          <i class='bx' [class.bx-circle]="!isSelected(target.id)" [class.bxs-check-circle]="isSelected(target.id)"></i>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-state" *ngIf="conversations().length === 0 && suggestedUsers().length === 0">
+        <i class='bx bx-user-plus'></i>
+        <p>Follow people to see them here</p>
+      </div>
+    </ng-container>
+
+    <!-- SEARCH MODE -->
+    <ng-container *ngIf="!isLoading() && isSearchMode()">
+      <!-- Search results -->
+      <div
+        class="target-item"
+        *ngFor="let target of searchResults()"
+        [class.selected]="isSelected(target.id)"
+        (click)="toggleSelection(target.id)">
+        <img [src]="target.avatar" [alt]="target.name" class="target-avatar">
+        <div class="target-info">
+          <span class="target-name">{{ target.name }}</span>
+          <span class="target-subtitle">{{ target.subtitle }}</span>
+        </div>
+        <div class="selection-indicator">
+          <i class='bx' [class.bx-circle]="!isSelected(target.id)" [class.bxs-check-circle]="isSelected(target.id)"></i>
+        </div>
+      </div>
+
+      <!-- Shimmer loading for DB search -->
+      <div class="shimmer-item" *ngFor="let i of getShimmerArray()">
+        <div class="shimmer-avatar"></div>
+        <div class="shimmer-text">
+          <div class="shimmer-line"></div>
+          <div class="shimmer-line short"></div>
+        </div>
+      </div>
+
+      <!-- No results -->
+      <div class="empty-state" *ngIf="searchResults().length === 0 && !isSearching() && shimmerCount() === 0">
+        <i class='bx bx-search-alt'></i>
+        <p>No results found</p>
+      </div>
+    </ng-container>
   </div>
 
   <!-- Action Buttons -->
   <div class="modal-footer">
-    <!-- Create Group Button (shows when 2+ users selected) -->
-    <button 
-      *ngIf="showCreateGroupButton"
-      class="btn btn-secondary"
-      (click)="onCreateGroupAndShare()">
-      <i class='bx bx-group'></i>
-      Create New Group
-    </button>
-
-    <!-- Send Button -->
-    <button 
+    <button
       class="btn btn-primary"
-      [disabled]="selectedCount === 0"
+      [disabled]="selectedCount === 0 || isSending()"
       (click)="onShare()">
-      <i class='bx bx-send'></i>
-      Send {{ selectedCount > 0 ? '(' + selectedCount + ')' : '' }}
+      <i class='bx' [class.bx-send]="!isSending()" [class.bx-loader-alt]="isSending()" [class.bx-spin]="isSending()"></i>
+      {{ isSending() ? 'Sending...' : 'Send' }} {{ !isSending() && selectedCount > 0 ? '(' + selectedCount + ')' : '' }}
     </button>
   </div>
 </div>
