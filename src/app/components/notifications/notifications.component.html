@@ -1,1 +1,82 @@
-<p>notifications works!</p>
+<div class="container" [class.active]="!sidebarService.sidebarActive()">
+  <div class="notifications-container" (scroll)="onScroll($event)">
+    <div class="notifications-header">
+      <h2>Notifications</h2>
+      @if (grouped().length > 0) {
+        <button class="clear-all-btn" (click)="clearAll()">Clear all</button>
+      }
+    </div>
+
+    <ul class="notification-list">
+      @for (group of grouped(); track trackGroup($index, group)) {
+        <li
+          class="notification-item"
+          [class.unread]="!group.allRead"
+          (click)="navigateFromNotification(group)"
+        >
+          <!-- Avatar (click navigates to actor profile) -->
+          <div class="avatar-stack" (click)="navigateToActor(group, $event)">
+            @for (actor of group.actors.slice(0, 2); track actor.id) {
+              <div class="avatar-wrap" [class.stacked]="group.actors.length > 1">
+                @if (actor.profile_picture_url) {
+                  <img
+                    [src]="actor.profile_picture_url"
+                    [alt]="actor.username"
+                    class="avatar"
+                  />
+                } @else {
+                  <div class="avatar avatar-placeholder">
+                    {{ actor.username[0].toUpperCase() }}
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Text and timestamp -->
+          <div class="notification-body">
+            <p class="notification-text">
+              <span class="actor-name" (click)="navigateToActor(group, $event)">{{ buildActorStr(group) }}</span>
+              {{ buildActionText(group) }}
+            </p>
+            <span class="notification-time">{{ formatTimestamp(group.latestAt) }}</span>
+          </div>
+
+          <!-- Unread dot -->
+          @if (!group.allRead) {
+            <div class="unread-dot"></div>
+          }
+
+          <!-- Post thumbnail -->
+          @if (group.representative.metadata['post_poster_url']) {
+            <img
+              class="notification-thumbnail"
+              [src]="group.representative.metadata['post_poster_url']"
+              alt="post"
+            />
+          }
+
+          <!-- Delete button -->
+          <button class="delete-btn" (click)="deleteNotification(group, $event)">
+            <i class='bx bx-x'></i>
+          </button>
+        </li>
+      }
+
+      @if (loading()) {
+        <li class="notification-loading">
+          <div class="skeleton-row"></div>
+          <div class="skeleton-row"></div>
+          <div class="skeleton-row"></div>
+        </li>
+      }
+
+      @if (!loading() && grouped().length === 0) {
+        <li class="notification-empty">
+          <i class='bx bx-bell-off'></i>
+          <p>No notifications yet</p>
+        </li>
+      }
+    </ul>
+  </div>
+</div>

@@ -1,6 +1,7 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, inject, signal, computed, effect, HostListener } from '@angular/core';
+import { Component, DoCheck, HostBinding, OnInit, OnDestroy, ViewChild, ElementRef, inject, signal, computed, effect, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { UsersService } from '../../services/users.service';
 import { AddChatModalComponent } from '../add-chat-modal/add-chat-modal.component';
@@ -13,16 +14,19 @@ import { MessageModel } from '../../models/database-models/message.model';
 import { ConversationModel, ConversationsService } from '../../services/conversations.service';
 import { MessageComponent } from '../templates/message/message.component';
 import { PostDetailModalComponent } from '../post-detail-modal/post-detail-modal.component';
+import { ShareRatingModalComponent } from '../share-rating-modal/share-rating-modal.component';
 import { PostWithRating } from '../../models/helper-models/post-with-ratings.interface';
+import { RatingModel } from '../../models/database-models/rating.model';
+import { ModalOverlayService } from '../../services/modal-overlay.service';
 
 @Component({
   selector: 'app-messages',
   standalone: true,
-  imports: [CommonModule, FormsModule, AddChatModalComponent, MessageComponent, PostDetailModalComponent],
+  imports: [CommonModule, FormsModule, AddChatModalComponent, MessageComponent, PostDetailModalComponent, ShareRatingModalComponent],
   templateUrl: './messages.component.html',
   styleUrl: './messages.component.css'
 })
-export class MessagesComponent implements OnInit, OnDestroy {
+export class MessagesComponent implements OnInit, OnDestroy, DoCheck {
   // Message loading
   messages = signal<MessageModel[]>([]);
   isLoadingMessages = signal(false);
@@ -37,6 +41,8 @@ export class MessagesComponent implements OnInit, OnDestroy {
   private usersService = inject(UsersService);
   public sidebarService = inject(SidebarService);
   private conversationsService = inject(ConversationsService);
+  private modalOverlayService = inject(ModalOverlayService);
+  private route = inject(ActivatedRoute);
 
   // State
   conversations = signal<ConversationWithDetailsModel[]>([]);
@@ -93,6 +99,19 @@ export class MessagesComponent implements OnInit, OnDestroy {
   chatPosts = signal<PostWithRating[]>([]);
   selectedPostIndex = signal<number>(0);
   showPostModal = signal(false);
+
+  // Share rating modal state
+  showShareModal = false;
+  shareRatingData: RatingModel | null = null;
+
+  @HostBinding('class.modal-open')
+  get isModalOpen() { return this.showPostModal() || this.showAddChatModal || this.showShareModal || this.showDeleteModal || this.showLeaveGroupModal || this.showEditGroupModal; }
+
+  ngDoCheck() {
+    if (this.isModalOpen) this.modalOverlayService.show();
+    else this.modalOverlayService.hide();
+  }
+
   selectedPost = computed(() => this.chatPosts()[this.selectedPostIndex()] ?? null);
   canNavigatePrevious = computed(() => this.selectedPostIndex() > 0);
   canNavigateNext = computed(() => this.selectedPostIndex() < this.chatPosts().length - 1);
@@ -129,11 +148,19 @@ export class MessagesComponent implements OnInit, OnDestroy {
     this.currentUser.set(current);
     this.currentUserId.set(current?.id || null);
     await this.loadConversations();
-    
+
     // Mark initial load as complete - shimmers won't show after this
     this.initialLoadComplete.set(true);
-    
-    if (this.conversations().length > 0) {
+
+    // Check for conversationId query param (from notification deep-link)
+    const targetConvId = this.route.snapshot.queryParamMap.get('conversationId');
+    const targetConv = targetConvId
+      ? this.conversations().find(c => c.id === targetConvId)
+      : null;
+
+    if (targetConv) {
+      await this.selectConversation(targetConv);
+    } else if (this.conversations().length > 0) {
       await this.selectConversation(this.conversations()[0]);
     }
   }
@@ -1137,14 +1164,29 @@ export class MessagesComponent implements OnInit, OnDestroy {
   shouldShowAvatar(index: number): boolean {
     const msgs = this.messages();
     const currentMsg = msgs[index];
-    
+
     // Always show on last message
     if (index === msgs.length - 1) {
       return true;
     }
-    
+
     // Show if next message is from a different sender
     const nextMsg = msgs[index + 1];
     return currentMsg.sender_id !== nextMsg.sender_id;
+  }
+
+  onShareRating(rating: RatingModel) {
+    this.shareRatingData = rating;
+    this.showShareModal = true;
+  }
+
+  onShareComplete() {
+    this.showShareModal = false;
+    this.shareRatingData = null;
+  }
+
+  onCancelShare() {
+    this.showShareModal = false;
+    this.shareRatingData = null;
   }
 }

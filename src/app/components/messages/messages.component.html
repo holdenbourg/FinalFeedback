@@ -492,5 +492,13 @@
   (navigateNext)="navigateToNextPost()"
   (postUpdated)="onModalPostUpdated($event)"
   (postDeleted)="onModalPostDeleted($event)"
-  (postVisibilityChanged)="onModalVisibilityChanged($event)">
+  (postVisibilityChanged)="onModalVisibilityChanged($event)"
+  (shareRating)="onShareRating($event)">
 </app-post-detail-modal>
+
+<app-share-rating-modal
+  *ngIf="showShareModal && shareRatingData"
+  [rating]="shareRatingData"
+  (share)="onShareComplete()"
+  (cancel)="onCancelShare()">
+</app-share-rating-modal>

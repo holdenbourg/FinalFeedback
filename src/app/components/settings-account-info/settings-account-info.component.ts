@@ -1,7 +1,7 @@
 // src/app/components/settings-account-info/settings-account-info.component.ts
 // COMPLETE FIXED VERSION
 
-import { Component, inject, OnInit, signal, OnDestroy } from '@angular/core';
+import { Component, DoCheck, HostBinding, inject, OnInit, signal, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RoutingService } from '../../services/routing.service';
@@ -11,6 +11,7 @@ import { UsersService } from '../../services/users.service';
 import { LogoutModalComponent } from '../logout-modal/logout-modal.component';
 import { AuthService } from '../../core/auth.service';
 import { DeleteAccountModalComponent } from '../delete-account-modal/delete-account-modal.component';
+import { ModalOverlayService } from '../../services/modal-overlay.service';
 
 @Component({
   selector: 'app-settings-account-info',
@@ -23,13 +24,22 @@ import { DeleteAccountModalComponent } from '../delete-account-modal/delete-acco
   templateUrl: './settings-account-info.component.html',
   styleUrl: './settings-account-info.component.css'
 })
-export class SettingsAccountInfoComponent implements OnInit, OnDestroy {
+export class SettingsAccountInfoComponent implements OnInit, OnDestroy, DoCheck {
   public routingService = inject(RoutingService);
   public sidebarService = inject(SidebarService);
   private usersService = inject(UsersService);
   private authService = inject(AuthService);
+  private modalOverlayService = inject(ModalOverlayService);
 
   showLogoutModal = false;
+
+  @HostBinding('class.modal-open')
+  get isModalOpen() { return this.showLogoutModal || this.showDeleteAccountModal; }
+
+  ngDoCheck() {
+    if (this.isModalOpen) this.modalOverlayService.show();
+    else this.modalOverlayService.hide();
+  }
 
   // State signals
   currentUser = signal<UserModel | null>(null);

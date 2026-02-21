@@ -8,6 +8,8 @@ import { UserModel } from '../../models/database-models/user.model';
 import { UsersService } from '../../services/users.service';
 import { LogoutModalComponent } from '../../components/logout-modal/logout-modal.component';
 import { AuthService } from '../../core/auth.service';
+import { ModalOverlayService } from '../../services/modal-overlay.service';
+import { NotificationsService } from '../../services/notifications.service';
 
 @Component({
   selector: 'app-desktop-layout',
@@ -22,7 +24,9 @@ export class DesktopLayoutComponent implements OnInit {
   public usersService = inject(UsersService);
   private authService = inject(AuthService);
   private router = inject(Router);
-  
+  public modalOverlayService = inject(ModalOverlayService);
+  public notificationsService = inject(NotificationsService);
+
   currentUser = signal<UserModel | null>(null);
   showLogoutModal = false;
 
@@ -33,6 +37,9 @@ export class DesktopLayoutComponent implements OnInit {
     // Load current user
     const current = await this.usersService.getCurrentUserProfile();
     this.currentUser.set(current);
+
+    // Initialize notifications (loads count + starts realtime)
+    await this.notificationsService.initialize();
   }
 
   // ✅ Check if current route is active
@@ -87,6 +94,7 @@ export class DesktopLayoutComponent implements OnInit {
     this.showLogoutModal = false;
     
     try {
+      this.notificationsService.unsubscribe();
       await this.authService.signOut();
       this.routingService.navigateToLogin();
     } catch (err) {

@@ -1,14 +1,16 @@
 // src/app/services/comments.service.ts
-// FIXED: Removed like_count from SELECT queries
 
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { supabase } from '../core/supabase.client';
 import { CommentModel } from '../models/database-models/comment.model';
+import { NotificationsService } from './notifications.service';
+import { NotificationType } from '../models/database-models/notification.model';
 
 type ChildrenByParent = Map<string, CommentModel[]>;
 
 @Injectable({ providedIn: 'root' })
 export class CommentsService {
+  private notificationsService = inject(NotificationsService);
   ///  Load all comments for a post and the replies to those comments  \\\
   async fetchThread(postId: string): Promise<{ roots: CommentModel[]; childrenByParent: Map<string, CommentModel[]>; }> {
     const { data, error } = await supabase
@@ -69,7 +71,58 @@ export class CommentsService {
 
     if (error) throw error;
 
-    return data as unknown as CommentModel;
+    const comment = data as unknown as CommentModel;
+
+    // Notify post owner + tagged users on the post
+    this.notifyOnComment(postId, comment.id, text).catch(() => {});
+
+    return comment;
+  }
+
+  private async notifyOnComment(postId: string, commentId: string, text: string): Promise<void> {
+    const { data: post } = await supabase
+      .from('posts')
+      .select('author_id, poster_url')
+      .eq('id', postId)
+      .single();
+    if (!post) return;
+
+    const { data: authorUser } = await supabase
+      .from('users')
+      .select('username')
+      .eq('id', post.author_id)
+      .single();
+    const authorUsername = authorUser?.username;
+
+    // Notify post owner
+    await this.notificationsService.create({
+      recipientId: post.author_id,
+      type: NotificationType.COMMENTED_ON_POST,
+      postId,
+      commentId,
+      metadata: { comment_preview: text.slice(0, 60), post_poster_url: post.poster_url, author_username: authorUsername },
+    });
+
+    // Notify tagged users on the post
+    const { data: tags } = await supabase
+      .from('tags')
+      .select('tagged_id')
+      .eq('target_type', 'post')
+      .eq('target_id', postId);
+
+    if (tags) {
+      for (const tag of tags) {
+        if (tag.tagged_id !== post.author_id) {
+          await this.notificationsService.create({
+            recipientId: tag.tagged_id,
+            type: NotificationType.COMMENT_ON_TAGGED_POST,
+            postId,
+            commentId,
+            metadata: { comment_preview: text.slice(0, 60), post_poster_url: post.poster_url, author_username: authorUsername },
+          });
+        }
+      }
+    }
   }
 
   ///  Add a reply to a comment/reply  \\\
@@ -104,7 +157,57 @@ export class CommentsService {
 
     if (error) throw error;
 
-    return data as unknown as CommentModel;
+    const reply = data as unknown as CommentModel;
+
+    // Notify parent comment author + post owner
+    this.notifyOnReply(parentCommentId, parent.post_id, reply.id, text).catch(() => {});
+
+    return reply;
+  }
+
+  private async notifyOnReply(parentCommentId: string, postId: string, replyId: string, text: string): Promise<void> {
+    const { data: parentComment } = await supabase
+      .from('comments')
+      .select('author_id')
+      .eq('id', parentCommentId)
+      .single();
+    if (!parentComment) return;
+
+    // Get post author username for deep-linking
+    const { data: post } = await supabase
+      .from('posts')
+      .select('author_id, poster_url')
+      .eq('id', postId)
+      .single();
+    let authorUsername: string | undefined;
+    if (post?.author_id) {
+      const { data: authorUser } = await supabase
+        .from('users')
+        .select('username')
+        .eq('id', post.author_id)
+        .single();
+      authorUsername = authorUser?.username;
+    }
+
+    // Notify parent comment author
+    await this.notificationsService.create({
+      recipientId: parentComment.author_id,
+      type: NotificationType.REPLIED_TO_COMMENT,
+      postId,
+      commentId: replyId,
+      metadata: { comment_preview: text.slice(0, 60), author_username: authorUsername },
+    });
+
+    // Notify post owner if different from parent comment author
+    if (post && post.author_id !== parentComment.author_id) {
+      await this.notificationsService.create({
+        recipientId: post.author_id,
+        type: NotificationType.REPLIED_TO_COMMENT_ON_POST,
+        postId,
+        commentId: replyId,
+        metadata: { comment_preview: text.slice(0, 60), post_poster_url: post.poster_url, author_username: authorUsername },
+      });
+    }
   }
 
   /**

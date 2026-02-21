@@ -1,10 +1,13 @@
 // src/app/services/follows.service.ts
 
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { supabase } from '../core/supabase.client';
+import { NotificationsService } from './notifications.service';
+import { NotificationType } from '../models/database-models/notification.model';
 
 @Injectable({ providedIn: 'root' })
 export class FollowsService {
+  private notificationsService = inject(NotificationsService);
   /**
    * Check if user1 is following user2 (accepted follow)
    */
@@ -83,6 +86,11 @@ export class FollowsService {
         });
 
       if (error) throw error;
+
+      this.notificationsService.create({
+        recipientId: targetId,
+        type: NotificationType.REQUESTED_FOLLOW,
+      }).catch(() => {});
     } else {
       // Public account - follow immediately
       const { error } = await supabase
@@ -93,6 +101,11 @@ export class FollowsService {
         });
 
       if (error) throw error;
+
+      this.notificationsService.create({
+        recipientId: targetId,
+        type: NotificationType.STARTED_FOLLOWING,
+      }).catch(() => {});
     }
   }
 
@@ -154,6 +167,11 @@ export class FollowsService {
       .eq('target_id', user.id);
 
     if (deleteErr) throw deleteErr;
+
+    this.notificationsService.create({
+      recipientId: requesterId,
+      type: NotificationType.ACCEPTED_FOLLOW_REQUEST,
+    }).catch(() => {});
   }
 
   /**

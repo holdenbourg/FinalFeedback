@@ -7,6 +7,7 @@ import { RatingsService } from '../../services/ratings.service';
 import { supabase } from '../../core/supabase.client';
 import { UserModel } from '../../models/database-models/user.model';
 import { UsersService } from '../../services/users.service';
+import { RatingModel } from '../../models/database-models/rating.model';
 
 @Component({
   selector: 'app-post-detail-modal',
@@ -25,13 +26,15 @@ export class PostDetailModalComponent implements OnInit, OnChanges {
   @Input() totalPosts: number = 0;
   @Input() canNavigatePrevious: boolean = false;
   @Input() canNavigateNext: boolean = false;
-  
+  @Input() highlightCommentId: string | null = null;
+
   @Output() close = new EventEmitter<void>();
   @Output() navigatePrevious = new EventEmitter<void>();
   @Output() navigateNext = new EventEmitter<void>();
   @Output() postUpdated = new EventEmitter<{ index: number; likeCount: number }>();
   @Output() postDeleted = new EventEmitter<{ postId: string; ratingId: string }>();
   @Output() postVisibilityChanged = new EventEmitter<{ postId: string; visibility: 'public' | 'archived' }>();
+  @Output() shareRating = new EventEmitter<RatingModel>();
 
   currentUser = signal<UserModel | null>(null);
 

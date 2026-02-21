@@ -1,30 +1,34 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnInit, ViewChild, ElementRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, HostBinding, HostListener, OnInit, ViewChild, ElementRef, inject, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { SidebarService } from '../../services/sidebar.service';
 import { RoutingService } from '../../services/routing.service';
 import { FeedPostComponent } from '../templates/feed-post/feed-post.component';
+import { ShareRatingModalComponent } from '../share-rating-modal/share-rating-modal.component';
 import { PostModelWithAuthor } from '../../models/database-models/post.model';
 import { FeedService } from '../../services/feed.service';
 import { UsersService } from '../../services/users.service';
 import { UserModel } from '../../models/database-models/user.model';
+import { RatingModel } from '../../models/database-models/rating.model';
 import { DeviceService } from '../../services/device.service';
+import { ModalOverlayService } from '../../services/modal-overlay.service';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, FeedPostComponent],
+  imports: [CommonModule, RouterModule, FeedPostComponent, ShareRatingModalComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, DoCheck {
   readonly routingService = inject(RoutingService);
   readonly sidebarService = inject(SidebarService);
   readonly usersService = inject(UsersService);
   private feedService = inject(FeedService);
   public deviceService = inject(DeviceService);
   private changeDetectorRef = inject(ChangeDetectorRef);
+  private modalOverlayService = inject(ModalOverlayService);
 
   public currentUser = signal<UserModel | null>(null);
   public authUserId = signal<string | null>(null);
@@ -33,6 +37,18 @@ export class HomeComponent implements OnInit {
   usersMemoryLanePosts: PostModelWithAuthor[] = [];
 
   mode: 'feed' | 'memory' = 'feed';
+
+  // Share rating modal state
+  showShareModal = false;
+  shareRatingData: RatingModel | null = null;
+
+  @HostBinding('class.modal-open')
+  get isModalOpen() { return this.showShareModal; }
+
+  ngDoCheck() {
+    if (this.isModalOpen) this.modalOverlayService.show();
+    else this.modalOverlayService.hide();
+  }
 
   @ViewChild('feedScroll') feedScrollRef?: ElementRef<HTMLDivElement>;
 
@@ -192,6 +208,24 @@ export class HomeComponent implements OnInit {
   onWindowResize(evt: UIEvent) {
     const width = (evt.target as Window).innerWidth;
     this.sidebarService.applySidebarByWidth(width);
+  }
+
+  onShareRating(rating: RatingModel) {
+    this.shareRatingData = rating;
+    this.showShareModal = true;
+    this.changeDetectorRef.markForCheck();
+  }
+
+  onShareComplete() {
+    this.showShareModal = false;
+    this.shareRatingData = null;
+    this.changeDetectorRef.markForCheck();
+  }
+
+  onCancelShare() {
+    this.showShareModal = false;
+    this.shareRatingData = null;
+    this.changeDetectorRef.markForCheck();
   }
 
   trackPost = (_: number, post: PostModelWithAuthor) => post.id ?? _;

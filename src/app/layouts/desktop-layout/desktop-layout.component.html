@@ -11,6 +11,9 @@
   <div class="row r10"><div class="inner"></div></div>
 </div>
 
+<!-- Modal overlay: sits between poster-rows (z:0) and sidebar (z:2) -->
+<div class="modal-overlay" *ngIf="modalOverlayService.active()" aria-hidden="true"></div>
+
 <!-- ✅ SIDEBAR -->
 <nav class="sidebar" [class.active]="sidebarService.sidebarActive()" [class.no-anim]="sidebarService.suppressAnim()" *ngIf="showSidebar()">
     <div class="logo-menu">
@@ -65,6 +68,9 @@
             <a (click)="routingService.navigateToNotifications()">
                 <i class='bx bx-bell'></i>
                 <span class="link-name" [style.--i]="getNavDelay()[6]">Notifications</span>
+                <span class="notification-badge" *ngIf="notificationsService.unreadCount() > 0">
+                    {{ notificationsService.unreadCount() > 99 ? '99+' : notificationsService.unreadCount() }}
+                </span>
             </a>
         </li>
 

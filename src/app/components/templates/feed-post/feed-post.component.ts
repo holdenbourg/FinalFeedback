@@ -17,7 +17,6 @@ import { UsersService } from '../../../services/users.service';
 import { MessagesService } from '../../../services/messages.service';
 import { RatingModel } from '../../../models/database-models/rating.model';
 import { ConversationsService } from '../../../services/conversations.service';
-import { ShareRatingModalComponent } from '../../share-rating-modal/share-rating-modal.component';
 
 type UiComment = {
   commentId: string;
@@ -47,14 +46,16 @@ type UiReply = {
 @Component({
   selector: 'app-feed-post',
   standalone: true,
-  imports: [CommonModule, FormsModule, CommentComponent, ReplyComponent, ShareRatingModalComponent],
+  imports: [CommonModule, FormsModule, CommentComponent, ReplyComponent],
   templateUrl: './feed-post.component.html',
   styleUrls: ['./feed-post.component.css'],
 })
 
 export class FeedPostComponent implements OnInit, OnChanges {
   @Input() feedPost!: PostModelWithAuthor;
+  @Input() autoHighlightId: string | null = null;
   @Output() postLikeChanged = new EventEmitter<number>();
+  @Output() shareRating = new EventEmitter<RatingModel>();
 
   @ViewChild('scrollBox') scrollBoxRef!: ElementRef<HTMLDivElement>;
   @ViewChild('commentInputReference') commentInputReference?: ElementRef<HTMLInputElement>;
@@ -147,6 +148,19 @@ export class FeedPostComponent implements OnInit, OnChanges {
       
       this.isLoadingComments = false;
       this.changeDetectorRef.markForCheck();
+
+      // Auto-highlight a comment/reply if requested via input
+      if (this.autoHighlightId) {
+        const id = this.autoHighlightId;
+        this.autoHighlightId = null;
+        // Expand all replies first, then scroll after DOM renders
+        for (const [parentId, replies] of this.repliesByComment.entries()) {
+          this.replyDisplayLimit.set(parentId, replies.length);
+        }
+        this.changeDetectorRef.detectChanges();
+        setTimeout(() => this.highlightAndScroll('c-' + id), 300);
+        setTimeout(() => this.highlightAndScroll('r-' + id), 350);
+      }
     } catch (err) {
       console.error('Error initializing post:', err);
       this.isLoadingComments = false;
@@ -688,7 +702,7 @@ export class FeedPostComponent implements OnInit, OnChanges {
   // ======================
   // Utilities used by template
   // ======================
-  private highlightAndScroll(elementId: string) {
+  highlightAndScroll(elementId: string) {
     const scrollContainer = this.scrollBoxRef?.nativeElement;
     if (!scrollContainer) return;
 
@@ -752,31 +766,13 @@ export class FeedPostComponent implements OnInit, OnChanges {
     }
   }
 
-// Add property
-showShareModal = false;
-postRatingForShare: RatingModel | null = null;
-
-  // Update onShare method
-  async onShare() {
-    // Get rating for this post
+  // Emit share event to parent (modal rendered at route-component level)
+  onShare() {
     if (!this.postRating) {
       console.error('No rating data available');
       return;
     }
-
-    this.postRatingForShare = this.postRating;
-    this.showShareModal = true;
-  }
-
-  // Handle share complete (modal handles sending internally, just close)
-  onShareComplete() {
-    this.showShareModal = false;
-    this.postRatingForShare = null;
-  }
-
-  onCancelShare() {
-    this.showShareModal = false;
-    this.postRatingForShare = null;
+    this.shareRating.emit(this.postRating as unknown as RatingModel);
   }
 
   onSave() {

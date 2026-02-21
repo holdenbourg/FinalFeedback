@@ -56,9 +56,11 @@
 
     <!-- Feed Post Component (exact same as home feed) -->
     <div class="post-wrapper">
-      <app-feed-post 
+      <app-feed-post
         [feedPost]="feedPost"
-        (postLikeChanged)="onPostLikeChanged($event)">
+        [autoHighlightId]="highlightCommentId"
+        (postLikeChanged)="onPostLikeChanged($event)"
+        (shareRating)="shareRating.emit($event)">
       </app-feed-post>
     </div>
 

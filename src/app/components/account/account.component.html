@@ -276,11 +276,20 @@
     [totalPosts]="posts().length"
     [canNavigatePrevious]="canNavigatePrevious()"
     [canNavigateNext]="canNavigateNext()"
+    [highlightCommentId]="highlightCommentId()"
     (close)="closePostModal()"
     (navigatePrevious)="navigateToPreviousPost()"
     (navigateNext)="navigateToNextPost()"
     (postUpdated)="onPostUpdated($event)"
     (postDeleted)="onModalPostDeleted($event)"
     (postVisibilityChanged)="onModalVisibilityChanged($event)"
+    (shareRating)="onShareRating($event)"
   ></app-post-detail-modal>
 </div>
+
+<app-share-rating-modal
+  *ngIf="showShareModal && shareRatingData"
+  [rating]="shareRatingData"
+  (share)="onShareComplete()"
+  (cancel)="onCancelShare()">
+</app-share-rating-modal>

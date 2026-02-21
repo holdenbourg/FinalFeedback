@@ -5,13 +5,20 @@
   font-family: "Poppins", sans-serif;
 }
 
+:host {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
 /* ========== Modal Backdrop with Blur ========== */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.225);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 1000;
   animation: fadeIn 0.2s ease;
   display: flex;

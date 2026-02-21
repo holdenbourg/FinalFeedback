@@ -19,6 +19,9 @@ export class RoutingService {
   navigateToMessages() {
     this.router.navigate(['/messages']);
   }
+  navigateToMessagesConversation(conversationId: string) {
+    this.router.navigate(['/messages'], { queryParams: { conversationId } });
+  }
 
   navigateToSearchAll(q?: string) {
     this.router.navigate(['/search', 'all'], { queryParams: { q: q || null } });
@@ -92,6 +95,12 @@ export class RoutingService {
   }
   navigateToAccountsArchive(username: string) {
     this.navigateToAccount(username, 'archive');
+  }
+  navigateToAccountPost(username: string, postId: string) {
+    this.router.navigate(['/account', username], { queryParams: { tab: 'posts', postId } });
+  }
+  navigateToAccountPostComment(username: string, postId: string, commentId: string) {
+    this.router.navigate(['/account', username], { queryParams: { tab: 'posts', postId, commentId } });
   }
 
   navigateToNotifications() {

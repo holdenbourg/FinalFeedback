@@ -58,6 +58,18 @@
 }
 
 /* ============================================ */
+/* MODAL OVERLAY — replaces route ::before     */
+/* when a modal is open (z:1, below sidebar)   */
+/* ============================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: rgba(0, 0, 0, var(--bg-dim, 0.8));
+  pointer-events: none;
+}
+
+/* ============================================ */
 /* SIDEBAR */
 /* ============================================ */
 .sidebar {
@@ -230,4 +242,28 @@
 .no-anim * {
   transition: none !important;
   animation: none !important;
+}
+
+/* Notification badge */
+.list .list-item a {
+  position: relative;
+}
+.notification-badge {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 8px;
+  background: #e53e3e;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 10px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  line-height: 1;
+  pointer-events: none;
 }

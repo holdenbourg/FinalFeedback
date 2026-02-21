@@ -1,9 +1,12 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { supabase } from '../core/supabase.client';
 import { MessageModel } from '../models/database-models/message.model';
+import { NotificationsService } from './notifications.service';
+import { NotificationType } from '../models/database-models/notification.model';
 
 @Injectable({ providedIn: 'root' })
 export class MessagesService {
+  private notificationsService = inject(NotificationsService);
   
   private readonly BATCH_SIZE = 50;  // Load 50 messages at a time
 
@@ -122,7 +125,47 @@ export class MessagesService {
       .single();
 
     if (error) throw error;
+
+    // Notify other participants
+    this.notifyMessageRecipients(
+      conversationId,
+      user.id,
+      replyToMessageId ? NotificationType.MESSAGE_REPLIED : NotificationType.MESSAGE_SENT,
+      content.trim(),
+    ).catch(() => {});
+
     return data as MessageModel;
+  }
+
+  private async notifyMessageRecipients(
+    conversationId: string,
+    senderId: string,
+    type: NotificationType,
+    content: string,
+    ratingTitle?: string,
+  ): Promise<void> {
+    const { data: conv } = await supabase
+      .from('conversations')
+      .select('participant_ids')
+      .eq('id', conversationId)
+      .single();
+    if (!conv?.participant_ids) return;
+
+    for (const participantId of conv.participant_ids) {
+      if (participantId === senderId) continue;
+      const metadata: any = {
+        conversation_id: conversationId,
+        message_preview: content.slice(0, 60),
+      };
+      if (ratingTitle) {
+        metadata.rating_title = ratingTitle;
+      }
+      await this.notificationsService.create({
+        recipientId: participantId,
+        type,
+        metadata,
+      });
+    }
   }
 
   /**
@@ -171,6 +214,17 @@ export class MessagesService {
       .single();
 
     if (error) throw error;
+
+    // Notify other participants about the shared rating
+    const ratingTitle = (data as any).shared_rating?.title;
+    this.notifyMessageRecipients(
+      conversationId,
+      user.id,
+      NotificationType.MESSAGE_SHARED_RATING,
+      comment?.trim() || 'Shared a rating',
+      ratingTitle,
+    ).catch(() => {});
+
     return data as MessageModel;
   }
 

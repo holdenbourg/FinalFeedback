@@ -20,3 +20,245 @@
   pointer-events: none;
   background: rgba(0, 0, 0, var(--bg-dim, 0.8));
 }
+
+/* ---------- Container ---------- */
+.container {
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  left: 280px;
+  right: 20px;
+  bottom: 20px;
+  top: 20px;
+  width: auto;
+  height: auto;
+  transition: .5s;
+}
+.container.active {
+  left: 100px;
+}
+
+/* ---------- Notifications Container ---------- */
+.notifications-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  margin: 0 auto;
+  border: .2vw solid #fff;
+  border-radius: 10px;
+  backdrop-filter: blur(3px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+.notifications-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---------- Header ---------- */
+.notifications-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.notifications-header h2 {
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+.clear-all-btn {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+  font-family: "Poppins", sans-serif;
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.clear-all-btn:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+}
+
+/* ---------- List ---------- */
+.notification-list {
+  list-style: none;
+}
+
+/* ---------- Item ---------- */
+.notification-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.notification-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.notification-item.unread {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* ---------- Avatar ---------- */
+.avatar-stack {
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+}
+.avatar-wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 44px;
+  height: 44px;
+}
+.avatar-wrap.stacked:first-child {
+  width: 34px;
+  height: 34px;
+  top: 0;
+  left: 0;
+  z-index: 2;
+}
+.avatar-wrap.stacked:nth-child(2) {
+  width: 28px;
+  height: 28px;
+  top: 16px;
+  left: 16px;
+  z-index: 1;
+}
+.avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* ---------- Body ---------- */
+.notification-body {
+  flex: 1;
+  min-width: 0;
+}
+.notification-text {
+  color: #fff;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.actor-name {
+  font-weight: 600;
+  cursor: pointer;
+}
+.actor-name:hover {
+  text-decoration: underline;
+}
+.notification-time {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.75rem;
+  margin-top: 2px;
+  display: inline-block;
+}
+
+/* ---------- Unread Dot ---------- */
+.unread-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3b82f6;
+}
+
+/* ---------- Thumbnail ---------- */
+.notification-thumbnail {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+/* ---------- Loading Skeleton ---------- */
+.notification-loading {
+  padding: 14px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.skeleton-row {
+  height: 44px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ---------- Empty State ---------- */
+.notification-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: rgba(255, 255, 255, 0.4);
+}
+.notification-empty i {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+.notification-empty p {
+  font-size: 0.95rem;
+}
+
+/* ---------- Delete Button ---------- */
+.delete-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+.notification-item:hover .delete-btn {
+  opacity: 1;
+}
+.delete-btn:hover {
+  color: rgba(255, 255, 255, 0.7);
+}

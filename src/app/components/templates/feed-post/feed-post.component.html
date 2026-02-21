@@ -258,10 +258,3 @@
     </div>
   </div>
 </div>
-
-<app-share-rating-modal
-  *ngIf="showShareModal && postRatingForShare"
-  [rating]="postRatingForShare"
-  (share)="onShareComplete()"
-  (cancel)="onCancelShare()">
-</app-share-rating-modal>

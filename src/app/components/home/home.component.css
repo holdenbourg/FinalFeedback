@@ -11,6 +11,12 @@
     display: block;
     overflow: hidden;
 }
+:host.modal-open {
+    z-index: 3;
+}
+:host.modal-open::before {
+    display: none;
+}
 :host::before {
     content: "";
     position: fixed;

@@ -1,6 +1,6 @@
 // src/app/components/settings-privacy/settings-privacy.component.ts
 
-import { Component, inject, signal, OnDestroy } from '@angular/core';
+import { Component, DoCheck, HostBinding, inject, signal, OnDestroy } from '@angular/core';
 import { UserModel } from '../../models/database-models/user.model';
 import { RoutingService } from '../../services/routing.service';
 import { SidebarService } from '../../services/sidebar.service';
@@ -9,6 +9,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LogoutModalComponent } from '../logout-modal/logout-modal.component';
 import { AuthService } from '../../core/auth.service';
+import { ModalOverlayService } from '../../services/modal-overlay.service';
 
 @Component({
   selector: 'app-settings-privacy',
@@ -17,13 +18,22 @@ import { AuthService } from '../../core/auth.service';
   templateUrl: './settings-privacy.component.html',
   styleUrl: './settings-privacy.component.css'
 })
-export class SettingsPrivacyComponent implements OnDestroy {
+export class SettingsPrivacyComponent implements OnDestroy, DoCheck {
   public routingService = inject(RoutingService);
   public sidebarService = inject(SidebarService);
   private usersService = inject(UsersService);
   private authService = inject(AuthService);
+  private modalOverlayService = inject(ModalOverlayService);
 
   showLogoutModal = false;
+
+  @HostBinding('class.modal-open')
+  get isModalOpen() { return this.showLogoutModal; }
+
+  ngDoCheck() {
+    if (this.isModalOpen) this.modalOverlayService.show();
+    else this.modalOverlayService.hide();
+  }
 
   // State signals
   currentUser = signal<UserModel | null>(null);

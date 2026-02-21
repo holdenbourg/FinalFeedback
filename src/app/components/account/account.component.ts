@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal, computed, ChangeDetectorRef, WritableSignal } from '@angular/core';
+import { Component, DoCheck, HostBinding, OnInit, inject, signal, computed, ChangeDetectorRef, WritableSignal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { combineLatest } from 'rxjs';
 import { UsersService } from '../../services/users.service';
@@ -11,18 +11,21 @@ import { FollowsService } from '../../services/follow.service';
 import { RoutingService } from '../../services/routing.service';
 import { SidebarService } from '../../services/sidebar.service';
 import { PostDetailModalComponent } from '../post-detail-modal/post-detail-modal.component';
+import { ShareRatingModalComponent } from '../share-rating-modal/share-rating-modal.component';
 import { BlocksService } from '../../services/blocks.service';
+import { RatingModel } from '../../models/database-models/rating.model';
+import { ModalOverlayService } from '../../services/modal-overlay.service';
 
 type TabType = 'posts' | 'tagged' | 'archive';
 
 @Component({
   selector: 'app-account',
   standalone: true,
-  imports: [CommonModule, PostDetailModalComponent],
+  imports: [CommonModule, PostDetailModalComponent, ShareRatingModalComponent],
   templateUrl: './account.component.html',
   styleUrl: './account.component.css'
 })
-export class AccountComponent implements OnInit {
+export class AccountComponent implements OnInit, DoCheck {
   // Services
   private route = inject(ActivatedRoute);
   private usersService = inject(UsersService);
@@ -30,6 +33,7 @@ export class AccountComponent implements OnInit {
   public routingService = inject(RoutingService);
   public sidebarService = inject(SidebarService);
   private blocksService = inject(BlocksService);
+  private modalOverlayService = inject(ModalOverlayService);
 
   // State signals
   currentUser = signal<UserModel | null>(null);
@@ -79,6 +83,19 @@ export class AccountComponent implements OnInit {
   // Modal state
   selectedPostIndex = signal<number | null>(null);
   showPostModal = signal(false);
+  highlightCommentId = signal<string | null>(null);
+
+  // Share rating modal state
+  showShareModal = false;
+  shareRatingData: RatingModel | null = null;
+
+  @HostBinding('class.modal-open')
+  get isModalOpen() { return this.showPostModal() || this.showShareModal; }
+
+  ngDoCheck() {
+    if (this.isModalOpen) this.modalOverlayService.show();
+    else this.modalOverlayService.hide();
+  }
 
   // Modal navigation
   canNavigatePrevious = computed(() => {
@@ -152,10 +169,21 @@ export class AccountComponent implements OnInit {
     ]).subscribe(async ([params, query]) => {
       const username = params.get('username');
       const tab = (query.get('tab') || 'posts') as TabType;
+      const postId = query.get('postId');
+      const commentId = query.get('commentId');
 
       if (username) {
         this.username.set(username);
         await this.loadAccount(username, tab);
+
+        // Auto-open post modal if postId query param is present
+        if (postId) {
+          this.highlightCommentId.set(commentId);
+          const postIndex = this.posts().findIndex(p => p.post.id === postId);
+          if (postIndex >= 0) {
+            this.openPostModal(postIndex);
+          }
+        }
       }
     });
   }
@@ -631,6 +659,7 @@ export class AccountComponent implements OnInit {
   closePostModal() {
     this.showPostModal.set(false);
     this.selectedPostIndex.set(null);
+    this.highlightCommentId.set(null);
   }
 
   navigateToPreviousPost() {
@@ -980,6 +1009,21 @@ export class AccountComponent implements OnInit {
     } catch (err) {
       console.error('[Account] Failed to load social data:', err);
     }
+  }
+
+  onShareRating(rating: RatingModel) {
+    this.shareRatingData = rating;
+    this.showShareModal = true;
+  }
+
+  onShareComplete() {
+    this.showShareModal = false;
+    this.shareRatingData = null;
+  }
+
+  onCancelShare() {
+    this.showShareModal = false;
+    this.shareRatingData = null;
   }
 
   formatDate(isoDate: string): string {

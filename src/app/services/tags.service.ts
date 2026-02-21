@@ -1,6 +1,9 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { supabase } from '../core/supabase.client';
 import { TaggedUser } from '../models/helper-models/film-data.model';
+import { NotificationsService } from './notifications.service';
+import { NotificationType, NotificationMetadata } from '../models/database-models/notification.model';
+
 export interface CreateTagData {
   tagged_id: string;  // User being tagged
   target_type: 'post' | 'comment' | 'reply';
@@ -10,6 +13,8 @@ export interface CreateTagData {
 
 @Injectable({ providedIn: 'root' })
 export class TagsService {
+  private notificationsService = inject(NotificationsService);
+
   /**
    * Get visible tagged users for a post
    * The database function filters out blocked users automatically
@@ -59,7 +64,86 @@ export class TagsService {
 
     if (error) throw error;
 
+    // Notify the tagged user
+    this.notifyTaggedUser(data.tagged_id, data.target_type, data.target_id).catch(() => {});
+
     return tag.id;
+  }
+
+  private async notifyTaggedUser(
+    taggedId: string,
+    targetType: 'post' | 'comment' | 'reply',
+    targetId: string
+  ): Promise<void> {
+    const typeMap: Record<string, NotificationType> = {
+      post: NotificationType.TAGGED_IN_POST,
+      comment: NotificationType.TAGGED_IN_COMMENT,
+      reply: NotificationType.TAGGED_IN_REPLY,
+    };
+
+    let postId: string | undefined;
+    let metadata: NotificationMetadata = {};
+
+    if (targetType === 'post') {
+      postId = targetId;
+      // Get rating title for post tags
+      const { data: post } = await supabase
+        .from('posts')
+        .select('rating_id, poster_url, author_id')
+        .eq('id', targetId)
+        .single();
+      if (post) {
+        if (post.author_id) {
+          const { data: authorUser } = await supabase
+            .from('users')
+            .select('username')
+            .eq('id', post.author_id)
+            .single();
+          metadata.author_username = authorUser?.username;
+        }
+        if (post.poster_url) metadata.post_poster_url = post.poster_url;
+        if (post.rating_id) {
+          const { data: rating } = await supabase
+            .from('ratings')
+            .select('title')
+            .eq('id', post.rating_id)
+            .single();
+          if (rating) metadata.rating_title = rating.title;
+        }
+      }
+    } else {
+      // For comment/reply tags, get the post_id from the comment
+      const { data: comment } = await supabase
+        .from('comments')
+        .select('post_id')
+        .eq('id', targetId)
+        .single();
+      if (comment) {
+        postId = comment.post_id;
+        // Get post author username for deep-linking
+        const { data: p } = await supabase
+          .from('posts')
+          .select('author_id')
+          .eq('id', comment.post_id)
+          .single();
+        if (p?.author_id) {
+          const { data: authorUser } = await supabase
+            .from('users')
+            .select('username')
+            .eq('id', p.author_id)
+            .single();
+          metadata.author_username = authorUser?.username;
+        }
+      }
+    }
+
+    await this.notificationsService.create({
+      recipientId: taggedId,
+      type: typeMap[targetType],
+      postId,
+      commentId: targetType !== 'post' ? targetId : undefined,
+      metadata,
+    });
   }
 
   /**
@@ -85,8 +169,13 @@ export class TagsService {
       .insert(tags);
 
     if (error) throw error;
+
+    // Notify each tagged user
+    for (const taggedId of taggedUserIds) {
+      this.notifyTaggedUser(taggedId, 'post', postId).catch(() => {});
+    }
   }
-  
+
   /**
    * Create tags from @mentions in text
    * Validates that mentioned users exist before creating tags
@@ -177,6 +266,12 @@ export class TagsService {
       }
 
       console.log(`[TagsService] Created ${created?.length || 0} tags`);
+
+      // Notify each tagged user
+      for (const tag of validTags) {
+        this.notifyTaggedUser(tag.tagged_id, targetType, targetId).catch(() => {});
+      }
+
       return (created || []).map(t => t.id);
 
     } catch (err) {

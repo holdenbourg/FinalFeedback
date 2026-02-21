@@ -1,5 +1,7 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { supabase } from '../core/supabase.client';
+import { NotificationsService } from './notifications.service';
+import { NotificationType } from '../models/database-models/notification.model';
 
 // Import the actual models from your codebase
 // These match your rating-model.ts exactly
@@ -41,6 +43,8 @@ export interface PostRating {
 
 @Injectable({ providedIn: 'root' })
 export class RatingsService {
+  private notificationsService = inject(NotificationsService);
+
   ///  Get rating data for a specific post (via post.rating_id)  \\\
   async getRatingByPostId(postId: string): Promise<PostRating | null> {
     // First get the post to find its rating_id
@@ -182,6 +186,17 @@ export class RatingsService {
 
     if (error) throw error;
 
+    // Notify all followers
+    this.notificationsService.createForFollowers({
+      type: NotificationType.RATED_TITLE,
+      ratingId: data.id,
+      metadata: {
+        rating_title: title,
+        rating_value: overallRating,
+        post_poster_url: posterUrl,
+      },
+    }).catch(() => {});
+
     return data.id;
   }
 
@@ -255,6 +270,22 @@ export class RatingsService {
       .eq('user_id', user.id);
 
     if (error) throw error;
+
+    // Notify all followers about re-rating
+    if (updates.rating !== undefined) {
+      const rating = await this.getRatingById(ratingId);
+      if (rating) {
+        this.notificationsService.createForFollowers({
+          type: NotificationType.RERATED_TITLE,
+          ratingId,
+          metadata: {
+            rating_title: rating.title,
+            rating_value: updates.rating,
+            post_poster_url: rating.poster_url,
+          },
+        }).catch(() => {});
+      }
+    }
   }
 
   ///  Delete a rating (use delete_rating_cascade function instead for safety)  \\\
