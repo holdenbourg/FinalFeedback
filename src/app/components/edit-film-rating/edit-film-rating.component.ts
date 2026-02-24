@@ -461,7 +461,7 @@ export class EditFilmRatingComponent implements OnInit {
 
     // Strictly parse YYYY-MM-DD
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
-    if (!match) return ymd; // fallback (don’t crash)
+    if (!match) return ymd; // fallback (don't crash)
 
     const [, year, month, day] = match;
 

@@ -229,7 +229,7 @@
 <!-- ============================================ -->
 <!--  TV VIEW -->
 <!-- ============================================ -->
-<div class="container tv-container" *ngIf="!loading && !error && tvSeriesDetails && type === 'tv'; else loadingOrError">
+<div class="container tv-container" *ngIf="!loading && !error && tvSeriesDetails && type === 'tv'">
   <div class="left-information">
     <div class="information">
       <!-- Director/Writer Section -->
@@ -564,8 +564,8 @@
     <p>{{ error }}</p>
   </div>
 
-  <!-- Loading Shimmer -->
-  <div class="container shimmer-container" *ngIf="loading">
+  <!-- Loading Shimmer: Movie / TV -->
+  <div class="container shimmer-container" *ngIf="loading && type !== 'person'">
     <!-- Left Column Shimmer -->
     <div class="left-information shimmer-left">
       <div class="shimmer-row">
@@ -631,24 +631,85 @@
         </div>
       </div>
 
-      <!-- Ratings + Button Shimmer -->
-      <div class="ratings-button shimmer-ratings-button">
-        <div class="ratings shimmer-ratings-grid">
-          <div class="shimmer-rating-item">
-            <div class="shimmer-rating-logo"></div>
-            <div class="shimmer-rating-score"></div>
-          </div>
-          <div class="shimmer-rating-item">
-            <div class="shimmer-rating-logo"></div>
-            <div class="shimmer-rating-score"></div>
-          </div>
-          <div class="shimmer-rating-item">
-            <div class="shimmer-rating-logo"></div>
-            <div class="shimmer-rating-score"></div>
+      <!-- Ratings Shimmer -->
+      <div class="ratings shimmer-ratings-grid">
+        <div class="shimmer-rating-item">
+          <div class="shimmer-rating-logo"></div>
+          <div class="shimmer-rating-score"></div>
+        </div>
+        <div class="shimmer-rating-item">
+          <div class="shimmer-rating-logo"></div>
+          <div class="shimmer-rating-score"></div>
+        </div>
+        <div class="shimmer-rating-item">
+          <div class="shimmer-rating-logo"></div>
+          <div class="shimmer-rating-score"></div>
+        </div>
+      </div>
+
+      <!-- Rate Button Shimmer -->
+      <div class="rate-button shimmer-rate-button"></div>
+    </div>
+  </div>
+
+  <!-- Loading Shimmer: Person -->
+  <div class="container shimmer-container" *ngIf="loading && type === 'person'">
+    <!-- Left Column Shimmer (same as movie/tv) -->
+    <div class="left-information shimmer-left">
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 60%;"></div>
+      </div>
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 45%;"></div>
+      </div>
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 70%;"></div>
+      </div>
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 85%;"></div>
+      </div>
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 85%;"></div>
+      </div>
+      <div class="shimmer-row">
+        <div class="shimmer-label"></div>
+        <div class="shimmer-value" style="width: 85%;"></div>
+      </div>
+    </div>
+
+    <!-- Right Column Shimmer (person layout) -->
+    <div class="right-information shimmer-right">
+      <!-- Person Info Shimmer (35% height) -->
+      <div class="person-information shimmer-person-info">
+        <div class="shimmer-film-content">
+          <div class="shimmer-title"></div>
+          <div class="shimmer-release"></div>
+          <div class="shimmer-release" style="width: 35%;"></div>
+        </div>
+        <div class="shimmer-poster"></div>
+      </div>
+
+      <!-- Cast/Crew Shimmer (62.5% height) -->
+      <div class="cast-crew shimmer-cast-crew">
+        <div class="person-tabs shimmer-person-tabs">
+          <div class="shimmer-tab-btn"></div>
+          <div class="shimmer-tab-btn"></div>
+        </div>
+        <div class="shimmer-credits-list">
+          <div class="shimmer-credit-row" *ngFor="let i of [1,2,3,4]">
+            <div class="shimmer-credit-poster"></div>
+            <div class="shimmer-credit-text">
+              <div class="shimmer-value" style="width: 70%;"></div>
+              <div class="shimmer-value" style="width: 50%; height: 14px;"></div>
+              <div class="shimmer-value" style="width: 40%; height: 14px;"></div>
+            </div>
           </div>
         </div>
-        
-        <div class="rate-button shimmer-rate-button"></div>
       </div>
     </div>
   </div>

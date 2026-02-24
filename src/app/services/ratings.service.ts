@@ -106,6 +106,17 @@ export class RatingsService {
     return (data ?? []) as PostRating[];
   }
 
+  ///  Lightweight check: does user have at least one rating?  \\\
+  async hasAnyRatings(userId: string): Promise<boolean> {
+    const { count, error } = await supabase
+      .from('ratings')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    if (error) return false;
+    return (count ?? 0) > 0;
+  }
+
   ///  Get only movies for a user  \\\
   async getUserMovies(userId: string): Promise<PostRating[]> {
     const { data, error } = await supabase

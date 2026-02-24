@@ -1,13 +1,13 @@
 <div class="container" [class.active]="sidebarService.sidebarActive() === false || deviceService.isMobile()">
     <div class="feed-container">
-        <p class="feed-title">Feed</p>
+        <p class="feed-title">Discover</p>
 
         <div class="no-new-posts" *ngIf="initialFeedLoaded() && !loadingFeed() && usersFeedPosts.length === 0">
             <p class="no-posts-message">No New Posts</p>
 
             <button
                 class="add-liked-posts"
-                *ngIf="usersMemoryLanePosts.length !== 0 && mode === 'feed'"
+                *ngIf="isAuthenticated() && usersMemoryLanePosts.length !== 0 && mode === 'feed'"
                 (click)="activateMemoryLane()">
                 Scroll Down Memory Lane
             </button>
@@ -18,6 +18,8 @@
                 <div class="post" *ngFor="let userFeedPost of usersFeedPosts; trackBy: trackPost; let i = index">
                     <app-feed-post
                         [feedPost]="userFeedPost"
+                        [followState]="getFollowState(userFeedPost.author_id)"
+                        (followClicked)="onFollowUser(userFeedPost.author_id)"
                         (shareRating)="onShareRating($event)"
                         class="feed-post-{{ i }}">
                     </app-feed-post>

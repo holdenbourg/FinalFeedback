@@ -127,9 +127,15 @@
     <ng-container *ngIf="activeConversation()">
       <!-- Chat header -->
       <div class="chat-header">
-        <img [src]="getConversationAvatar(activeConversation()!)" class="header-avatar">
+        <a *ngIf="!activeConversation()!.is_group" [routerLink]="['/account', getConversationName(activeConversation()!)]">
+          <img [src]="getConversationAvatar(activeConversation()!)" class="header-avatar clickable">
+        </a>
+        <img *ngIf="activeConversation()!.is_group" [src]="getConversationAvatar(activeConversation()!)" class="header-avatar">
         <div class="header-info">
-          <h3>{{ getConversationName(activeConversation()!) }}</h3>
+          <a *ngIf="!activeConversation()!.is_group" class="header-name-link" [routerLink]="['/account', getConversationName(activeConversation()!)]">
+            <h3>{{ getConversationName(activeConversation()!) }}</h3>
+          </a>
+          <h3 *ngIf="activeConversation()!.is_group">{{ getConversationName(activeConversation()!) }}</h3>
           <span class="participant-count" *ngIf="activeConversation()!.is_group">
             {{ getParticipantCount(activeConversation()!) }} members
           </span>

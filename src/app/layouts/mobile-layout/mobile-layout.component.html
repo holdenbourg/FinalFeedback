@@ -16,7 +16,7 @@
 
 <!-- ✅ BOTTOM NAVIGATION BAR -->
 <nav class="bottom-nav" *ngIf="showBottomNav()">
-    <button 
+    <button
         class="nav-item"
         [class.active]="isActive('/search')"
         (click)="navigateTo('/search/all')"
@@ -24,35 +24,38 @@
         <i class='bx bx-search'></i>
     </button>
 
-    <button 
+    <button
         class="nav-item"
         [class.active]="isActive('/library')"
-        (click)="navigateTo('/library')"
+        [class.disabled]="authResolved() && (!isAuthenticated() || !hasRatings())"
+        (click)="isAuthenticated() && hasRatings() ? navigateTo('/library') : navigateOrLogin('/library')"
         aria-label="Library">
         <i class='bx bx-list-ul'></i>
     </button>
 
-    <button 
+    <button
         class="nav-item home-button"
-        [class.active]="isActive('/home')"
-        (click)="navigateTo('/home')"
+        [class.active]="isActive('/')"
+        (click)="navigateTo('/')"
         aria-label="Home">
         <i class='bx bx-home-alt'></i>
     </button>
 
-    <button 
+    <button
         class="nav-item"
         [class.active]="isActive('/messages')"
-        (click)="navigateTo('/messages')"
+        [class.disabled]="authResolved() && !isAuthenticated()"
+        (click)="navigateOrLogin('/messages')"
         aria-label="Messages">
         <i class='bx bx-message-rounded'></i>
-        <span class="badge" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
+        <span class="badge" *ngIf="isAuthenticated() && unreadCount > 0">{{ unreadCount }}</span>
     </button>
 
-    <button 
+    <button
         class="nav-item"
         [class.active]="isActive('/account')"
-        (click)="navigateTo('/account/posts')"
+        [class.disabled]="authResolved() && !isAuthenticated()"
+        (click)="isAuthenticated() ? navigateTo('/account/' + currentUser()!.username) : navigateTo('/login')"
         aria-label="Account">
         <i class='bx bx-user'></i>
     </button>

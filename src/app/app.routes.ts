@@ -19,30 +19,32 @@ import { NotificationsComponent } from './components/notifications/notifications
 
 
 export const routes: Routes = [
-    { path: '', component: LoginRegisterComponent, pathMatch: 'full' },
-        
+    { path: '', component: HomeComponent, pathMatch: 'full' },
+
+    { path: 'login', component: LoginRegisterComponent },
+
     { path: 'privacy-policy', component: PrivacyPolicyComponent },
 
-    { path: 'home', component: HomeComponent, canActivate: [AuthGuard] },
+    { path: 'home', redirectTo: '', pathMatch: 'full' },
 
     { path: 'messages', component: MessagesComponent, canActivate: [AuthGuard] },
 
     { path: 'search', redirectTo: 'search/movies', pathMatch: 'full' },
-    { path: 'search/:type', component: SearchComponent, canActivate: [AuthGuard] }, // all | movies | series | people | users
+    { path: 'search/:type', component: SearchComponent }, // all | movies | series | people | users
 
-    { path: 'details/:type/:id', component: DetailsComponent, canActivate: [AuthGuard]  },
+    { path: 'details/:type/:id', component: DetailsComponent },
 
     { path: 'rate/:type/:imdbId', component: RateFilmComponent, canActivate: [AuthGuard] }, // movies | series
 
     { path: 'post/:type', component: PostFilmComponent, canActivate: [AuthGuard] }, // movies | series
-    
+
     { path: 'library', component: LibraryComponent, data: { kind: 'movie' }, canActivate: [AuthGuard] },
 
     { path: 'summary', component: SummaryComponent, data: { kind: 'series' }, canActivate: [AuthGuard] },
 
     { path: 'edit/:type/:postId', component: EditFilmRatingComponent, canActivate: [AuthGuard] },
 
-    { path: 'account/:username', component: AccountComponent, canActivate: [AuthGuard] },
+    { path: 'account/:username', component: AccountComponent },
 
     { path: 'notifications', component: NotificationsComponent, canActivate: [AuthGuard] },
 

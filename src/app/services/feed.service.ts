@@ -5,96 +5,51 @@ import { PostModelWithAuthor } from '../models/database-models/post.model';
 @Injectable({ providedIn: 'root' })
 export class FeedService {
 
-  ///  Home feed: posts from people the user follows (NOT including their own posts),
-  ///  excluding posts they've already liked or seen.
-  async getFollowersFeed(userId: string, limit = 20, offset = 0): Promise<PostModelWithAuthor[]> {
-    // 1) Who the current user follows
-    const { data: follows, error: fErr } = await supabase
-      .from('follows')
-      .select('followee_id')
-      .eq('follower_id', userId);
-
-    if (fErr) {
-      console.error('FeedService.getFollowersFeed: follows error', fErr);
-      throw fErr;
-    }
-
-    let authorIds = (follows ?? []).map(f => f.followee_id as string);
-
-    // Don't include the user themselves - they shouldn't see their own posts in feed
-    // (Users can see their own posts on their profile page instead)
-
-    // If somehow we still have nobody, bail early
-    if (!authorIds.length) return [];
-
-    // 2) Posts this user has liked (for filtering out of feed)
-    const { data: likedRows, error: lErr } = await supabase
-      .from('likes')
-      .select('target_id')
-      .eq('user_id', userId)
-      .eq('target_type', 'post');
-
-    if (lErr) {
-      console.error('FeedService.getFollowersFeed: likes error', lErr);
-      throw lErr;
-    }
-
-    const likedIds = (likedRows ?? []).map(r => r.target_id as string);
-
-    // 3) Posts this user has already viewed
-    const { data: seenRows, error: sErr } = await supabase
-      .from('views')
-      .select('target_id')
-      .eq('user_id', userId)
-      .eq('target_type', 'post');
-
-    if (sErr) {
-      console.error('FeedService.getFollowersFeed: views error', sErr);
-      throw sErr;
-    }
-
-    const seenIds = (seenRows ?? []).map(r => r.target_id as string);
-
-    // 4) Base posts query
-    let query = supabase
-      .from('posts')
-      .select(`
-        *,
-        author:users!posts_author_id_fkey (
-          username,
-          profile_picture_url
-        ),
-        rating:ratings!posts_rating_id_fkey (
-          id,
-          criteria,
-          media_type,
-          title
-        )
-      `)
-      .eq('visibility', 'public')
-      .in('author_id', authorIds)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    // 5) Exclude posts the user has liked / seen
-    if (likedIds.length > 0) {
-      const likedList = '(' + likedIds.map(id => `"${id}"`).join(',') + ')';
-      query = query.not('id', 'in', likedList);
-    }
-
-    if (seenIds.length > 0) {
-      const seenList = '(' + seenIds.map(id => `"${id}"`).join(',') + ')';
-      query = query.not('id', 'in', seenList);
-    }
-
-    const { data, error } = await query;
+  ///  Unified feed: followed-user posts first, then discover posts.
+  ///  Excludes own posts, blocked users, and already-viewed/liked posts.
+  ///  Works for anonymous users (pass null viewerId).
+  async getUserFeed(
+    viewerId: string | null,
+    limit = 20,
+    offset = 0
+  ): Promise<{ posts: PostModelWithAuthor[]; followedAuthorIds: Set<string> }> {
+    const { data, error } = await supabase
+      .rpc('get_user_feed', {
+        p_viewer_id: viewerId,
+        p_limit: limit,
+        p_offset: offset,
+      });
 
     if (error) {
-      console.error('FeedService.getFollowersFeed: posts error', error);
+      console.error('FeedService.getUserFeed: error', error);
       throw error;
     }
 
-    return (data ?? []) as PostModelWithAuthor[];
+    const followedAuthorIds = new Set<string>();
+
+    const posts = (data ?? []).map((row: any) => {
+      if (row.is_followed) followedAuthorIds.add(row.author_id);
+
+      return {
+        id: row.id,
+        author_id: row.author_id,
+        poster_url: row.poster_url,
+        caption: row.caption,
+        visibility: row.visibility,
+        created_at: row.created_at,
+        rating_id: row.rating_id,
+        like_count: 0,
+        save_count: 0,
+        comment_count: 0,
+        tag_count: 0,
+        author: {
+          username: row.author_username,
+          profile_picture_url: row.author_profile_picture_url,
+        },
+      } as PostModelWithAuthor;
+    });
+
+    return { posts, followedAuthorIds };
   }
 
   ///  Memory lane: posts the user has previously liked (reverse chrono).

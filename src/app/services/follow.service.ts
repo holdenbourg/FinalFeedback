@@ -77,13 +77,13 @@ export class FollowsService {
     if (userErr) throw userErr;
 
     if (targetUser?.private) {
-      // Private account - create follow request
+      // Private account - create follow request (ignore if already requested)
       const { error } = await supabase
         .from('follow_requests')
-        .insert({
-          requester_id: user.id,
-          target_id: targetId
-        });
+        .upsert(
+          { requester_id: user.id, target_id: targetId },
+          { onConflict: 'requester_id,target_id', ignoreDuplicates: true }
+        );
 
       if (error) throw error;
 
@@ -92,13 +92,13 @@ export class FollowsService {
         type: NotificationType.REQUESTED_FOLLOW,
       }).catch(() => {});
     } else {
-      // Public account - follow immediately
+      // Public account - follow immediately (ignore if already following)
       const { error } = await supabase
         .from('follows')
-        .insert({
-          follower_id: user.id,
-          followee_id: targetId
-        });
+        .upsert(
+          { follower_id: user.id, followee_id: targetId },
+          { onConflict: 'follower_id,followee_id', ignoreDuplicates: true }
+        );
 
       if (error) throw error;
 
@@ -222,6 +222,34 @@ export class FollowsService {
     }
 
     return count || 0;
+  }
+
+  /**
+   * Batch check: which of the candidate IDs does the follower already follow?
+   */
+  async getFollowingSet(followerId: string, candidateIds: string[]): Promise<Set<string>> {
+    if (!candidateIds.length) return new Set();
+    const { data, error } = await supabase
+      .from('follows')
+      .select('followee_id')
+      .eq('follower_id', followerId)
+      .in('followee_id', candidateIds);
+    if (error) { console.error('getFollowingSet error:', error); return new Set(); }
+    return new Set((data ?? []).map(r => r.followee_id as string));
+  }
+
+  /**
+   * Batch check: which of the candidate IDs has the requester sent a pending request to?
+   */
+  async getRequestedSet(requesterId: string, candidateIds: string[]): Promise<Set<string>> {
+    if (!candidateIds.length) return new Set();
+    const { data, error } = await supabase
+      .from('follow_requests')
+      .select('target_id')
+      .eq('requester_id', requesterId)
+      .in('target_id', candidateIds);
+    if (error) { console.error('getRequestedSet error:', error); return new Set(); }
+    return new Set((data ?? []).map(r => r.target_id as string));
   }
 
   /**

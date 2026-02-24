@@ -1,6 +1,7 @@
 import { Component, Input, ViewChild, ElementRef, ChangeDetectorRef, inject, OnInit, signal, EventEmitter, Output, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 import { CommentComponent } from '../comment/comment.component';
 import { ReplyComponent } from '../reply/reply.component';
 import { CommentView, mapRowToView } from '../../../models/database-models/comment.model';
@@ -17,6 +18,7 @@ import { UsersService } from '../../../services/users.service';
 import { MessagesService } from '../../../services/messages.service';
 import { RatingModel } from '../../../models/database-models/rating.model';
 import { ConversationsService } from '../../../services/conversations.service';
+import { FollowState } from '../../home/home.component';
 
 type UiComment = {
   commentId: string;
@@ -46,7 +48,7 @@ type UiReply = {
 @Component({
   selector: 'app-feed-post',
   standalone: true,
-  imports: [CommonModule, FormsModule, CommentComponent, ReplyComponent],
+  imports: [CommonModule, FormsModule, RouterLink, CommentComponent, ReplyComponent],
   templateUrl: './feed-post.component.html',
   styleUrls: ['./feed-post.component.css'],
 })
@@ -54,8 +56,10 @@ type UiReply = {
 export class FeedPostComponent implements OnInit, OnChanges {
   @Input() feedPost!: PostModelWithAuthor;
   @Input() autoHighlightId: string | null = null;
+  @Input() followState: FollowState = 'self';
   @Output() postLikeChanged = new EventEmitter<number>();
   @Output() shareRating = new EventEmitter<RatingModel>();
+  @Output() followClicked = new EventEmitter<void>();
 
   @ViewChild('scrollBox') scrollBoxRef!: ElementRef<HTMLDivElement>;
   @ViewChild('commentInputReference') commentInputReference?: ElementRef<HTMLInputElement>;
@@ -69,6 +73,7 @@ export class FeedPostComponent implements OnInit, OnChanges {
   private ratingsService = inject(RatingsService);
   private messagesService = inject(MessagesService);
   private conversationsService = inject(ConversationsService);
+  private router = inject(Router);
   private changeDetectorRef = inject(ChangeDetectorRef);
 
   posterSrc = '';
@@ -450,6 +455,10 @@ export class FeedPostComponent implements OnInit, OnChanges {
   }
 
   async onPostComment() {
+    if (!this.currentUser()) {
+      this.router.navigateByUrl('/login');
+      return;
+    }
     if (this.submitting) return;
     const raw = (this.commentInput ?? '').trim();
     if (!raw) return;
@@ -647,6 +656,10 @@ export class FeedPostComponent implements OnInit, OnChanges {
   // Post like (optimistic)
   // ======================
   async togglePostLike() {
+    if (!this.currentUser()) {
+      this.router.navigateByUrl('/login');
+      return;
+    }
     const next = !this.liked;
     const prevCount = this.feedPost.like_count ?? 0;
     
@@ -685,6 +698,7 @@ export class FeedPostComponent implements OnInit, OnChanges {
   // Seen-by on hover (debounced)
   // ======================
   async onHoverSeen() {
+    if (!this.currentUser()) return;
     if (this.seenOnce) return;
     if (this.seenTimer) clearTimeout(this.seenTimer);
 
@@ -773,6 +787,14 @@ export class FeedPostComponent implements OnInit, OnChanges {
       return;
     }
     this.shareRating.emit(this.postRating as unknown as RatingModel);
+  }
+
+  onFollowClick() {
+    if (!this.currentUser()) {
+      this.router.navigateByUrl('/login');
+      return;
+    }
+    this.followClicked.emit();
   }
 
   onSave() {

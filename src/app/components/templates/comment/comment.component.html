@@ -1,17 +1,19 @@
 <div class="comment-row">
   <div class="left">
-    <img class="profile-picture" [src]="comment.profilePicture" [attr.alt]="comment.username" loading="lazy" decoding="async" />
+    <a [routerLink]="['/account', comment.username]">
+      <img class="profile-picture" [src]="comment.profilePicture" [attr.alt]="comment.username" loading="lazy" decoding="async" />
+    </a>
   </div>
 
   <div class="right comment-grid">
     <div class="comment-main">
       <div class="line">
-        <a class="username" [href]="'/account/' + comment.username">{{ comment.username }}</a>
+        <a class="username" [routerLink]="['/account', comment.username]">{{ comment.username }}</a>
         <span class="content-inline">
           <ng-container *ngFor="let t of tokensOf(comment.comment)">
             <ng-container *ngIf="t.handle; else plain">
-              <a class="atted" 
-                 [href]="'/account/' + t.handle"
+              <a class="atted"
+                 [routerLink]="['/account', t.handle]"
                  [class.clickable]="t.handle">
                 {{ t.text }}
               </a>

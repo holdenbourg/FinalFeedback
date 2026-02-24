@@ -55,10 +55,10 @@ export class LoginRegisterComponent implements OnInit {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
       console.log('[Login] Already logged in, redirecting to home');
-      this.router.navigateByUrl('/home');
+      this.router.navigateByUrl('/');
       return;
     }
-    
+
     ///==-  Restore checkbox preference   -==\\\
     const preferRemember = localStorage.getItem('ff-prefer-remember');
     if (preferRemember !== null) {
@@ -124,7 +124,7 @@ export class LoginRegisterComponent implements OnInit {
       );
 
       this.transitionWarning('Welcome back!', 'success');
-      this.router.navigateByUrl('/home');
+      this.router.navigateByUrl('/');
     } catch (e: any) {
       this.transitionWarning(
         e?.message ?? 'That username/email or password does not exist',
@@ -225,7 +225,7 @@ export class LoginRegisterComponent implements OnInit {
   ///  -======================================-  OAuth Helpers  -======================================-  \\\
   private buildRedirectUrl(): string {
     const redirect = this.activatedRoute.snapshot.queryParamMap.get('redirect');
-    const targetPath = redirect && redirect !== '/' ? redirect : '/home';
+    const targetPath = redirect && redirect !== '/' && redirect !== '/login' ? redirect : '/';
     return `${window.location.origin}${targetPath}`;
   }
 

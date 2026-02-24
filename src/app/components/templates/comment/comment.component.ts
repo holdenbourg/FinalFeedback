@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, HostListener, inject, Input, OnInit, Output } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { LikesService } from '../../../services/likes.service';
 import { CommentModerationService, MentionToken } from '../../../services/comment-moderation.service';
 import { UsersService } from '../../../services/users.service';
@@ -19,7 +20,7 @@ export type FeedUiComment = {
 @Component({
   selector: 'app-comment',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './comment.component.html',
   styleUrls: ['./comment.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,

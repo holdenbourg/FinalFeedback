@@ -26,6 +26,9 @@ export enum AccountViewState {
   /** Profile user does not exist */
   NOT_FOUND = 'not_found',
   
+  /** Unauthenticated visitor viewing a public profile */
+  GUEST = 'guest',
+
   /** Loading state */
   LOADING = 'loading'
 }

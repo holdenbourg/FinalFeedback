@@ -1,12 +1,59 @@
 <div class="container" [class.active]="sidebarService.sidebarActive() === false" [class.no-anim]="sidebarService.suppressAnim()">
-  <!-- Loading State -->
-  <div class="left-side loading-shimmer" *ngIf="isLoadingRatings()">
-    <div class="shimmer-poster"></div>
+  <!-- Loading State (Left Side) -->
+  <div class="left-side" *ngIf="isLoadingRatings()">
+    <div class="top-information">
+      <div class="shimmer-bg shimmer-poster-left"></div>
 
-    <div class="shimmer-content">
-      <div class="shimmer-line"></div>
-      <div class="shimmer-line short"></div>
-      <div class="shimmer-line medium"></div>
+      <div class="film-left">
+        <div class="film-scroll">
+          <div class="shimmer-bg shimmer-title-line"></div>
+          <div class="shimmer-bg shimmer-release-line"></div>
+          <div class="shimmer-badges-row">
+            <div class="shimmer-bg shimmer-badge-pill"></div>
+            <div class="shimmer-bg shimmer-badge-pill wide"></div>
+          </div>
+        </div>
+
+        <div class="film-counts">
+          <div class="count">
+            <div class="shimmer-bg shimmer-count-num"></div>
+            <div class="shimmer-bg shimmer-count-label"></div>
+          </div>
+          <div class="count">
+            <div class="shimmer-bg shimmer-count-num"></div>
+            <div class="shimmer-bg shimmer-count-label"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-information">
+      <div class="film-ratings">
+        <div class="shimmer-rating-titles">
+          <div class="shimmer-bg shimmer-rating-row"></div>
+          <div class="shimmer-bg shimmer-rating-row"></div>
+          <div class="shimmer-bg shimmer-rating-row"></div>
+          <div class="shimmer-bg shimmer-rating-row"></div>
+          <div class="shimmer-bg shimmer-rating-row"></div>
+          <div class="shimmer-bg shimmer-rating-row"></div>
+          <div class="shimmer-bg shimmer-rating-row total"></div>
+        </div>
+        <div class="shimmer-rating-scores">
+          <div class="shimmer-bg shimmer-score"></div>
+          <div class="shimmer-bg shimmer-score"></div>
+          <div class="shimmer-bg shimmer-score"></div>
+          <div class="shimmer-bg shimmer-score"></div>
+          <div class="shimmer-bg shimmer-score"></div>
+          <div class="shimmer-bg shimmer-score"></div>
+          <div class="shimmer-bg shimmer-score total"></div>
+        </div>
+      </div>
+
+      <div class="date-rated">
+        <div class="shimmer-bg shimmer-date-line"></div>
+        <div class="shimmer-bg shimmer-button-line"></div>
+        <div class="shimmer-bg shimmer-button-line"></div>
+      </div>
     </div>
   </div>
 
@@ -91,7 +138,7 @@
   </ng-template>
 
   <div class="rated-films-container">
-    <div class="seach-bar" *ngIf="usersRatedList().length > 0">
+    <div class="seach-bar">
       <div class="input-box">
         <input
           type="text"
@@ -270,18 +317,29 @@
     </div>
 
     <div class="scroll-box" #scrollBox>
-      <div class="rated-films" *ngIf="filteredRatedFilms().length; else noRatedMovies">
+      <!-- Shimmer rated film cards while loading -->
+      <div class="rated-films" *ngIf="isLoadingRatings()">
+        <div class="shimmer-card" *ngFor="let i of [1,2,3,4,5]">
+          <div class="shimmer-bg shimmer-card-poster"></div>
+          <div class="shimmer-card-details">
+            <div class="shimmer-bg shimmer-card-title"></div>
+            <div class="shimmer-bg shimmer-card-rating"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rated-films" *ngIf="!isLoadingRatings() && filteredRatedFilms().length; else noRatedMovies">
         <div class="rated-film" *ngFor="let film of filteredRatedFilms(); trackBy: trackByPostId" (click)="onRatedFilmClicked(film)" [attr.data-postid]="film.id">
           <app-rated-film
-            [ratedFilm]="film" 
-            [active]="film.id === activeFilm?.id" 
+            [ratedFilm]="film"
+            [active]="film.id === activeFilm?.id"
             [attr.aria-selected]="film.id === activeFilm?.id">
           </app-rated-film>
         </div>
       </div>
 
       <ng-template #noRatedMovies>
-        <div class="no-rated-movies"></div>
+        <div class="no-rated-movies" *ngIf="!isLoadingRatings()"></div>
       </ng-template>
     </div>
   </div>
@@ -312,7 +370,7 @@
 
     <div class="modal-actions">
       <button type="button" class="btn btn-danger" (click)="confirmDelete()">
-        Yes, I’m sure
+        Yes, I'm sure
       </button>
       <button type="button" class="btn btn-ghost" (click)="closeConfirm()">
         Never mind

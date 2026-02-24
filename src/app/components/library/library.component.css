@@ -10,14 +10,7 @@
   inset: 0;
   display: block;
   overflow: hidden;
-}
-:host::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: rgba(0,0,0, var(--bg-dim, 0.8));
+  z-index: 2;
 }
 
 
@@ -689,52 +682,138 @@
   cursor: pointer; 
 }
 
-/* ========== Loading Shimmer ========== */
-.loading-shimmer {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 20px;
-}
-
-.shimmer-poster {
-  width: 100%;
-  aspect-ratio: 2/3;
-  max-width: 300px;
-  background: linear-gradient(90deg, #2a2a2a 25%, #333 50%, #2a2a2a 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: 8px;
-}
-
-.shimmer-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-}
-
-.shimmer-line {
-  height: 20px;
+/* ========== Shimmer base ========== */
+.shimmer-bg {
   background: linear-gradient(90deg, #2a2a2a 25%, #333 50%, #2a2a2a 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;
 }
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 
-.shimmer-line.short {
+/* --- Left side: poster --- */
+.shimmer-poster-left {
+  height: 100%;
+  width: auto;
+  max-width: clamp(160px, 16vw, 340px);
+  aspect-ratio: 2/3;
+  border-radius: 5px;
+  margin-left: 12px;
+  margin-top: 12px;
+}
+
+/* --- Left side: title / release / badges --- */
+.shimmer-title-line {
+  height: 2.4vw;
+  width: 75%;
+  margin-bottom: 8px;
+}
+.shimmer-release-line {
+  height: 1.65vw;
+  width: 50%;
+  margin-bottom: 8px;
+}
+.shimmer-badges-row {
+  display: inline-flex;
+  gap: 6px;
+}
+.shimmer-badge-pill {
+  height: 1.6vw;
+  width: 3.5vw;
+  border-radius: 999px;
+}
+.shimmer-badge-pill.wide {
+  width: 10vw;
+}
+
+/* --- Left side: counts --- */
+.shimmer-count-num {
+  height: 1.8vw;
+  width: 2.5vw;
+  margin-bottom: 4px;
+}
+.shimmer-count-label {
+  height: 0.9vw;
+  width: 3.8vw;
+}
+
+/* --- Left side: rating rows --- */
+.shimmer-rating-titles,
+.shimmer-rating-scores {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.shimmer-rating-titles { margin-right: 12px; }
+.shimmer-rating-row {
+  height: 1.7vw;
+  width: 5vw;
+  border-radius: 3px;
+}
+.shimmer-rating-row.total {
+  height: 1.85vw;
+  width: 4vw;
+  margin-top: 5px;
+}
+.shimmer-score {
+  height: 1.7vw;
+  width: 2vw;
+  border-radius: 3px;
+}
+.shimmer-score.total {
+  height: 1.85vw;
+  width: 2.5vw;
+  margin-top: 5px;
+}
+
+/* --- Left side: date + buttons --- */
+.shimmer-date-line {
+  height: 1.25vw;
+  width: 12vw;
+  margin-bottom: 10px;
+}
+.shimmer-button-line {
+  height: 2.2vw;
+  width: 100%;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+/* --- Right side: shimmer rated-film cards --- */
+.shimmer-card {
+  display: flex;
+  align-items: center;
+  border: 0.15vw solid rgba(255,255,255,0.3);
+  border-radius: 5px;
+  padding: 12px 15px;
+  margin-bottom: 6px;
+}
+.shimmer-card-poster {
+  height: 5vw;
+  min-height: 60px;
+  aspect-ratio: 2/3;
+  border-radius: 3px;
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+.shimmer-card-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+.shimmer-card-title {
+  height: 1.2vw;
+  min-height: 14px;
   width: 60%;
 }
-
-.shimmer-line.medium {
-  width: 80%;
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+.shimmer-card-rating {
+  height: 1.2vw;
+  min-height: 14px;
+  width: 2vw;
+  min-width: 24px;
 }

@@ -22,7 +22,7 @@
     </div>
 
     <ul class="list">
-        <li class="list-item" [class.active]="isActive('/home')">
+        <li class="list-item" [class.active]="isActive('/')">
             <a (click)="routingService.navigateToHome()">
                 <i class="bx bx-home-alt"></i>
                 <span class="link-name" [style.--i]="getNavDelay()[0]">Home</span>
@@ -36,52 +36,52 @@
             </a>
         </li>
 
-        <li class="list-item" [class.active]="isActive('/messages')">
-            <a (click)="routingService.navigateToMessages()">
+        <li class="list-item" [class.active]="isActive('/messages')" [class.disabled]="authResolved() && !isAuthenticated()">
+            <a (click)="isAuthenticated() ? routingService.navigateToMessages() : onDisabledNavClick()">
                 <i class='bx bx-message'></i>
                 <span class="link-name" [style.--i]="getNavDelay()[2]">Messages</span>
             </a>
         </li>
 
-        <li class="list-item" [class.active]="isActive('/library')">
-            <a (click)="routingService.navigateToLibrary()">
+        <li class="list-item" [class.active]="isActive('/library')" [class.disabled]="authResolved() && (!isAuthenticated() || !hasRatings())">
+            <a (click)="isAuthenticated() && hasRatings() ? routingService.navigateToLibrary() : onDisabledNavClick()">
                 <i class='bx bx-list-ul'></i>
                 <span class="link-name" [style.--i]="getNavDelay()[3]">Library</span>
             </a>
         </li>
 
-        <li class="list-item" [class.active]="isActive('/summary')">
-            <a (click)="routingService.navigateToSummary()">
+        <li class="list-item" [class.active]="isActive('/summary')" [class.disabled]="authResolved() && !isAuthenticated()">
+            <a (click)="isAuthenticated() ? routingService.navigateToSummary() : onDisabledNavClick()">
                 <i class='bx bx-bar-chart-alt-2'></i>
                 <span class="link-name" [style.--i]="getNavDelay()[4]">Summary</span>
             </a>
         </li>
 
-        <li class="list-item" [class.active]="isActive('/account')">
-            <a (click)="routingService.navigateToAccountsPosts(currentUser()!.username)">
+        <li class="list-item" [class.active]="isActive('/account')" [class.disabled]="authResolved() && !isAuthenticated()">
+            <a (click)="isAuthenticated() ? routingService.navigateToAccountsPosts(currentUser()!.username) : onDisabledNavClick()">
                 <i class="bx bx-user"></i>
                 <span class="link-name" [style.--i]="getNavDelay()[5]">Account</span>
             </a>
         </li>
 
-        <li class="list-item" [class.active]="isActive('/notifications')">
-            <a (click)="routingService.navigateToNotifications()">
+        <li class="list-item" [class.active]="isActive('/notifications')" [class.disabled]="authResolved() && !isAuthenticated()">
+            <a (click)="isAuthenticated() ? routingService.navigateToNotifications() : onDisabledNavClick()">
                 <i class='bx bx-bell'></i>
                 <span class="link-name" [style.--i]="getNavDelay()[6]">Notifications</span>
-                <span class="notification-badge" *ngIf="notificationsService.unreadCount() > 0">
+                <span class="notification-badge" *ngIf="isAuthenticated() && notificationsService.unreadCount() > 0">
                     {{ notificationsService.unreadCount() > 99 ? '99+' : notificationsService.unreadCount() }}
                 </span>
             </a>
         </li>
 
-        <li class="list-item" [class.active]="isSettingsActive()">
-            <a (click)="routingService.navigateToSettings()">
+        <li class="list-item" [class.active]="isSettingsActive()" [class.disabled]="authResolved() && !isAuthenticated()">
+            <a (click)="isAuthenticated() ? routingService.navigateToSettings() : onDisabledNavClick()">
                 <i class="bx bx-cog"></i>
                 <span class="link-name" [style.--i]="getNavDelay()[7]">Settings</span>
             </a>
         </li>
 
-        <ng-container *ngIf="isSettingsActive()">
+        <ng-container *ngIf="isSettingsActive() && isAuthenticated()">
             <li class="settings-item" [class.active]="isActiveSettings('/settings/account-info')">
                 <a (click)="routingService.navigateToSettings()">
                     <i class='bx bx-info-circle'></i>
@@ -98,7 +98,7 @@
 
             <li class="settings-item" [class.active]="isActiveSettings('/settings/privacy-policy')">
                 <a (click)="routingService.navigateToPrivacyPolicy()">
-                    <i class='bx bx-clipboard'></i>   
+                    <i class='bx bx-clipboard'></i>
                     <span class="link-name" [style.--i]="getNavDelay()[7]">Privacy Policy</span>
                 </a>
             </li>
@@ -114,6 +114,13 @@
         <li class="username" *ngIf="currentUser() as cu">
             <p class="link-name" [style.--i]="getNavDelay()[8]">Signed in as:</p>
             <p class="link-name" [style.--i]="getNavDelay()[8]">{{ cu.username }}</p>
+        </li>
+
+        <li class="sign-in-item" *ngIf="!isAuthenticated()">
+            <a class="sign-in-btn" (click)="routingService.navigateToLogin()">
+                <i class='bx bx-log-in'></i>
+                <span class="link-name" [style.--i]="getNavDelay()[8]">Sign In / Register</span>
+            </a>
         </li>
     </ul>
 </nav>

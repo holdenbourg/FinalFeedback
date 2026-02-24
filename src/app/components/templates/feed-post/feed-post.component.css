@@ -17,30 +17,38 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0px 12px;
+  padding: 12px;
   color: #fff;
   flex: 0 0 auto;
   min-height: 0;
 }
 
+.profile-picture-username a {
+  display: inline-flex;
+  align-items: center;
+}
+
 .user-profile-picture {
+  display: block;
   height: 2vw;
   width: 2vw;
   min-width: 24px;
   min-height: 24px;
   border-radius: 50%;
   object-fit: cover;
+  cursor: pointer;
 }
 
 .user-username, .post-date {
   font-size: 1.145vw;
   font-weight: 500;
-  line-height: 1;   
+  line-height: 1;
   text-decoration: none;
   color: #fff;
 }
 .user-username {
   margin-left: 10px;
+  cursor: pointer;
 }
 
 .profile-picture-username { 
@@ -48,9 +56,47 @@
   align-items: center; 
 }
 
-.post-date { 
-  font-size: 1.145vw; 
-  font-weight: 500; 
+.post-date {
+  font-size: 1.145vw;
+  font-weight: 500;
+  margin: 0;
+}
+
+.post-date-follow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.follow-btn {
+  background: transparent;
+  border: 2px solid #fff;
+  color: #fff;
+  font-size: 0.9vw;
+  font-weight: 500;
+  font-family: "Poppins", sans-serif;
+  padding: 2px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  white-space: nowrap;
+}
+.follow-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #fff;
+  transform: scale(1.03);
+}
+
+.follow-status {
+  font-size: 0.9vw;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.follow-status.following {
+  color: rgba(255, 255, 255, 0.5);
+}
+.follow-status.requested {
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .bottom {
@@ -163,10 +209,7 @@
   font-weight: 600;
   text-decoration: none;
   margin: 0;
-  transition: transform .15s ease;
-}
-.tagged-name:hover { 
-  transform: scale(1.05); 
+  cursor: pointer;
 }
 
 .thumb-animation {
@@ -307,12 +350,13 @@
   color: #fff; 
   font-size: 1.145vw;
 }
-.caption .profile-username { 
-  font-weight: 600; 
-  text-decoration: none; 
-  color: #fff; 
+.caption .profile-username {
+  font-weight: 600;
+  text-decoration: none;
+  color: #fff;
   white-space: nowrap;
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .actual-caption { 
@@ -546,10 +590,9 @@
 
 .rating-criteria-shimmer {
   display: flex;
-  justify-content: space-around;
-  gap: 10px;
-  margin: 8px 0;
-  padding: 0 20px;
+  justify-content: space-between;
+  width: 75%;
+  margin: 0 0 0 12.5%;
 }
 
 /* Make shimmer animations consistent */

@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, HostBinding, HostListener, OnInit, ViewChild, ElementRef, inject, signal } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { SidebarService } from '../../services/sidebar.service';
 import { RoutingService } from '../../services/routing.service';
 import { FeedPostComponent } from '../templates/feed-post/feed-post.component';
@@ -8,10 +8,13 @@ import { ShareRatingModalComponent } from '../share-rating-modal/share-rating-mo
 import { PostModelWithAuthor } from '../../models/database-models/post.model';
 import { FeedService } from '../../services/feed.service';
 import { UsersService } from '../../services/users.service';
+import { FollowsService } from '../../services/follow.service';
 import { UserModel } from '../../models/database-models/user.model';
 import { RatingModel } from '../../models/database-models/rating.model';
 import { DeviceService } from '../../services/device.service';
 import { ModalOverlayService } from '../../services/modal-overlay.service';
+
+export type FollowState = 'none' | 'following' | 'requested' | 'self' | 'anonymous';
 
 @Component({
   selector: 'app-home',
@@ -26,17 +29,24 @@ export class HomeComponent implements OnInit, DoCheck {
   readonly sidebarService = inject(SidebarService);
   readonly usersService = inject(UsersService);
   private feedService = inject(FeedService);
+  private followsService = inject(FollowsService);
+  private router = inject(Router);
   public deviceService = inject(DeviceService);
   private changeDetectorRef = inject(ChangeDetectorRef);
   private modalOverlayService = inject(ModalOverlayService);
 
   public currentUser = signal<UserModel | null>(null);
   public authUserId = signal<string | null>(null);
+  public isAuthenticated = signal(false);
 
   usersFeedPosts: PostModelWithAuthor[] = [];
   usersMemoryLanePosts: PostModelWithAuthor[] = [];
 
   mode: 'feed' | 'memory' = 'feed';
+
+  // Follow state tracking
+  followingSet = new Set<string>();
+  requestedSet = new Set<string>();
 
   // Share rating modal state
   showShareModal = false;
@@ -58,7 +68,7 @@ export class HomeComponent implements OnInit, DoCheck {
   private PREFETCH_THRESHOLD = 20;
   private NEAR_BOTTOM_PX = 700;
 
-  private followersCache: PostModelWithAuthor[] = [];
+  private feedCache: PostModelWithAuthor[] = [];
   private memoryCache: PostModelWithAuthor[] = [];
   private feedServerOffset = 0;
   private memoryServerOffset = 0;
@@ -71,24 +81,28 @@ export class HomeComponent implements OnInit, DoCheck {
 
 
   async ngOnInit() {
-    this.usersService.getCurrentUserProfile()
-      .then(u => this.currentUser.set(u))
-      .catch(err => {
-        console.error('Failed to load current user', err);
-        this.currentUser.set(null);
-      });
-      
     try {
       const uid = await this.usersService.getCurrentUserId();
-      if (!uid) { this.error.set('Not signed in'); return; }
 
-      this.authUserId.set(uid);
+      if (uid) {
+        this.authUserId.set(uid);
+        this.isAuthenticated.set(true);
 
-      await this.fetchFollowersBatch();
-      this.revealMoreFromCache();
+        this.usersService.getCurrentUserProfile()
+          .then(u => this.currentUser.set(u))
+          .catch(() => this.currentUser.set(null));
 
-      await this.fetchMemoryBatch();
-      this.usersMemoryLanePosts = this.memoryCache.slice(0, this.PAGE);
+        await this.fetchFeedBatch();
+        this.revealMoreFromCache();
+        await this.refreshFollowStatuses();
+
+        await this.fetchMemoryBatch();
+        this.usersMemoryLanePosts = this.memoryCache.slice(0, this.PAGE);
+      } else {
+        // Unauthenticated — load discover feed only
+        await this.fetchFeedBatch();
+        this.revealMoreFromCache();
+      }
 
       this.initialFeedLoaded.set(true);
       this.loadingFeed.set(false);
@@ -99,19 +113,19 @@ export class HomeComponent implements OnInit, DoCheck {
     }
   }
 
-  
-  /// -======================================-  Feed/Memory Lane Logic  -======================================- \\\
-  ///  Fetch the current users feed and store it in the cache  \\\
-  private async fetchFollowersBatch() {
-    const uid = this.authUserId();
-    if (!uid) return;
 
+  /// -======================================-  Feed/Memory Lane Logic  -======================================- \\\
+  private async fetchFeedBatch() {
     this.loadingFeed.set(true);
 
     try {
-      const data = await this.feedService.getFollowersFeed(uid, this.FEED_FETCH_BATCH, this.feedServerOffset);
-      this.followersCache.push(...data);
+      const uid = this.authUserId();
+      const { posts, followedAuthorIds } = await this.feedService.getUserFeed(uid, this.FEED_FETCH_BATCH, this.feedServerOffset);
+      this.feedCache.push(...posts);
       this.feedServerOffset += this.FEED_FETCH_BATCH;
+
+      // Merge followed author IDs from the RPC into the local set
+      for (const id of followedAuthorIds) this.followingSet.add(id);
 
       this.changeDetectorRef.markForCheck();
 
@@ -120,7 +134,6 @@ export class HomeComponent implements OnInit, DoCheck {
     }
   }
 
-  ///  Fetch the current users memeory lane and store it in the cache  \\\
   private async fetchMemoryBatch() {
     const uid = this.authUserId();
     if (!uid) return;
@@ -139,35 +152,76 @@ export class HomeComponent implements OnInit, DoCheck {
     }
   }
 
-  ///  Grab more posts from the cache if the user nears the end on the current list  \\\
   private revealMoreFromCache() {
-    const cache = this.mode === 'feed' ? this.followersCache : this.memoryCache;
+    const cache = this.mode === 'feed' ? this.feedCache : this.memoryCache;
     this.visibleCount = Math.min(cache.length, this.visibleCount + this.PAGE);
     this.usersFeedPosts = cache.slice(0, this.visibleCount);
 
     this.changeDetectorRef.markForCheck();
 
-    ///  Pre-fetch more posts if we’re getting low  \\\
     const remaining = cache.length - this.visibleCount;
     if (remaining <= this.PREFETCH_THRESHOLD) {
-      if (this.mode === 'feed') this.fetchFollowersBatch().catch(() => {});
+      if (this.mode === 'feed') this.fetchFeedBatch().catch(() => {});
       else this.fetchMemoryBatch().catch(() => {});
     }
+
+    if (this.isAuthenticated()) this.refreshFollowStatuses().catch(() => {});
   }
 
-  ///  Switch to memory lane when button clicked  \\\
   async activateMemoryLane() {
     if (this.mode === 'memory') return;
 
     this.mode = 'memory';
     this.visibleCount = 0;
-    
-    ///  Make sure we have memory batches ready (if not, fetch some)  \\\
+
     if (this.memoryCache.length === 0) await this.fetchMemoryBatch();
     this.revealMoreFromCache();
     this.scrollToTop();
 
     this.changeDetectorRef.markForCheck();
+  }
+
+  // --- Follow state management ---
+  private async refreshFollowStatuses() {
+    const uid = this.authUserId();
+    if (!uid) return;
+
+    const authorIds = [...new Set(this.usersFeedPosts.map(p => p.author_id))];
+    const [following, requested] = await Promise.all([
+      this.followsService.getFollowingSet(uid, authorIds),
+      this.followsService.getRequestedSet(uid, authorIds),
+    ]);
+
+    // Merge database follows into the set (keeps RPC data + catches any the RPC missed)
+    for (const id of following) this.followingSet.add(id);
+    this.requestedSet = requested;
+    this.changeDetectorRef.markForCheck();
+  }
+
+  getFollowState(authorId: string): FollowState {
+    if (!this.isAuthenticated()) return 'anonymous';
+    if (authorId === this.authUserId()) return 'self';
+    if (this.followingSet.has(authorId)) return 'following';
+    if (this.requestedSet.has(authorId)) return 'requested';
+    return 'none';
+  }
+
+  async onFollowUser(authorId: string) {
+    if (!this.isAuthenticated()) {
+      this.router.navigateByUrl('/login');
+      return;
+    }
+    try {
+      await this.followsService.follow(authorId);
+      // Optimistically update local state
+      // Check if the target is private to determine follow vs request
+      this.followingSet.add(authorId);
+      this.changeDetectorRef.markForCheck();
+      // Refresh to get accurate state (in case it was a request, not a follow)
+      await this.refreshFollowStatuses();
+    } catch (err) {
+      console.error('Follow failed', err);
+    }
   }
 
 
@@ -189,7 +243,7 @@ export class HomeComponent implements OnInit, DoCheck {
     if (!nearBottom) return;
 
     // If there is still more cached posts, reveal the next batch
-    const cache = this.mode === 'feed' ? this.followersCache : this.memoryCache;
+    const cache = this.mode === 'feed' ? this.feedCache : this.memoryCache;
 
     if (this.visibleCount < cache.length) {
       this.revealMoreFromCache();
@@ -198,7 +252,7 @@ export class HomeComponent implements OnInit, DoCheck {
 
     // If the cache is fully revealed, ensure a prefetch is in-flight
     if (this.mode === 'feed' && !this.loadingFeed()) {
-      this.fetchFollowersBatch().then(() => this.revealMoreFromCache());
+      this.fetchFeedBatch().then(() => this.revealMoreFromCache());
     } else if (this.mode === 'memory' && !this.loadingMemory()) {
       this.fetchMemoryBatch().then(() => this.revealMoreFromCache());
     }

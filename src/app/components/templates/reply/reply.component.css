@@ -9,13 +9,14 @@
 }
 .reply-row .profile-picture {
   display: block;
-  width: 1.75vw; 
-  height: 1.75vw; 
-  min-width: 26px; 
+  width: 1.75vw;
+  height: 1.75vw;
+  min-width: 26px;
   min-height: 26px;
   border-radius: 50%;
   object-fit: cover;
   transform: translateY(2px);
+  cursor: pointer;
 }
 .reply-row .options {
   font-size: 1vw;
@@ -173,6 +174,7 @@
   font-weight: 600;
   text-decoration: none;
   color: #fff;
+  cursor: pointer;
 }
 
 .chevron {

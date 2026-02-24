@@ -19,7 +19,7 @@
     min-height: 100dvh;
     color: var(--white);
     overflow: hidden;
-    z-index: 0;
+    z-index: 2;
 }
 :host::after {
     content:"";

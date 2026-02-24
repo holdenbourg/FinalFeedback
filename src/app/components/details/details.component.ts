@@ -102,6 +102,9 @@ export class DetailsComponent implements OnInit {
   streamingServices: { name: string; logo: string; url: string | null }[] = [];
 
   async ngOnInit() {
+    // Set type immediately from snapshot so correct shimmer shows during loading
+    this.type = this.activatedRoute.snapshot.paramMap.get('type');
+
     const current = await this.usersService.getCurrentUserProfile();
     this.currentUser.set(current);
 
@@ -412,14 +415,36 @@ export class DetailsComponent implements OnInit {
     return hasCast || hasCrew;
   }
 
-  // ✅ Get cast credits (for display)
+  // ✅ Get cast credits (sorted newest first, no-date items at bottom)
   get castCredits(): any[] {
-    return this.personCredits?.cast || [];
+    const credits = this.personCredits?.cast || [];
+    return this.sortCreditsByDate(credits);
   }
 
-  // ✅ Get crew credits (for display)
+  // ✅ Get crew credits (sorted newest first, no-date items at bottom)
   get crewCredits(): any[] {
-    return this.personCredits?.crew || [];
+    const credits = this.personCredits?.crew || [];
+    return this.sortCreditsByDate(credits);
+  }
+
+  private sortCreditsByDate(credits: any[]): any[] {
+    return [...credits].sort((a, b) => {
+      const dateA = this.getCreditDate(a);
+      const dateB = this.getCreditDate(b);
+
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+
+      return dateB.getTime() - dateA.getTime();
+    });
+  }
+
+  private getCreditDate(credit: any): Date | null {
+    const raw = credit.release_date || credit.first_air_date;
+    if (!raw) return null;
+    const d = new Date(raw);
+    return isNaN(d.getTime()) ? null : d;
   }
 
   get seasonsLabel(): string {
@@ -814,7 +839,7 @@ export class DetailsComponent implements OnInit {
     return title
       .toLowerCase()
       .replace(/&/g, ' and ')
-      .replace(/[’'":!?.,()]/g, '')
+      .replace(/[''":!?.,()]/g, '')
       .replace(/\s+/g, '_')
       .replace(/_+/g, '_')
       .trim();
@@ -842,7 +867,7 @@ export class DetailsComponent implements OnInit {
     return title
       .toLowerCase()
       .replace(/&/g, ' and ')
-      .replace(/[’'":!?.,()]/g, '')
+      .replace(/[''":!?.,()]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .trim();

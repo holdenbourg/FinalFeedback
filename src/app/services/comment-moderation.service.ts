@@ -131,7 +131,7 @@ export class CommentModerationService {
         const last = Number(localStorage.getItem(this.lastKey(commentContext.authorUsername)) || '0');
 
         if (now - last < 2000) {
-            return { ok: false, error: 'You’re commenting too fast, please wait a moment' };
+            return { ok: false, error: `You're commenting too fast, please wait a moment` };
         }
 
         ///  Make sure reply context is valid  \\\

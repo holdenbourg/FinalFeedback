@@ -15,6 +15,7 @@ import { ShareRatingModalComponent } from '../share-rating-modal/share-rating-mo
 import { BlocksService } from '../../services/blocks.service';
 import { RatingModel } from '../../models/database-models/rating.model';
 import { ModalOverlayService } from '../../services/modal-overlay.service';
+import { DeviceService } from '../../services/device.service';
 
 type TabType = 'posts' | 'tagged' | 'archive';
 
@@ -28,10 +29,12 @@ type TabType = 'posts' | 'tagged' | 'archive';
 export class AccountComponent implements OnInit, DoCheck {
   // Services
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private usersService = inject(UsersService);
   private followsService = inject(FollowsService);
   public routingService = inject(RoutingService);
   public sidebarService = inject(SidebarService);
+  public deviceService = inject(DeviceService);
   private blocksService = inject(BlocksService);
   private modalOverlayService = inject(ModalOverlayService);
 
@@ -125,7 +128,8 @@ export class AccountComponent implements OnInit, DoCheck {
     return state === AccountViewState.OWN_ACCOUNT ||
            state === AccountViewState.FOLLOWING_PUBLIC ||
            state === AccountViewState.FOLLOWING_PRIVATE ||
-           state === AccountViewState.NOT_FOLLOWING_PUBLIC;
+           state === AccountViewState.NOT_FOLLOWING_PUBLIC ||
+           state === AccountViewState.GUEST;
   });
   
   canEditProfile = computed(() => this.isOwnAccount());
@@ -133,7 +137,8 @@ export class AccountComponent implements OnInit, DoCheck {
   canFollow = computed(() => {
     const state = this.viewState();
     return state === AccountViewState.NOT_FOLLOWING_PUBLIC ||
-           state === AccountViewState.NOT_FOLLOWING_PRIVATE;
+           state === AccountViewState.NOT_FOLLOWING_PRIVATE ||
+           state === AccountViewState.GUEST;
   });
 
   showFollowButton = computed(() => (this.canFollow() && this.profileUserHasRequestedMe() === false));
@@ -232,9 +237,14 @@ export class AccountComponent implements OnInit, DoCheck {
   private async determineViewState(): Promise<AccountViewState> {
     const current = this.currentUser();
     const profile = this.profileUser();
-    
-    if (!current || !profile) {
-      return AccountViewState.NOT_FOUND;
+
+    if (!profile) return AccountViewState.NOT_FOUND;
+
+    // Unauthenticated visitor
+    if (!current) {
+      return profile.private
+        ? AccountViewState.NOT_FOLLOWING_PRIVATE
+        : AccountViewState.GUEST;
     }
 
     // Own account
@@ -839,6 +849,10 @@ export class AccountComponent implements OnInit, DoCheck {
 
   ///  -======================================-  Follow Logic  -======================================- \\\
   async onFollow() {
+    if (!this.currentUser()) {
+      this.router.navigateByUrl('/login');
+      return;
+    }
     const profile = this.profileUser();
     if (!profile) return;
 

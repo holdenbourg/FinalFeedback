@@ -8,12 +8,12 @@ export class RoutingService {
   private router = inject(Router);
 
   navigateToLogin() {
-    this.router.navigate(['']);
+    this.router.navigate(['/login']);
   }
 
   ///  Sidebar  \\\
   navigateToHome() {
-    this.router.navigate(['/home'], { replaceUrl: true });
+    this.router.navigate(['/'], { replaceUrl: true });
   }
 
   navigateToMessages() {

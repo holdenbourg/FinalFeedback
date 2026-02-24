@@ -1,7 +1,7 @@
 import { Component, DoCheck, HostBinding, OnInit, OnDestroy, ViewChild, ElementRef, inject, signal, computed, effect, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { UsersService } from '../../services/users.service';
 import { AddChatModalComponent } from '../add-chat-modal/add-chat-modal.component';
@@ -22,7 +22,7 @@ import { ModalOverlayService } from '../../services/modal-overlay.service';
 @Component({
   selector: 'app-messages',
   standalone: true,
-  imports: [CommonModule, FormsModule, AddChatModalComponent, MessageComponent, PostDetailModalComponent, ShareRatingModalComponent],
+  imports: [CommonModule, FormsModule, RouterLink, AddChatModalComponent, MessageComponent, PostDetailModalComponent, ShareRatingModalComponent],
   templateUrl: './messages.component.html',
   styleUrl: './messages.component.css'
 })

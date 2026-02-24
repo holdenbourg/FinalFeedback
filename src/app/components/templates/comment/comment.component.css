@@ -21,6 +21,7 @@
   border-radius: 50%;
   object-fit: cover;
   transform: translateY(2px);
+  cursor: pointer;
 }
 
 .comment-grid {
@@ -49,6 +50,7 @@
   font-weight: 600;
   text-decoration: none;
   color: #fff;
+  cursor: pointer;
 }
 
 .content-inline .atted {

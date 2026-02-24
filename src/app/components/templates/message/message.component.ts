@@ -1,12 +1,13 @@
 import { CommonModule } from "@angular/common";
 import { Component, Input, Output, EventEmitter } from "@angular/core";
+import { RouterLink } from "@angular/router";
 import { MessageModel } from "../../../models/database-models/message.model";
 import { SharedRatingComponent } from "../shared-rating/shared-rating.component";
 
 @Component({
   selector: 'app-message',
   standalone: true,
-  imports: [CommonModule, SharedRatingComponent],
+  imports: [CommonModule, RouterLink, SharedRatingComponent],
   templateUrl: `./message.component.html`,
   styleUrl: `./message.component.css`
 })

@@ -1,19 +1,21 @@
 <div class="reply-row" [attr.id]="'r-' + reply.replyId">
-  <img class="profile-picture" [src]="reply.profilePicture" [attr.alt]="reply.username" loading="lazy" decoding="async" />
+  <a [routerLink]="['/account', reply.username]">
+    <img class="profile-picture" [src]="reply.profilePicture" [attr.alt]="reply.username" loading="lazy" decoding="async" />
+  </a>
 
   <div class="reply-grid">
     <div class="reply-main">
       <div class="username-line">
-        <a class="profile-username" [href]="'/account/' + reply.username">{{ reply.username }}</a>
+        <a class="profile-username" [routerLink]="['/account', reply.username]">{{ reply.username }}</a>
         <span class="chevron">›</span>
-        <a class="atted-username" [href]="'/account/' + reply.replyingToUsername">{{ reply.replyingToUsername }}</a>
+        <a class="atted-username" [routerLink]="['/account', reply.replyingToUsername]">{{ reply.replyingToUsername }}</a>
       </div>
 
       <p class="reply-text">        
         <ng-container *ngFor="let t of tokensOf(reply.comment)">
           <ng-container *ngIf="t.handle; else plain">
-            <a class="atted" 
-               [href]="'/account/' + t.handle"
+            <a class="atted"
+               [routerLink]="['/account', t.handle]"
                [class.clickable]="t.handle">
               {{ t.text }}
             </a>

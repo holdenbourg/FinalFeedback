@@ -62,8 +62,9 @@
   </div>
 
   <!-- ✅ Profile picture (only shown if showAvatar is true) -->
-  <img *ngIf="showAvatar"
-       [src]="avatarUrl"
-       [alt]="message.sender?.username"
-       class="profile-picture">
+  <a *ngIf="showAvatar" [routerLink]="['/account', message.sender?.username || '']">
+    <img [src]="avatarUrl"
+         [alt]="message.sender?.username"
+         class="profile-picture">
+  </a>
 </div>

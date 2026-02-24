@@ -8,6 +8,21 @@
 }
 
 /* ============================================ */
+/* PERMANENT DARK OVERLAY                       */
+/* Sits between poster-rows (z:0) and sidebar   */
+/* (z:2) so every routed component gets dimming  */
+/* even during async guard resolution.           */
+/* ============================================ */
+:host::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: rgba(0, 0, 0, var(--bg-dim, 0.8));
+}
+
+/* ============================================ */
 /* BACKGROUND ROWS */
 /* ============================================ */
 .poster-rows {
@@ -73,7 +88,7 @@
 /* SIDEBAR */
 /* ============================================ */
 .sidebar {
-  z-index: 2;
+  z-index: 3;
   position: fixed;
   top: 0;
   left: 0;
@@ -235,6 +250,49 @@
   font-size: 20px;
   font-weight: 500;
   color: #fff;
+}
+
+/* Disabled nav items (unauthenticated) */
+.list .list-item.disabled a {
+  opacity: 0.35;
+  cursor: default;
+}
+.list .list-item.disabled a:hover {
+  background: transparent;
+  transform: none;
+}
+
+/* Sign-in button at bottom */
+.sign-in-item {
+  position: absolute;
+  bottom: 0;
+  padding: 0 0 15px;
+  list-style: none;
+  width: calc(100% - 28px);
+}
+.sign-in-item .sign-in-btn {
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: .5s;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+}
+.sign-in-item .sign-in-btn:hover {
+  background: rgba(255, 255, 255, .2);
+  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+.sign-in-item .sign-in-btn i {
+  min-width: 50px;
+  height: 50px;
+  text-align: center;
+  line-height: 50px;
 }
 
 /* No animation class */

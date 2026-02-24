@@ -10,16 +10,9 @@
   inset: 0;
   display: block;
   overflow: hidden;
+  z-index: 2;
 }
 
-:host::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: rgba(0, 0, 0, var(--bg-dim, 0.8));
-}
 
 /* ---------- Container ---------- */
 .container {
@@ -169,9 +162,6 @@
 .actor-name {
   font-weight: 600;
   cursor: pointer;
-}
-.actor-name:hover {
-  text-decoration: underline;
 }
 .notification-time {
   color: rgba(255, 255, 255, 0.45);

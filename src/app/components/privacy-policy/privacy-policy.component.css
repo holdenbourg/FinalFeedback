@@ -13,16 +13,9 @@
   display: block;
   background: #000;
   overflow: hidden;
+  z-index: 2;
 }
 
-:host::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: rgba(0, 0, 0, var(--bg-dim, 0.8));
-}
 
 /* ========== Background Poster Rows (Your existing styles) ========== */
 .poster-rows {

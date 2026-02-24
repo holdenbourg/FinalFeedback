@@ -1,5 +1,5 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit, OnDestroy, inject, signal, HostBinding } from '@angular/core';
+import { Router, NavigationEnd } from '@angular/router';
 import { RoutingService } from '../../services/routing.service';
 import { SidebarService } from '../../services/sidebar.service';
 import { CommonModule } from '@angular/common';
@@ -10,6 +10,10 @@ import { LogoutModalComponent } from '../../components/logout-modal/logout-modal
 import { AuthService } from '../../core/auth.service';
 import { ModalOverlayService } from '../../services/modal-overlay.service';
 import { NotificationsService } from '../../services/notifications.service';
+import { RatingsService } from '../../services/ratings.service';
+import { supabase } from '../../core/supabase.client';
+import { filter, take } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-desktop-layout',
@@ -18,7 +22,7 @@ import { NotificationsService } from '../../services/notifications.service';
   templateUrl: './desktop-layout.component.html',
   styleUrl: './desktop-layout.component.css'
 })
-export class DesktopLayoutComponent implements OnInit {
+export class DesktopLayoutComponent implements OnInit, OnDestroy {
   public sidebarService = inject(SidebarService);
   public routingService = inject(RoutingService);
   public usersService = inject(UsersService);
@@ -26,24 +30,86 @@ export class DesktopLayoutComponent implements OnInit {
   private router = inject(Router);
   public modalOverlayService = inject(ModalOverlayService);
   public notificationsService = inject(NotificationsService);
+  private ratingsService = inject(RatingsService);
 
-  currentUser = signal<UserModel | null>(null);
-  showLogoutModal = false;
-
-  async ngOnInit() {
-    // ✅ Initialize background rows with random start points
-    this.addRandomStartPointForRows();
-
-    // Load current user
-    const current = await this.usersService.getCurrentUserProfile();
-    this.currentUser.set(current);
-
-    // Initialize notifications (loads count + starts realtime)
-    await this.notificationsService.initialize();
+  @HostBinding('style.--bg-dim') get bgDim(): number {
+    const url = this.router.url;
+    if (url.startsWith('/login') || url.startsWith('/privacy-policy')) return 0;
+    return 0.8;
   }
 
-  // ✅ Check if current route is active
+  currentUser = signal<UserModel | null>(null);
+  authResolved = signal(false);
+  hasRatings = signal(true); // default true to avoid flash of disabled state
+  showLogoutModal = false;
+
+  private navigationResolved = false;
+  private authSubscription?: { unsubscribe: () => void };
+  private navSubscription?: Subscription;
+
+  async ngOnInit() {
+    this.addRandomStartPointForRows();
+
+    // Wait for the first NavigationEnd before showing sidebar to prevent
+    // flash during async AuthGuard resolution
+    this.navSubscription = this.router.events.pipe(
+      filter(e => e instanceof NavigationEnd),
+      take(1)
+    ).subscribe(() => this.navigationResolved = true);
+
+    const current = await this.usersService.getCurrentUserProfile();
+    this.currentUser.set(current);
+    this.authResolved.set(true);
+
+    if (current) {
+      await this.notificationsService.initialize();
+      this.ratingsService.hasAnyRatings(current.id)
+        .then(has => this.hasRatings.set(has))
+        .catch(() => this.hasRatings.set(false));
+    } else {
+      this.hasRatings.set(false);
+    }
+
+    // Listen for auth state changes so sidebar updates on sign-in/sign-out
+    const { data } = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_IN') {
+        const user = await this.usersService.getCurrentUserProfile();
+        this.currentUser.set(user);
+        if (user) {
+          await this.notificationsService.initialize();
+          this.ratingsService.hasAnyRatings(user.id)
+            .then(has => this.hasRatings.set(has))
+            .catch(() => this.hasRatings.set(false));
+        }
+      } else if (event === 'SIGNED_OUT') {
+        this.currentUser.set(null);
+        this.hasRatings.set(false);
+        this.notificationsService.unsubscribe();
+      }
+    });
+    this.authSubscription = data.subscription;
+  }
+
+  ngOnDestroy() {
+    this.authSubscription?.unsubscribe();
+    this.navSubscription?.unsubscribe();
+  }
+
+  isAuthenticated(): boolean {
+    return !!this.currentUser();
+  }
+
   isActive(path: string): boolean {
+    if (path === '/account') {
+      const cu = this.currentUser();
+      if (!cu) return false;
+      const url = this.router.url;
+      return url.startsWith(`/account/${cu.username}`);
+    }
+    if (path === '/') {
+      const url = this.router.url;
+      return url === '/' || url.startsWith('/?');
+    }
     return this.router.url.startsWith(path);
   }
   isActiveSettings(path: string): boolean {
@@ -56,16 +122,22 @@ export class DesktopLayoutComponent implements OnInit {
   }
 
   showSidebar(): boolean {
-    if (this.router.url.startsWith('/home')) return true;
-    if (this.router.url.startsWith('/search')) return true;
-    if (this.router.url.startsWith('/messages')) return true;
-    if (this.router.url.startsWith('/library')) return true;
-    if (this.router.url.startsWith('/summary')) return true;
-    if (this.router.url.startsWith('/account')) return true;
-    if (this.router.url.startsWith('/notifications')) return true;
-    if (this.router.url.startsWith('/settings')) return true;
+    if (!this.navigationResolved) return false;
+    const url = this.router.url;
+    if (url === '/' || url.startsWith('/?')) return true;
+    if (url.startsWith('/search')) return true;
+    if (url.startsWith('/messages')) return true;
+    if (url.startsWith('/library')) return true;
+    if (url.startsWith('/summary')) return true;
+    if (url.startsWith('/account')) return true;
+    if (url.startsWith('/notifications')) return true;
+    if (url.startsWith('/settings')) return true;
 
     return false;
+  }
+
+  onDisabledNavClick() {
+    this.routingService.navigateToLogin();
   }
 
   getNavDelay(): string[] {
@@ -78,14 +150,15 @@ export class DesktopLayoutComponent implements OnInit {
     const notifications = ['6', '5', '4', '3', '2', '1', '0', '1', '0'];
     const settings = ['7', '6', '5', '4', '3', '2', '1', '0', '0'];
 
-    if (this.router.url.startsWith('/home')) return home;
-    if (this.router.url.startsWith('/search')) return search;
-    if (this.router.url.startsWith('/messages')) return messages;
-    if (this.router.url.startsWith('/library')) return library;
-    if (this.router.url.startsWith('/summary')) return summary;
-    if (this.router.url.startsWith('/account')) return account;
-    if (this.router.url.startsWith('/notifications')) return notifications;
-    if (this.router.url.startsWith('/settings')) return settings;
+    const url = this.router.url;
+    if (url === '/' || url.startsWith('/?')) return home;
+    if (url.startsWith('/search')) return search;
+    if (url.startsWith('/messages')) return messages;
+    if (url.startsWith('/library')) return library;
+    if (url.startsWith('/summary')) return summary;
+    if (url.startsWith('/account')) return account;
+    if (url.startsWith('/notifications')) return notifications;
+    if (url.startsWith('/settings')) return settings;
 
     return home;
   }

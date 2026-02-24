@@ -10,6 +10,6 @@ export class AuthGuard implements CanActivate {
     const { data: { session } } = await supabase.auth.getSession();
     return session
       ? true
-      : this.router.createUrlTree(['/'], { queryParams: { redirect: state.url } });
+      : this.router.createUrlTree(['/login'], { queryParams: { redirect: state.url } });
   }
 }
