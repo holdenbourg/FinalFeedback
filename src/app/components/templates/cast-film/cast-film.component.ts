@@ -4,11 +4,10 @@ import { RouterLink } from '@angular/router';
 import { PeopleCastCredit } from '../../../models/api-models/tmdb-models/people-combined-credits.model';
 
 @Component({
-  selector: 'app-cast-film',
-  standalone: true,
-  imports: [RouterLink],
-  templateUrl: './cast-film.component.html',
-  styleUrl: './cast-film.component.css'
+    selector: 'app-cast-film',
+    imports: [RouterLink],
+    templateUrl: './cast-film.component.html',
+    styleUrl: './cast-film.component.css'
 })
 export class CastFilmComponent {
   @Input({ required: true }) item!: PeopleCastCredit;

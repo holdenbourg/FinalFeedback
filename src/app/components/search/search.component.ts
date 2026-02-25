@@ -19,18 +19,17 @@ import { SearchedPersonComponent } from '../templates/searched-person/searched-p
 
 
 @Component({
-  selector: 'app-search',
-  standalone: true,
-  imports: [
-    CommonModule, 
-    FormsModule, 
-    SearchedFilmComponent,
-    SearchedPersonComponent, 
-    SearchedUserComponent,
-    RouterModule
-  ],
-  templateUrl: './search.component.html',
-  styleUrl: './search.component.css'
+    selector: 'app-search',
+    imports: [
+        CommonModule,
+        FormsModule,
+        SearchedFilmComponent,
+        SearchedPersonComponent,
+        SearchedUserComponent,
+        RouterModule
+    ],
+    templateUrl: './search.component.html',
+    styleUrl: './search.component.css'
 })
 
 export class SearchComponent implements OnInit {

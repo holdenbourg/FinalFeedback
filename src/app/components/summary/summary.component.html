@@ -35,33 +35,24 @@
   </div>
 
   <main class="dashboard">
-    <!-- Locked overlay when current tab is locked -->
-    <div class="locked-overlay" *ngIf="currentTab() === 'all' && !canViewAll()">
-      <div class="locked-message">
-        <i class="bx bx-lock-alt"></i>
-        <h2>All Summary Locked</h2>
-        <p>{{ allThresholdMessage() }}</p>
-      </div>
-    </div>
-    
-    <div class="locked-overlay" *ngIf="currentTab() === 'movies' && !canViewMovies()">
-      <div class="locked-message">
-        <i class="bx bx-lock-alt"></i>
-        <h2>Movies Summary Locked</h2>
-        <p>{{ moviesThresholdMessage() }}</p>
-      </div>
-    </div>
-    
-    <div class="locked-overlay" *ngIf="currentTab() === 'series' && !canViewSeries()">
-      <div class="locked-message">
-        <i class="bx bx-lock-alt"></i>
-        <h2>Series Summary Locked</h2>
-        <p>{{ seriesThresholdMessage() }}</p>
-      </div>
-    </div>
+    <!-- Shimmer loading skeleton -->
+    <ng-container *ngIf="loading()">
+      <section class="cell shimmer-cell" *ngFor="let i of [1,2,3,4,5,6]">
+        <div class="shimmer-header">
+          <div class="shimmer-line shimmer-title"></div>
+        </div>
+        <div class="shimmer-body">
+          <div class="shimmer-line shimmer-bar-long"></div>
+          <div class="shimmer-line shimmer-bar-med"></div>
+          <div class="shimmer-line shimmer-bar-short"></div>
+          <div class="shimmer-line shimmer-bar-long"></div>
+          <div class="shimmer-line shimmer-bar-med"></div>
+        </div>
+      </section>
+    </ng-container>
 
     <!-- Cell 1: Favorites -->
-    <section class="cell" *ngIf="(canViewMovies() || canViewSeries())">
+    <section class="cell" *ngIf="!loading() && (canViewMovies() || canViewSeries())">
       <header class="cell-header">
         <button class="chev-btn prev"
                 *ngIf="favoritesSequence().length > 1 && favIndex() > 0; else favPrevSpacer"
@@ -103,7 +94,7 @@
     </section>
 
     <!-- Cell 2: Totals -->
-    <section class="cell" *ngIf="(canViewMovies() || canViewSeries())">
+    <section class="cell" *ngIf="!loading() && (canViewMovies() || canViewSeries())">
       <header class="cell-header">
         <button class="chev-btn prev"
                 *ngIf="countIndex() > 0; else countPrevSpacer"
@@ -226,7 +217,7 @@
       </div>
     </section>
     <!-- Cell 3: Genre bars -->
-    <section class="cell no-bottom-padding" *ngIf="(canViewMovies() || canViewSeries())">
+    <section class="cell no-bottom-padding" *ngIf="!loading() && (canViewMovies() || canViewSeries())">
       <header class="cell-header">
         <button class="chev-btn prev"
                 *ngIf="genreBarIndex() > 0; else genreBarPrevSpacer"
@@ -281,7 +272,7 @@
     </section>
 
     <!-- Cell 4: Rated bars -->
-    <section class="cell no-bottom-padding" *ngIf="(canViewMovies() || canViewSeries())">
+    <section class="cell no-bottom-padding" *ngIf="!loading() && (canViewMovies() || canViewSeries())">
       <header class="cell-header">
         <button class="chev-btn prev"
                 *ngIf="ratedBarIndex() > 0; else ratedBarPrevSpacer"
@@ -336,7 +327,7 @@
     </section>
 
     <!-- Cell 5: Rated pies -->
-    <section class="cell no-bottom-padding" *ngIf="(canViewMovies() || canViewSeries())">
+    <section class="cell no-bottom-padding" *ngIf="!loading() && (canViewMovies() || canViewSeries())">
       <header class="cell-header">
         <button class="chev-btn prev"
                 *ngIf="ratedPieIndex() > 0; else ratedPiePrevSpacer"
@@ -395,7 +386,7 @@
     </section>
 
     <!-- Cell 6: Genre pies -->
-    <section class="cell no-bottom-padding" *ngIf="(canViewMovies() || canViewSeries())">
+    <section class="cell no-bottom-padding" *ngIf="!loading() && (canViewMovies() || canViewSeries())">
       <header class="cell-header">
         <button class="chev-btn prev"
                 *ngIf="genrePieIndex() > 0; else genrePiePrevSpacer"

@@ -4,11 +4,10 @@ import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-logout-modal',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './logout-modal.component.html',
-  styleUrl: './logout-modal.component.css'
+    selector: 'app-logout-modal',
+    imports: [CommonModule],
+    templateUrl: './logout-modal.component.html',
+    styleUrl: './logout-modal.component.css'
 })
 export class LogoutModalComponent {
   @Output() confirm = new EventEmitter<void>();

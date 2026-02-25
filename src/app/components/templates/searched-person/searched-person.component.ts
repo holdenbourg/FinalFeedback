@@ -4,11 +4,10 @@ import { MultiSearchPersonResultModel } from '../../../models/api-models/tmdb-mo
 import { RouterLink } from '@angular/router';
 
 @Component({
-  selector: 'app-searched-person',
-  standalone: true,
-  imports: [RouterLink],
-  templateUrl: './searched-person.component.html',
-  styleUrl: './searched-person.component.css'
+    selector: 'app-searched-person',
+    imports: [RouterLink],
+    templateUrl: './searched-person.component.html',
+    styleUrl: './searched-person.component.css'
 })
 export class SearchedPersonComponent {
   @Input({ required: true }) item!: MultiSearchPersonResultModel;

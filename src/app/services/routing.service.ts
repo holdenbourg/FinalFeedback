@@ -113,6 +113,9 @@ export class RoutingService {
   navigateToPrivacy() {
     this.router.navigate(['/settings', 'privacy']);
   }
+  navigateToNotificationSettings() {
+    this.router.navigate(['/settings', 'notifications']);
+  }
   navigateToPrivacyPolicy() {
     this.router.navigate(['/settings', 'privacy-policy']);
   }

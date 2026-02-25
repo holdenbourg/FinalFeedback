@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal, HostBinding } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, HostBinding, NgZone } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { RoutingService } from '../../services/routing.service';
 import { SidebarService } from '../../services/sidebar.service';
@@ -16,11 +16,10 @@ import { filter, take } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
 
 @Component({
-  selector: 'app-desktop-layout',
-  standalone: true,
-  imports: [CommonModule, RouterOutlet, LogoutModalComponent],
-  templateUrl: './desktop-layout.component.html',
-  styleUrl: './desktop-layout.component.css'
+    selector: 'app-desktop-layout',
+    imports: [CommonModule, RouterOutlet, LogoutModalComponent],
+    templateUrl: './desktop-layout.component.html',
+    styleUrl: './desktop-layout.component.css'
 })
 export class DesktopLayoutComponent implements OnInit, OnDestroy {
   public sidebarService = inject(SidebarService);
@@ -31,19 +30,22 @@ export class DesktopLayoutComponent implements OnInit, OnDestroy {
   public modalOverlayService = inject(ModalOverlayService);
   public notificationsService = inject(NotificationsService);
   private ratingsService = inject(RatingsService);
+  private ngZone = inject(NgZone);
 
   @HostBinding('style.--bg-dim') get bgDim(): number {
     const url = this.router.url;
-    if (url.startsWith('/login') || url.startsWith('/privacy-policy')) return 0;
+    if (url.startsWith('/login') || url.startsWith('/privacy-policy') || url.startsWith('/auth')) return 0;
     return 0.8;
   }
 
   currentUser = signal<UserModel | null>(null);
   authResolved = signal(false);
   hasRatings = signal(true); // default true to avoid flash of disabled state
+  hasSummaryAccess = signal(true); // default true to avoid flash of disabled state
   showLogoutModal = false;
 
   private navigationResolved = false;
+  private wasAlreadySignedIn = false;
   private authSubscription?: { unsubscribe: () => void };
   private navSubscription?: Subscription;
 
@@ -62,30 +64,63 @@ export class DesktopLayoutComponent implements OnInit, OnDestroy {
     this.authResolved.set(true);
 
     if (current) {
+      this.wasAlreadySignedIn = true;
       await this.notificationsService.initialize();
       this.ratingsService.hasAnyRatings(current.id)
         .then(has => this.hasRatings.set(has))
         .catch(() => this.hasRatings.set(false));
+      this.ratingsService.hasSummaryAccess(current.id)
+        .then(has => this.hasSummaryAccess.set(has))
+        .catch(() => this.hasSummaryAccess.set(false));
+
+      // Sync OAuth avatar on initial load too (not just on auth state change)
+      this.syncOAuthAvatar(current);
     } else {
       this.hasRatings.set(false);
+      this.hasSummaryAccess.set(false);
     }
 
     // Listen for auth state changes so sidebar updates on sign-in/sign-out
+    // Wrapped in NgZone.run() so Angular change detection fires after signal updates
     const { data } = supabase.auth.onAuthStateChange(async (event) => {
-      if (event === 'SIGNED_IN') {
-        const user = await this.usersService.getCurrentUserProfile();
-        this.currentUser.set(user);
-        if (user) {
-          await this.notificationsService.initialize();
-          this.ratingsService.hasAnyRatings(user.id)
-            .then(has => this.hasRatings.set(has))
-            .catch(() => this.hasRatings.set(false));
+      this.ngZone.run(async () => {
+        if (event === 'SIGNED_IN') {
+          const user = await this.usersService.getCurrentUserProfile();
+          this.currentUser.set(user);
+          if (user) {
+            await this.notificationsService.initialize();
+            this.ratingsService.hasAnyRatings(user.id)
+              .then(has => this.hasRatings.set(has))
+              .catch(() => this.hasRatings.set(false));
+            this.ratingsService.hasSummaryAccess(user.id)
+              .then(has => this.hasSummaryAccess.set(has))
+              .catch(() => this.hasSummaryAccess.set(false));
+
+            // Sync OAuth avatar if user has no profile picture
+            this.syncOAuthAvatar(user);
+
+            // Fire login alert email only on genuine new sign-ins
+            // (not on session restore / tab refocus / token refresh)
+            if (!this.wasAlreadySignedIn && user.email_notifications?.login_alerts) {
+              supabase.functions.invoke('send-notification-email', {
+                body: {
+                  notification_type: 'login_alert',
+                  recipient_email: user.email,
+                  recipient_name: user.first_name || user.username,
+                  actor_username: user.username,
+                  metadata: { timestamp: new Date().toLocaleString(), method: 'Web browser' },
+                },
+              }).catch(() => {});
+            }
+            this.wasAlreadySignedIn = true;
+          }
+        } else if (event === 'SIGNED_OUT') {
+          this.currentUser.set(null);
+          this.hasRatings.set(false);
+          this.hasSummaryAccess.set(false);
+          this.notificationsService.unsubscribe();
         }
-      } else if (event === 'SIGNED_OUT') {
-        this.currentUser.set(null);
-        this.hasRatings.set(false);
-        this.notificationsService.unsubscribe();
-      }
+      });
     });
     this.authSubscription = data.subscription;
   }
@@ -172,6 +207,23 @@ export class DesktopLayoutComponent implements OnInit, OnDestroy {
       this.routingService.navigateToLogin();
     } catch (err) {
       console.error('Logout error:', err);
+    }
+  }
+
+  // Sync Google/GitHub OAuth avatar to profile_picture_url if missing
+  private async syncOAuthAvatar(user: UserModel) {
+    if (user.profile_picture_url) return;
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const avatarUrl = authUser?.user_metadata?.['avatar_url']
+        || authUser?.user_metadata?.['picture'];
+      if (avatarUrl) {
+        await this.usersService.updateUserProfile(user.id, { profile_picture_url: avatarUrl });
+        const updated = await this.usersService.getCurrentUserProfile();
+        if (updated) this.currentUser.set(updated);
+      }
+    } catch {
+      // non-critical — silently ignore
     }
   }
 

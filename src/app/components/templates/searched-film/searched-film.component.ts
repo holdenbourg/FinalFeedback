@@ -3,11 +3,10 @@ import { MultiSearchMediaResultModel } from '../../../models/api-models/tmdb-mod
 import { RouterLink } from '@angular/router';
 
 @Component({
-  selector: 'app-searched-film',
-  standalone: true,
-  imports: [RouterLink],
-  templateUrl: './searched-film.component.html',
-  styleUrls: ['./searched-film.component.css']
+    selector: 'app-searched-film',
+    imports: [RouterLink],
+    templateUrl: './searched-film.component.html',
+    styleUrls: ['./searched-film.component.css']
 })
 
 export class SearchedFilmComponent {

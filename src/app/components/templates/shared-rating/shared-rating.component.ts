@@ -3,11 +3,10 @@ import { Component, Input } from "@angular/core";
 import { RatingModel } from "../../../models/database-models/rating.model";
 
 @Component({
-  selector: 'app-shared-rating',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './shared-rating.component.html',
-  styleUrl: './shared-rating.component.css'
+    selector: 'app-shared-rating',
+    imports: [CommonModule],
+    templateUrl: './shared-rating.component.html',
+    styleUrl: './shared-rating.component.css'
 })
 export class SharedRatingComponent {
   @Input() rating!: RatingModel;  // ✅ Changed from PostModel to RatingModel

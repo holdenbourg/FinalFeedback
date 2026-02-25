@@ -4,11 +4,10 @@ import { RoutingService } from '../../../services/routing.service';
 import { TaggedUser } from '../../../models/helper-models/film-data.model';
 
 @Component({
-  selector: 'app-tagged-user',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './tagged-user.component.html',
-  styleUrl: './tagged-user.component.css'
+    selector: 'app-tagged-user',
+    imports: [CommonModule],
+    templateUrl: './tagged-user.component.html',
+    styleUrl: './tagged-user.component.css'
 })
 export class TaggedUserComponent {
   @Input() user!: TaggedUser;

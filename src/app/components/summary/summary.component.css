@@ -97,44 +97,54 @@
 }
 
 
-/* ========== Locked Overlay ========== */
-.locked-overlay {
-  position: absolute;
-  inset: 0;
-  border: .2vw solid #fff; 
-  border-radius: 10px; 
-  backdrop-filter: blur(3px);
-  z-index: 10;
+/* ========== Shimmer Loading Skeleton ========== */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer-cell {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
 }
 
-.locked-message {
-  text-align: center;
-  color: #fff;
-  max-width: 400px;
-  padding: 40px;
+.shimmer-header {
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
 }
 
-.locked-message i {
-  font-size: 72px;
-  opacity: 0.6;
-  margin-bottom: 20px;
+.shimmer-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
 }
 
-.locked-message h2 {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0 0 12px 0;
+.shimmer-line {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.06) 25%,
+    rgba(255,255,255,0.15) 50%,
+    rgba(255,255,255,0.06) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
 }
 
-.locked-message p {
-  font-size: 16px;
-  opacity: 0.8;
-  margin: 0;
-  line-height: 1.5;
+.shimmer-title {
+  width: 45%;
+  height: 18px;
+  margin: 0 auto;
 }
+
+.shimmer-bar-long  { width: 90%; }
+.shimmer-bar-med   { width: 65%; }
+.shimmer-bar-short { width: 40%; }
 
 
 /* ---------- Dashboard ---------- */

@@ -9,11 +9,10 @@ import { UsersService } from '../../services/users.service';
 import { supabase } from '../../core/supabase.client';
 
 @Component({
-  selector: 'app-login-register',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './login-register.component.html',
-  styleUrls: ['./login-register.component.css']
+    selector: 'app-login-register',
+    imports: [CommonModule, FormsModule, RouterLink],
+    templateUrl: './login-register.component.html',
+    styleUrls: ['./login-register.component.css']
 })
 
 export class LoginRegisterComponent implements OnInit {
@@ -130,6 +129,23 @@ export class LoginRegisterComponent implements OnInit {
         e?.message ?? 'That username/email or password does not exist',
         'error'
       );
+    }
+  }
+
+
+  ///  -======================================-  Forgot Password  -======================================-  \\\
+  async onForgotPassword(event: Event) {
+    event.preventDefault();
+    const identifier = this.loginObject.usernameOrEmail?.trim();
+    if (!identifier) {
+      this.transitionWarning('Enter your username or email first', 'error');
+      return;
+    }
+    try {
+      await this.authService.sendPasswordReset(identifier);
+      this.transitionWarning('Password reset email sent! Check your inbox.', 'success');
+    } catch (e: any) {
+      this.transitionWarning(e?.message ?? 'Could not send reset email', 'error');
     }
   }
 

@@ -2,11 +2,10 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-privacy-policy-content',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './privacy-policy-content.component.html',
-  styleUrl: './privacy-policy-content.component.css'
+    selector: 'app-privacy-policy-content',
+    imports: [CommonModule],
+    templateUrl: './privacy-policy-content.component.html',
+    styleUrl: './privacy-policy-content.component.css'
 })
 export class PrivacyPolicyContentComponent {
   @Input() showBackButton = true;

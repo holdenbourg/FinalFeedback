@@ -1,0 +1,164 @@
+<div class="container" [class.active]="!sidebarService.sidebarActive()" [class.no-anim]="sidebarService.suppressAnim()">
+  <div class="privacy-panel">
+    <div class="privacy-header">
+      <h1 class="privacy-title">Email Notifications</h1>
+      <p class="privacy-subtitle">Choose which email notifications you'd like to receive. In-app notifications are always on.</p>
+    </div>
+
+    <!-- Status Messages -->
+    <div class="message success-message" [class.visible]="successMessage()">
+      <i class='bx bx-check-circle'></i>
+      <span>{{ successMessage() }}</span>
+    </div>
+
+    <div class="message error-message" [class.visible]="errorMessage()">
+      <i class='bx bx-error-circle'></i>
+      <span>{{ errorMessage() }}</span>
+    </div>
+
+    <!-- Security Section -->
+    <div class="privacy-section">
+      <h2 class="section-title">Security</h2>
+
+      <div class="privacy-toggle-card">
+        <div class="toggle-header">
+          <div class="toggle-info">
+            <h3 class="toggle-label">Login Alerts</h3>
+            <p class="toggle-description">Get notified when someone signs into your account</p>
+          </div>
+
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              [checked]="preferences().login_alerts"
+              (change)="onToggle('login_alerts')"
+              [disabled]="isSaving()">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Section -->
+    <div class="privacy-section">
+      <h2 class="section-title">Activity</h2>
+
+      <div class="toggle-list">
+        <!-- Messages -->
+        <div class="privacy-toggle-card">
+          <div class="toggle-header">
+            <div class="toggle-info">
+              <h3 class="toggle-label">Messages</h3>
+              <p class="toggle-description">New messages, replies, and shared ratings in conversations</p>
+            </div>
+
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                [checked]="preferences().messages"
+                (change)="onToggle('messages')"
+                [disabled]="isSaving()">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Likes -->
+        <div class="privacy-toggle-card">
+          <div class="toggle-header">
+            <div class="toggle-info">
+              <h3 class="toggle-label">Likes</h3>
+              <p class="toggle-description">When someone likes your posts, comments, or replies</p>
+            </div>
+
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                [checked]="preferences().likes"
+                (change)="onToggle('likes')"
+                [disabled]="isSaving()">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Comments & Replies -->
+        <div class="privacy-toggle-card">
+          <div class="toggle-header">
+            <div class="toggle-info">
+              <h3 class="toggle-label">Comments & Replies</h3>
+              <p class="toggle-description">When someone comments on your post or replies to your comment</p>
+            </div>
+
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                [checked]="preferences().comments"
+                (change)="onToggle('comments')"
+                [disabled]="isSaving()">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Tags -->
+        <div class="privacy-toggle-card">
+          <div class="toggle-header">
+            <div class="toggle-info">
+              <h3 class="toggle-label">Tags</h3>
+              <p class="toggle-description">When someone tags you in a post, comment, or reply</p>
+            </div>
+
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                [checked]="preferences().tags"
+                (change)="onToggle('tags')"
+                [disabled]="isSaving()">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Ratings -->
+        <div class="privacy-toggle-card">
+          <div class="toggle-header">
+            <div class="toggle-info">
+              <h3 class="toggle-label">Ratings</h3>
+              <p class="toggle-description">When someone you follow rates or re-rates a title</p>
+            </div>
+
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                [checked]="preferences().ratings"
+                (change)="onToggle('ratings')"
+                [disabled]="isSaving()">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Follows -->
+        <div class="privacy-toggle-card">
+          <div class="toggle-header">
+            <div class="toggle-info">
+              <h3 class="toggle-label">Follows</h3>
+              <p class="toggle-description">New followers, follow requests, and accepted requests</p>
+            </div>
+
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                [checked]="preferences().follows"
+                (change)="onToggle('follows')"
+                [disabled]="isSaving()">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

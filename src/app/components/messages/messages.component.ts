@@ -20,11 +20,10 @@ import { RatingModel } from '../../models/database-models/rating.model';
 import { ModalOverlayService } from '../../services/modal-overlay.service';
 
 @Component({
-  selector: 'app-messages',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, AddChatModalComponent, MessageComponent, PostDetailModalComponent, ShareRatingModalComponent],
-  templateUrl: './messages.component.html',
-  styleUrl: './messages.component.css'
+    selector: 'app-messages',
+    imports: [CommonModule, FormsModule, RouterLink, AddChatModalComponent, MessageComponent, PostDetailModalComponent, ShareRatingModalComponent],
+    templateUrl: './messages.component.html',
+    styleUrl: './messages.component.css'
 })
 export class MessagesComponent implements OnInit, OnDestroy, DoCheck {
   // Message loading

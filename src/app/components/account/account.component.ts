@@ -20,11 +20,10 @@ import { DeviceService } from '../../services/device.service';
 type TabType = 'posts' | 'tagged' | 'archive';
 
 @Component({
-  selector: 'app-account',
-  standalone: true,
-  imports: [CommonModule, PostDetailModalComponent, ShareRatingModalComponent],
-  templateUrl: './account.component.html',
-  styleUrl: './account.component.css'
+    selector: 'app-account',
+    imports: [CommonModule, PostDetailModalComponent, ShareRatingModalComponent],
+    templateUrl: './account.component.html',
+    styleUrl: './account.component.css'
 })
 export class AccountComponent implements OnInit, DoCheck {
   // Services

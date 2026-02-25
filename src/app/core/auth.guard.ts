@@ -7,8 +7,8 @@ export class AuthGuard implements CanActivate {
   constructor(private router: Router) {}
 
   async canActivate(_route: any, state: any): Promise<boolean | UrlTree> {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session
+    const { data: { user } } = await supabase.auth.getUser();
+    return user
       ? true
       : this.router.createUrlTree(['/login'], { queryParams: { redirect: state.url } });
   }

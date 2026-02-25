@@ -8,11 +8,10 @@ import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter } from 'rxjs/operators';
 
 @Component({
-  selector: 'app-add-chat-modal',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './add-chat-modal.component.html',
-  styleUrl: './add-chat-modal.component.css'
+    selector: 'app-add-chat-modal',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './add-chat-modal.component.html',
+    styleUrl: './add-chat-modal.component.css'
 })
 export class AddChatModalComponent implements OnInit, OnDestroy {
   @Output() cancel = new EventEmitter<void>();

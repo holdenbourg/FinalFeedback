@@ -3,11 +3,10 @@ import { RouterLink } from '@angular/router';
 import { PeopleCrewCredit } from '../../../models/api-models/tmdb-models/people-combined-credits.model';
 
 @Component({
-  selector: 'app-crew-film',
-  standalone: true,
-  imports: [RouterLink],
-  templateUrl: './crew-film.component.html',
-  styleUrls: ['./crew-film.component.css']
+    selector: 'app-crew-film',
+    imports: [RouterLink],
+    templateUrl: './crew-film.component.html',
+    styleUrls: ['./crew-film.component.css']
 })
 
 export class CrewFilmComponent {

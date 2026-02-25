@@ -8,21 +8,18 @@ import { RoutingService } from '../../services/routing.service';
 import { SidebarService } from '../../services/sidebar.service';
 import { UserModel } from '../../models/database-models/user.model';
 import { UsersService } from '../../services/users.service';
-import { LogoutModalComponent } from '../logout-modal/logout-modal.component';
 import { AuthService } from '../../core/auth.service';
 import { DeleteAccountModalComponent } from '../delete-account-modal/delete-account-modal.component';
 import { ModalOverlayService } from '../../services/modal-overlay.service';
 
 @Component({
-  selector: 'app-settings-account-info',
-  standalone: true,
-  imports: [CommonModule, 
-            FormsModule, 
-            LogoutModalComponent, 
-            DeleteAccountModalComponent
-          ],
-  templateUrl: './settings-account-info.component.html',
-  styleUrl: './settings-account-info.component.css'
+    selector: 'app-settings-account-info',
+    imports: [CommonModule,
+        FormsModule,
+        DeleteAccountModalComponent
+    ],
+    templateUrl: './settings-account-info.component.html',
+    styleUrl: './settings-account-info.component.css'
 })
 export class SettingsAccountInfoComponent implements OnInit, OnDestroy, DoCheck {
   public routingService = inject(RoutingService);

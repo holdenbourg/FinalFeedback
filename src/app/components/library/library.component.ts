@@ -23,11 +23,10 @@ type FilmUIState = {
 };
 
 @Component({
-  selector: 'app-library',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RatedFilmComponent],
-  templateUrl: './library.component.html',
-  styleUrls: ['./library.component.css'],
+    selector: 'app-library',
+    imports: [CommonModule, FormsModule, RatedFilmComponent],
+    templateUrl: './library.component.html',
+    styleUrls: ['./library.component.css']
 })
 
 

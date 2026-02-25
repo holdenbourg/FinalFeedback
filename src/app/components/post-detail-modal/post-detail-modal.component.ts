@@ -10,11 +10,10 @@ import { UsersService } from '../../services/users.service';
 import { RatingModel } from '../../models/database-models/rating.model';
 
 @Component({
-  selector: 'app-post-detail-modal',
-  standalone: true,
-  imports: [CommonModule, FeedPostComponent],
-  templateUrl: './post-detail-modal.component.html',
-  styleUrl: './post-detail-modal.component.css'
+    selector: 'app-post-detail-modal',
+    imports: [CommonModule, FeedPostComponent],
+    templateUrl: './post-detail-modal.component.html',
+    styleUrl: './post-detail-modal.component.css'
 })
 export class PostDetailModalComponent implements OnInit, OnChanges {
   private changeDetectorRef = inject(ChangeDetectorRef);

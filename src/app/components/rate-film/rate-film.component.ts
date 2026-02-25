@@ -13,11 +13,10 @@ import { MovieDetailsPageModel } from '../../models/api-models/movie-details-pag
 import { TvSeriesDetailsPageModel } from '../../models/api-models/tv-series-details-page.model';
 
 @Component({
-  selector: 'app-rate-film',
-  standalone: true,
-  imports: [CommonModule, RateItemComponent],
-  templateUrl: './rate-film.component.html',
-  styleUrl: './rate-film.component.css'
+    selector: 'app-rate-film',
+    imports: [CommonModule, RateItemComponent],
+    templateUrl: './rate-film.component.html',
+    styleUrl: './rate-film.component.css'
 })
 
 export class RateFilmComponent implements OnInit {

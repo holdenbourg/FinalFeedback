@@ -7,16 +7,14 @@ import { SidebarService } from '../../services/sidebar.service';
 import { UsersService } from '../../services/users.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { LogoutModalComponent } from '../logout-modal/logout-modal.component';
 import { AuthService } from '../../core/auth.service';
 import { ModalOverlayService } from '../../services/modal-overlay.service';
 
 @Component({
-  selector: 'app-settings-privacy',
-  standalone: true,
-  imports: [CommonModule, FormsModule, LogoutModalComponent],
-  templateUrl: './settings-privacy.component.html',
-  styleUrl: './settings-privacy.component.css'
+    selector: 'app-settings-privacy',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './settings-privacy.component.html',
+    styleUrl: './settings-privacy.component.css'
 })
 export class SettingsPrivacyComponent implements OnDestroy, DoCheck {
   public routingService = inject(RoutingService);

@@ -117,6 +117,17 @@ export class RatingsService {
     return (count ?? 0) > 0;
   }
 
+  ///  Lightweight check: does user have 10+ movies OR 10+ series?  \\\
+  async hasSummaryAccess(userId: string): Promise<boolean> {
+    const [movies, series] = await Promise.all([
+      supabase.from('ratings').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('media_type', 'movie'),
+      supabase.from('ratings').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('media_type', 'series'),
+    ]);
+
+    if (movies.error && series.error) return false;
+    return (movies.count ?? 0) >= 10 || (series.count ?? 0) >= 10;
+  }
+
   ///  Get only movies for a user  \\\
   async getUserMovies(userId: string): Promise<PostRating[]> {
     const { data, error } = await supabase

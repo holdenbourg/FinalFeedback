@@ -18,11 +18,10 @@ interface ShareTarget {
 }
 
 @Component({
-  selector: 'app-share-rating-modal',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './share-rating-modal.component.html',
-  styleUrl: './share-rating-modal.component.css'
+    selector: 'app-share-rating-modal',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './share-rating-modal.component.html',
+    styleUrl: './share-rating-modal.component.css'
 })
 export class ShareRatingModalComponent implements OnInit, OnDestroy {
   @Input() rating!: RatingModel;

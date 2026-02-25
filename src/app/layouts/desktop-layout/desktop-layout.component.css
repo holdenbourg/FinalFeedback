@@ -252,10 +252,10 @@
   color: #fff;
 }
 
-/* Disabled nav items (unauthenticated) */
+/* Disabled nav items (unauthenticated or locked) */
 .list .list-item.disabled a {
   opacity: 0.35;
-  cursor: default;
+  cursor: not-allowed;
 }
 .list .list-item.disabled a:hover {
   background: transparent;

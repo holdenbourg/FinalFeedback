@@ -28,7 +28,7 @@
             <div class="remember-forgot">
                 <label><input type="checkbox" class="ff-checkbox" [(ngModel)]="rememberMeChecked" name="remember-me"/>Remember me</label>
                 
-                <a (click)="$event.preventDefault()">Forgot password?</a>
+                <a (click)="onForgotPassword($event)">Forgot password?</a>
             </div>
 
             <button type="submit" class="button">Login</button>

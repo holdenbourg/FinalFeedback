@@ -1,7 +1,7 @@
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../core/supabase.client';
 import { Injectable } from '@angular/core';
-import { UserModel } from '../models/database-models/user.model';
+import { UserModel, EmailNotificationPreferences } from '../models/database-models/user.model';
 import { catchError, from, map, Observable, of } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
@@ -15,6 +15,7 @@ export class UsersService {
     bio,
     profile_picture_url,
     private,
+    email_notifications,
     created_at,
     updated_at
   `;
@@ -401,8 +402,8 @@ export class UsersService {
    */
   async updateUserPassword(newPassword: string): Promise<{ success: boolean; error?: string }> {
     try {
-      if (!newPassword || newPassword.length < 6) {
-        return { success: false, error: 'Password must be at least 6 characters' };
+      if (!newPassword || newPassword.length < 8) {
+        return { success: false, error: 'Password must be at least 8 characters' };
       }
 
       // Check if user is OAuth user (cannot set password)
@@ -451,57 +452,57 @@ export class UsersService {
       }
 
       if (!isPrivate) {
-        console.log('[UsersService] Switching to public - accepting all pending requests');
-        
-        // Get all pending requests for this user
+        // Accept all pending follow requests when switching to public
         const { data: requests, error: fetchError } = await supabase
           .from('follow_requests')
           .select('requester_id')
           .eq('target_id', userId);
 
-        if (fetchError) {
-          console.error('Error fetching pending requests:', fetchError);
-          // Don't fail the entire operation, just log
-        } else if (requests && requests.length > 0) {
-          console.log(`[UsersService] Found ${requests.length} pending requests to accept`);
-
-          // Create follows for all requesters
+        if (!fetchError && requests && requests.length > 0) {
           const followsToInsert = requests.map(req => ({
             follower_id: req.requester_id,
             followee_id: userId
           }));
 
-          const { error: followsError } = await supabase
+          await supabase
             .from('follows')
             .insert(followsToInsert);
 
-          if (followsError) {
-            console.error('Error inserting follows:', followsError);
-            // Don't fail - they can manually accept later
-          } else {
-            console.log(`[UsersService] Created ${followsToInsert.length} follows`);
-          }
-
-          // Delete all the requests
-          const { error: deleteError } = await supabase
+          await supabase
             .from('follow_requests')
             .delete()
             .eq('target_id', userId);
-
-          if (deleteError) {
-            console.error('Error deleting requests:', deleteError);
-            // Don't fail - requests will just remain
-          } else {
-            console.log(`[UsersService] Deleted ${requests.length} follow requests`);
-          }
-        } else {
-          console.log('[UsersService] No pending requests to accept');
         }
       }
 
       return { success: true };
     } catch (err) {
       console.error('updateAccountPrivacy exception:', err);
+      return { success: false, error: 'An unexpected error occurred' };
+    }
+  }
+
+  /**
+   * Update email notification preferences
+   */
+  async updateEmailNotifications(userId: string, preferences: EmailNotificationPreferences): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          email_notifications: preferences,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Error updating email notifications:', error.message);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.error('updateEmailNotifications exception:', err);
       return { success: false, error: 'An unexpected error occurred' };
     }
   }

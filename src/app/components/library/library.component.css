@@ -665,6 +665,7 @@
   mask-image: linear-gradient(to bottom, transparent 0, black var(--top-mask-size, 0), black calc(100% - var(--bottom-mask-size, 0)), transparent 100%);
   --top-mask-size: 10px; 
   --bottom-mask-size: 0px;
+  scrollbar-gutter: stable;
 }
 .scroll-box::-webkit-scrollbar { 
   width: 0.5em; 

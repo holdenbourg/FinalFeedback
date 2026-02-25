@@ -1,3 +1,13 @@
+export interface EmailNotificationPreferences {
+  messages: boolean;
+  likes: boolean;
+  comments: boolean;
+  tags: boolean;
+  ratings: boolean;
+  follows: boolean;
+  login_alerts: boolean;
+}
+
 export interface UserModel {
   id: string;
   username: string;
@@ -7,6 +17,7 @@ export interface UserModel {
   profile_picture_url: string | null;
   bio: string | null;
   private: boolean;
+  email_notifications: EmailNotificationPreferences;
   created_at: string;
   updated_at: string;
 }

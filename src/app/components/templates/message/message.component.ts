@@ -5,11 +5,10 @@ import { MessageModel } from "../../../models/database-models/message.model";
 import { SharedRatingComponent } from "../shared-rating/shared-rating.component";
 
 @Component({
-  selector: 'app-message',
-  standalone: true,
-  imports: [CommonModule, RouterLink, SharedRatingComponent],
-  templateUrl: `./message.component.html`,
-  styleUrl: `./message.component.css`
+    selector: 'app-message',
+    imports: [CommonModule, RouterLink, SharedRatingComponent],
+    templateUrl: `./message.component.html`,
+    styleUrl: `./message.component.css`
 })
 export class MessageComponent {
   @Input() message!: MessageModel;

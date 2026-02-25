@@ -41,6 +41,9 @@ testem.log
 .claude/
 .mcp.json
 
+# Database context files (full schema - never bundle in production)
+src/assets/db-context.md
+
 # Environment files (contain API keys)
 src/environments/environment.ts
 src/environments/environment.prod.ts

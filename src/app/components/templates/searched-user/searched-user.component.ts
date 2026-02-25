@@ -14,12 +14,11 @@ type RelationshipState =
   | 'self';         // It's your own account
 
 @Component({
-  selector: 'app-searched-user',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './searched-user.component.html',
-  styleUrls: ['./searched-user.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+    selector: 'app-searched-user',
+    imports: [CommonModule],
+    templateUrl: './searched-user.component.html',
+    styleUrls: ['./searched-user.component.css'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SearchedUserComponent implements OnInit {
   public routingService = inject(RoutingService);

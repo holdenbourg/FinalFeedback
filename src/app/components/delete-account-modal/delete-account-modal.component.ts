@@ -4,11 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { UserModel } from '../../models/database-models/user.model';
 
 @Component({
-  selector: 'app-delete-account-modal',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './delete-account-modal.component.html',
-  styleUrl: './delete-account-modal.component.css'
+    selector: 'app-delete-account-modal',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './delete-account-modal.component.html',
+    styleUrl: './delete-account-modal.component.css'
 })
 export class DeleteAccountModalComponent {
   @Output() confirm = new EventEmitter<void>();

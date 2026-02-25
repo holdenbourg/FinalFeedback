@@ -18,12 +18,11 @@ export type FeedUiComment = {
 };
 
 @Component({
-  selector: 'app-comment',
-  standalone: true,
-  imports: [CommonModule, RouterLink],
-  templateUrl: './comment.component.html',
-  styleUrls: ['./comment.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-comment',
+    imports: [CommonModule, RouterLink],
+    templateUrl: './comment.component.html',
+    styleUrls: ['./comment.component.css'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class CommentComponent implements OnInit {

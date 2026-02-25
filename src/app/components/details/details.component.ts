@@ -14,11 +14,10 @@ import { RoutingService } from '../../services/routing.service';
 import { FilmCacheService } from '../../services/film-cache.service';
 
 @Component({
-  selector: 'app-details',
-  standalone: true,
-  imports: [CommonModule, CastFilmComponent, CrewFilmComponent],
-  templateUrl: './details.component.html',
-  styleUrls: ['./details.component.css']
+    selector: 'app-details',
+    imports: [CommonModule, CastFilmComponent, CrewFilmComponent],
+    templateUrl: './details.component.html',
+    styleUrls: ['./details.component.css']
 })
 
 export class DetailsComponent implements OnInit {

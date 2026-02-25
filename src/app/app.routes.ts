@@ -12,10 +12,12 @@ import { AccountComponent } from './components/account/account.component';
 import { SettingsAccountInfoComponent } from './components/settings-account-info/settings-account-info.component';
 import { SettingsPrivacyComponent } from './components/settings-privacy/settings-privacy.component';
 import { SettingsPrivacyPolicyComponent } from './components/settings-privacy-policy/settings-privacy-policy.component';
+import { SettingsNotificationsComponent } from './components/settings-notifications/settings-notifications.component';
 import { PrivacyPolicyComponent } from './components/privacy-policy/privacy-policy.component';
 import { DetailsComponent } from './components/details/details.component';
 import { MessagesComponent } from './components/messages/messages.component';
 import { NotificationsComponent } from './components/notifications/notifications.component';
+import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
 
 
 export const routes: Routes = [
@@ -24,6 +26,8 @@ export const routes: Routes = [
     { path: 'login', component: LoginRegisterComponent },
 
     { path: 'privacy-policy', component: PrivacyPolicyComponent },
+
+    { path: 'auth/reset-password', component: ResetPasswordComponent },
 
     { path: 'home', redirectTo: '', pathMatch: 'full' },
 
@@ -50,6 +54,7 @@ export const routes: Routes = [
 
     { path: 'settings/account-info', component: SettingsAccountInfoComponent, canActivate: [AuthGuard] },
     { path: 'settings/privacy', component: SettingsPrivacyComponent, canActivate: [AuthGuard] },
+    { path: 'settings/notifications', component: SettingsNotificationsComponent, canActivate: [AuthGuard] },
     { path: 'settings/privacy-policy', component: SettingsPrivacyPolicyComponent, canActivate: [AuthGuard] },
 
     // Fallback

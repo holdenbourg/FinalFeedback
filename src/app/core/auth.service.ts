@@ -54,7 +54,7 @@ export class AuthService {
     // Light client-side checks (your stricter UI validators still run in the component)
     if (!this.isEmail(email)) throw new Error('Please enter a valid email.');
     if (username.length < 3) throw new Error('Username must be at least 3 characters.');
-    if (password.length < 6) throw new Error('Password must be at least 6 characters.');
+    if (password.length < 8) throw new Error('Password must be at least 8 characters.');
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -91,28 +91,15 @@ export class AuthService {
       throw new Error(msg);
     }
 
-    // ✅ Clean up old flag
     localStorage.removeItem('ff-remember-me');
-    
-    // ✅ ADD LOGGING
-    console.log('[Auth] Remember Me:', rememberMe);
-    console.log('[Auth] Session created:', data.session?.access_token ? 'YES' : 'NO');
-    
+
     if (rememberMe) {
-      // User wants to stay logged in - clear session-only flags
       sessionStorage.removeItem('ff-session-active');
       localStorage.removeItem('ff-session-only');
-      console.log('[Auth] Remember Me ON - cleared session-only flags');
     } else {
-      // User wants session-only - set both flags
       sessionStorage.setItem('ff-session-active', Date.now().toString());
       localStorage.setItem('ff-session-only', 'true');
-      console.log('[Auth] Remember Me OFF - set session-only flags');
     }
-
-    // ✅ VERIFY session is stored
-    const storedSession = localStorage.getItem(`sb-${await supabase.auth.getUser() ? 'session' : 'user'}`);
-    console.log('[Auth] Supabase session stored in localStorage:', storedSession ? 'YES' : 'NO');
 
     return data;
   }
@@ -130,7 +117,7 @@ export class AuthService {
   async sendPasswordReset(identifier: string) {
     const email = await this.resolveEmail(identifier);
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      // emailRedirectTo: `${window.location.origin}/auth/reset`,
+      redirectTo: `${window.location.origin}/auth/reset-password`,
     });
     if (error) throw new Error(error.message);
     return data;

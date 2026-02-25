@@ -25,11 +25,10 @@ type Delta = { label: string; from: number; to: number };
 
 
 @Component({
-  selector: 'app-edit-film-rating',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './edit-film-rating.component.html',
-  styleUrls: ['./edit-film-rating.component.css'],
+    selector: 'app-edit-film-rating',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './edit-film-rating.component.html',
+    styleUrls: ['./edit-film-rating.component.css']
 })
 
 export class EditFilmRatingComponent implements OnInit {

@@ -17,12 +17,11 @@ import { ModalOverlayService } from '../../services/modal-overlay.service';
 export type FollowState = 'none' | 'following' | 'requested' | 'self' | 'anonymous';
 
 @Component({
-  selector: 'app-home',
-  standalone: true,
-  imports: [CommonModule, RouterModule, FeedPostComponent, ShareRatingModalComponent],
-  templateUrl: './home.component.html',
-  styleUrls: ['./home.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+    selector: 'app-home',
+    imports: [CommonModule, RouterModule, FeedPostComponent, ShareRatingModalComponent],
+    templateUrl: './home.component.html',
+    styleUrls: ['./home.component.css'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HomeComponent implements OnInit, DoCheck {
   readonly routingService = inject(RoutingService);

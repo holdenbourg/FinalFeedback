@@ -12,9 +12,6 @@
   overflow: hidden;
   z-index: 2;
 }
-:host.modal-open {
-  z-index: 4;
-}
 
 
 /* ========== Container ========== */
@@ -27,23 +24,24 @@
   bottom: 20px;
   display: flex;
   transition: .5s;
+  overflow: hidden;
+    border: .2vw solid #fff; 
+  border-radius: 10px; 
+  backdrop-filter: blur(3px);
 }
 
 .container.active {
   left: 100px;
 }
 
-
 /* ========== Privacy Panel ========== */
 .privacy-panel {
   width: 100%;
   margin: 0 auto;
   padding: 17.5px 30px 30px 30px;
-  border: 0.2vw solid #fff;
-  border-radius: 10px;
-  backdrop-filter: blur(3px);
   overflow-y: auto;
   overflow-x: hidden;
+  margin-right: 2.5px;
 }
 
 .privacy-panel::-webkit-scrollbar {
@@ -130,6 +128,13 @@
   font-weight: 600;
   color: #fff;
   margin: 0 0 20px 0;
+}
+
+/* Toggle List */
+.toggle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 /* Privacy Toggle Card */
@@ -223,153 +228,6 @@ input:disabled + .slider {
   cursor: not-allowed;
 }
 
-/* Blocked List Card */
-.blocked-list-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.blocked-list {
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.blocked-list::-webkit-scrollbar {
-  width: 8px;
-}
-
-.blocked-list::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.blocked-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
-}
-
-.blocked-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
-}
-
-/* Blocked User Item */
-.blocked-user-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  transition: background 0.2s;
-}
-
-.blocked-user-item:last-child {
-  border-bottom: none;
-}
-
-.blocked-user-item:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-}
-
-.user-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  object-fit: cover;
-}
-
-.user-details {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.user-username {
-  font-size: 16px;
-  font-weight: 600;
-  color: #fff;
-  margin: 0;
-}
-
-.user-name {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
-  margin: 0;
-}
-
-/* Unblock Button */
-.btn-unblock {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-unblock i {
-  font-size: 18px;
-}
-
-.btn-unblock:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: translateY(-2px);
-}
-
-.btn-unblock:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.btn-unblock:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* No Blocked Users */
-.no-blocked-users {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  text-align: center;
-}
-
-.no-blocked-users i {
-  font-size: 64px;
-  color: rgba(255, 255, 255, 0.3);
-  margin-bottom: 16px;
-}
-
-.no-blocked-message {
-  font-size: 18px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
-  margin: 0 0 8px 0;
-}
-
-.no-blocked-hint {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
-  margin: 0;
-}
-
 /* Responsive Design */
 @media (max-width: 768px) {
   .container {
@@ -398,15 +256,5 @@ input:disabled + .slider {
 
   .toggle-switch {
     align-self: flex-start;
-  }
-
-  .blocked-user-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .btn-unblock {
-    width: 100%;
   }
 }

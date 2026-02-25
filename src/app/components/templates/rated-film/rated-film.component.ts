@@ -4,12 +4,11 @@ import { RatingModel } from '../../../models/database-models/rating.model';
 
 
 @Component({
-  selector: 'app-rated-film',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './rated-film.component.html',
-  styleUrl: './rated-film.component.css',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-rated-film',
+    imports: [CommonModule],
+    templateUrl: './rated-film.component.html',
+    styleUrl: './rated-film.component.css',
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class RatedFilmComponent {

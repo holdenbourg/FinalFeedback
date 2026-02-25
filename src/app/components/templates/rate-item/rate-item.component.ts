@@ -13,11 +13,10 @@ export interface RateResult {
 }
 
 @Component({
-  selector: 'app-rate-item',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './rate-item.component.html',
-  styleUrl: './rate-item.component.css',
+    selector: 'app-rate-item',
+    imports: [CommonModule],
+    templateUrl: './rate-item.component.html',
+    styleUrl: './rate-item.component.css'
 })
 
 export class RateItemComponent {

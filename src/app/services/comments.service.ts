@@ -222,26 +222,20 @@ export class CommentsService {
       throw authErr ?? new Error('Not authenticated');
     }
 
-    console.log('[CommentsService] Deleting comment:', commentId, 'by user:', user.id);
-
     // Delete the comment (user must be author due to RLS)
     const { error, data } = await supabase
       .from('comments')
       .delete()
       .eq('id', commentId)
-      .eq('author_id', user.id)  // ✅ Explicit ownership check
-      .select();  // ✅ Return deleted row to verify
+      .eq('author_id', user.id)
+      .select();
 
     if (error) {
-      console.error('[CommentsService] Delete error:', error);
       throw error;
     }
 
     if (!data || data.length === 0) {
-      console.warn('[CommentsService] No rows deleted - comment not found or not owned by user');
       throw new Error('Comment not found or you do not have permission to delete it');
     }
-
-    console.log('[CommentsService] Successfully deleted comment');
   }
 }

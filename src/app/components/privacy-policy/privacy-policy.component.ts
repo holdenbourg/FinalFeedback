@@ -4,11 +4,10 @@ import { PrivacyPolicyContentComponent } from '../privacy-policy-content/privacy
 import { Router } from '@angular/router';
 
 @Component({
-  selector: 'app-privacy-policy',
-  standalone: true,
-  imports: [CommonModule, PrivacyPolicyContentComponent],
-  templateUrl: './privacy-policy.component.html',
-  styleUrl: './privacy-policy.component.css'
+    selector: 'app-privacy-policy',
+    imports: [CommonModule, PrivacyPolicyContentComponent],
+    templateUrl: './privacy-policy.component.html',
+    styleUrl: './privacy-policy.component.css'
 })
 export class PrivacyPolicyComponent implements OnInit {
   public router = inject(Router);

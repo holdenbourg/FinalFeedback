@@ -6,12 +6,12 @@
     </div>
 
     <!-- Status Messages -->
-    <div *ngIf="successMessage()" class="message success-message">
+    <div class="message success-message" [class.visible]="successMessage()">
       <i class='bx bx-check-circle'></i>
       <span>{{ successMessage() }}</span>
     </div>
 
-    <div *ngIf="errorMessage()" class="message error-message">
+    <div class="message error-message" [class.visible]="errorMessage()">
       <i class='bx bx-error-circle'></i>
       <span>{{ errorMessage() }}</span>
     </div>

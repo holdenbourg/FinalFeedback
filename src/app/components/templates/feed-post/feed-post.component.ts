@@ -46,11 +46,10 @@ type UiReply = {
 };
 
 @Component({
-  selector: 'app-feed-post',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, CommentComponent, ReplyComponent],
-  templateUrl: './feed-post.component.html',
-  styleUrls: ['./feed-post.component.css'],
+    selector: 'app-feed-post',
+    imports: [CommonModule, FormsModule, RouterLink, CommentComponent, ReplyComponent],
+    templateUrl: './feed-post.component.html',
+    styleUrls: ['./feed-post.component.css']
 })
 
 export class FeedPostComponent implements OnInit, OnChanges {
@@ -122,19 +121,22 @@ export class FeedPostComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    // ✅ FIX: When feedPost changes, reload all data
     if (changes['feedPost'] && !changes['feedPost'].firstChange) {
-      // Reset state
-      this.isLoadingComments = true;
-      this.reversedComments = [];
-      this.repliesByComment.clear();
-      this.replyDisplayLimit.clear();
-      
-      // Reload everything for the new post
-      this.initializePost();
-      
-      this.changeDetectorRef.markForCheck();
-      this.changeDetectorRef.detectChanges();
+      const prev = changes['feedPost'].previousValue as PostModelWithAuthor;
+      const curr = changes['feedPost'].currentValue as PostModelWithAuthor;
+
+      // Only reload if it's actually a different post (not just a reference change)
+      if (prev?.id !== curr?.id) {
+        this.isLoadingComments = true;
+        this.reversedComments = [];
+        this.repliesByComment.clear();
+        this.replyDisplayLimit.clear();
+
+        this.initializePost();
+
+        this.changeDetectorRef.markForCheck();
+        this.changeDetectorRef.detectChanges();
+      }
     }
   }
 
@@ -142,7 +144,7 @@ export class FeedPostComponent implements OnInit, OnChanges {
   private async initializePost() {
     try {
       this.isLoadingComments = true;
-      
+
       // Load all data in parallel
       await Promise.all([
         this.loadLikeStatusAndCount(),
@@ -150,7 +152,13 @@ export class FeedPostComponent implements OnInit, OnChanges {
         this.loadTaggedUsers(),
         this.loadThread()
       ]);
-      
+
+      // Batch load comment/reply like counts and liked status
+      await Promise.all([
+        this.loadCommentLikeCounts(),
+        this.loadCommentLikedStatus()
+      ]);
+
       this.isLoadingComments = false;
       this.changeDetectorRef.markForCheck();
 
@@ -295,11 +303,11 @@ export class FeedPostComponent implements OnInit, OnChanges {
       
       // Batch load counts in parallel
       const [commentCounts, replyCounts] = await Promise.all([
-        commentIds.length > 0 
+        commentIds.length > 0
           ? this.likesService.countMultiple('comment', commentIds)
           : Promise.resolve(new Map<string, number>()),
         replyIds.length > 0
-          ? this.likesService.countMultiple('comment', replyIds)  // replies are also 'comment' type
+          ? this.likesService.countMultiple('reply', replyIds)
           : Promise.resolve(new Map<string, number>())
       ]);
       
@@ -336,11 +344,11 @@ export class FeedPostComponent implements OnInit, OnChanges {
       
       // Batch check liked status in parallel
       const [likedComments, likedReplies] = await Promise.all([
-        commentIds.length > 0 
+        commentIds.length > 0
           ? this.likesService.checkMultipleLiked('comment', commentIds)
           : Promise.resolve(new Set<string>()),
         replyIds.length > 0
-          ? this.likesService.checkMultipleLiked('comment', replyIds)  // replies are also 'comment' type
+          ? this.likesService.checkMultipleLiked('reply', replyIds)
           : Promise.resolve(new Set<string>())
       ]);
       
@@ -662,35 +670,23 @@ export class FeedPostComponent implements OnInit, OnChanges {
     }
     const next = !this.liked;
     const prevCount = this.feedPost.like_count ?? 0;
-    
+
     // Optimistic update
     this.liked = next;
     this.feedPost.like_count = prevCount + (next ? 1 : -1);
-    
-    // FORCE DETECTION - Try both methods
     this.changeDetectorRef.markForCheck();
-    this.changeDetectorRef.detectChanges();
-    
-    // Also force Angular to re-evaluate bindings
-    setTimeout(() => {
-      this.changeDetectorRef.detectChanges();
-    }, 0);
-    
+
     try {
       await this.likesService.toggleLike('post', this.feedPost.id, next);
       await this.refreshPostCount();
-
       this.postLikeChanged.emit(this.feedPost.like_count);
-      
     } catch (err) {
       console.error('Error toggling post like:', err);
-      
+
       // Revert on error
       this.liked = !next;
       this.feedPost.like_count = prevCount;
-      
       this.changeDetectorRef.markForCheck();
-      this.changeDetectorRef.detectChanges();
     }
   }
 

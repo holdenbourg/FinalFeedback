@@ -50,8 +50,9 @@
             </a>
         </li>
 
-        <li class="list-item" [class.active]="isActive('/summary')" [class.disabled]="authResolved() && !isAuthenticated()">
-            <a (click)="isAuthenticated() ? routingService.navigateToSummary() : onDisabledNavClick()">
+        <li class="list-item" [class.active]="isActive('/summary')" [class.disabled]="authResolved() && (!isAuthenticated() || !hasSummaryAccess())"
+            [attr.title]="authResolved() && isAuthenticated() && !hasSummaryAccess() ? 'Rate at least 10 movies or 10 shows to unlock' : null">
+            <a (click)="isAuthenticated() && hasSummaryAccess() ? routingService.navigateToSummary() : onDisabledNavClick()">
                 <i class='bx bx-bar-chart-alt-2'></i>
                 <span class="link-name" [style.--i]="getNavDelay()[4]">Summary</span>
             </a>
@@ -93,6 +94,13 @@
                 <a (click)="routingService.navigateToPrivacy()">
                     <i class='bx bx-shield-quarter'></i>
                     <span class="link-name" [style.--i]="getNavDelay()[7]">Privacy</span>
+                </a>
+            </li>
+
+            <li class="settings-item" [class.active]="isActiveSettings('/settings/notifications')">
+                <a (click)="routingService.navigateToNotificationSettings()">
+                    <i class='bx bx-bell'></i>
+                    <span class="link-name" [style.--i]="getNavDelay()[7]">Notifications</span>
                 </a>
             </li>
 

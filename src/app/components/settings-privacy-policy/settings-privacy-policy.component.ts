@@ -2,7 +2,6 @@ import { Component, DoCheck, HostBinding, inject, OnInit, signal } from '@angula
 import { RoutingService } from '../../services/routing.service';
 import { SidebarService } from '../../services/sidebar.service';
 import { CommonModule } from '@angular/common';
-import { LogoutModalComponent } from '../logout-modal/logout-modal.component';
 import { PrivacyPolicyContentComponent } from '../privacy-policy-content/privacy-policy-content.component';
 import { AuthService } from '../../core/auth.service';
 import { UserModel } from '../../models/database-models/user.model';
@@ -10,11 +9,10 @@ import { UsersService } from '../../services/users.service';
 import { ModalOverlayService } from '../../services/modal-overlay.service';
 
 @Component({
-  selector: 'app-settings-privacy-policy',
-  standalone: true,
-  imports: [CommonModule, LogoutModalComponent, PrivacyPolicyContentComponent],
-  templateUrl: './settings-privacy-policy.component.html',
-  styleUrl: './settings-privacy-policy.component.css'
+    selector: 'app-settings-privacy-policy',
+    imports: [CommonModule, PrivacyPolicyContentComponent],
+    templateUrl: './settings-privacy-policy.component.html',
+    styleUrl: './settings-privacy-policy.component.css'
 })
 export class SettingsPrivacyPolicyComponent implements OnInit, DoCheck {
   public routingService = inject(RoutingService);

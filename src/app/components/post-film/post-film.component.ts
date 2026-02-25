@@ -15,11 +15,10 @@ import { UserModel } from '../../models/database-models/user.model';
 import { FilmData, TaggedUser, FilmType } from '../../models/helper-models/film-data.model';
 
 @Component({
-  selector: 'app-post-film',
-  standalone: true,
-  imports: [CommonModule, FormsModule, TaggedUserComponent],
-  templateUrl: './post-film.component.html',
-  styleUrl: './post-film.component.css'
+    selector: 'app-post-film',
+    imports: [CommonModule, FormsModule, TaggedUserComponent],
+    templateUrl: './post-film.component.html',
+    styleUrl: './post-film.component.css'
 })
 export class PostFilmComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);

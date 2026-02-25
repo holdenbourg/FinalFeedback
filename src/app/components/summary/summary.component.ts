@@ -34,11 +34,10 @@ type FavoriteEntry = {
 };
 
 @Component({
-  selector: 'app-summary',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './summary.component.html',
-  styleUrls: ['./summary.component.css'],
+    selector: 'app-summary',
+    imports: [CommonModule],
+    templateUrl: './summary.component.html',
+    styleUrls: ['./summary.component.css']
 })
 
 export class SummaryComponent implements OnInit {
@@ -69,6 +68,7 @@ export class SummaryComponent implements OnInit {
   readonly fallbackPoster = 'assets/images/no-poster.png';
 
   public currentUser = signal<UserModel | null>(null);
+  public loading = signal(true);
 
   ///  User's rated movies  \\\
   private allRatedMovies = signal<RatingModel[]>([]);
@@ -179,6 +179,8 @@ export class SummaryComponent implements OnInit {
       this.allRatedMovies.set([]);
       this.allRatedSeries.set([]);
       this.tabAvailability.set({ all: false, movies: false, series: false });
+    } finally {
+      this.loading.set(false);
     }
 
     // ✅ Listen to URL changes

@@ -8,12 +8,11 @@ import { SidebarService } from '../../services/sidebar.service';
 import { supabase } from '../../core/supabase.client';
 
 @Component({
-  selector: 'app-notifications',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './notifications.component.html',
-  styleUrl: './notifications.component.css',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-notifications',
+    imports: [CommonModule],
+    templateUrl: './notifications.component.html',
+    styleUrl: './notifications.component.css',
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NotificationsComponent implements OnInit {
   readonly notificationsService = inject(NotificationsService);

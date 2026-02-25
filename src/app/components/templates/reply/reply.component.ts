@@ -18,12 +18,11 @@ export type FeedUiReply = {
 };
 
 @Component({
-  selector: 'app-reply',
-  standalone: true,
-  imports: [CommonModule, RouterLink],
-  templateUrl: './reply.component.html',
-  styleUrls: ['./reply.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-reply',
+    imports: [CommonModule, RouterLink],
+    templateUrl: './reply.component.html',
+    styleUrls: ['./reply.component.css'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class ReplyComponent implements OnInit {
