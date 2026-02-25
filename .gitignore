@@ -44,9 +44,10 @@ testem.log
 # Database context files (full schema - never bundle in production)
 src/assets/db-context.md
 
-# Environment files (contain API keys)
-src/environments/environment.ts
-src/environments/environment.prod.ts
+# Environment example (template for new devs)
+# Note: environment.ts contains only client-side keys (Supabase anon key, OMDB,
+# TMDB, MDBList) that are embedded in the browser bundle anyway, so they are
+# safe to commit. Do NOT put server-side secrets here.
 
 # System files
 .DS_Store
