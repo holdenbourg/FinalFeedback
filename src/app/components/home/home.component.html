@@ -1,13 +1,18 @@
 <div class="container" [class.active]="sidebarService.sidebarActive() === false || deviceService.isMobile()">
     <div class="feed-container">
-        <p class="feed-title">Discover</p>
+        <!-- Shown to signed-out visitors only: the site's name, what it is, and a link to the privacy policy.
+             The name is a heading here because the sidebar's name is hidden when the sidebar is collapsed
+             and the phone layout has no name at all. -->
+        <div class="feed-about" *ngIf="authChecked() && !isAuthenticated()">
+            <h1 class="feed-about-name">FinalFeedback</h1>
+            <p>
+                Rate movies and shows on acting, visuals, story, pacing and ending, and see what the people
+                you follow thought.
+                <a routerLink="/privacy-policy">Privacy Policy</a>
+            </p>
+        </div>
 
-        <!-- Shown to signed-out visitors only: says what the site is and links to the privacy policy. -->
-        <p class="feed-about" *ngIf="authChecked() && !isAuthenticated()">
-            FinalFeedback is where you rate movies and shows on acting, visuals, story, pacing and ending,
-            and see what the people you follow thought.
-            <a routerLink="/privacy-policy">Privacy Policy</a>
-        </p>
+        <p class="feed-title">Discover</p>
 
         <div class="no-new-posts" *ngIf="initialFeedLoaded() && !loadingFeed() && usersFeedPosts.length === 0">
             <p class="no-posts-message">No New Posts</p>
