@@ -1,0 +1,10 @@
+# Netlify build settings. These take priority over the build settings in the Netlify dashboard,
+# so the folder that gets published always matches the project name in angular.json.
+
+[build]
+  # Runs `ng build`, then scripts/add-static-text.mjs (see the "build" script in package.json).
+  command = "npm run build"
+
+  # Angular's application builder writes the site to <outputPath>/browser, and outputPath is
+  # "dist/final-feedback" in angular.json. If the project is ever renamed, change this to match.
+  publish = "dist/final-feedback/browser"
