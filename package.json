@@ -1,10 +1,10 @@
 {
-  "name": "what-to-watch",
+  "name": "final-feedback",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "ng build && node scripts/add-static-text.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },

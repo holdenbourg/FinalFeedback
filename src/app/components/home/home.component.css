@@ -59,6 +59,17 @@
     margin-right: 14px; 
     border-bottom: .15vw solid #fff;
 }
+.feed-about {
+    color: #fff;
+    font-size: clamp(12px, 1vw, 16px);
+    line-height: 1.4;
+    margin: 8px 14px 4px 20px;
+}
+.feed-about a {
+    color: #fff;
+    text-decoration: underline;
+    white-space: nowrap;
+}
 
 .feed-loading-bar {
     position: relative;

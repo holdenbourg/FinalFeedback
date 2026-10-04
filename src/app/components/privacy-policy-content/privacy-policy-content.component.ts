@@ -10,7 +10,7 @@ import { CommonModule } from '@angular/common';
 export class PrivacyPolicyContentComponent {
   @Input() showBackButton = true;
   
-  lastUpdated = 'January 7, 2026';
+  lastUpdated = 'October 4, 2026';
   companyName = 'FinalFeedback';
   contactEmail = 'privacy@finalfeedback.com';
   websiteUrl = 'https://finalfeedback.com';

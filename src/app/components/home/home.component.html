@@ -2,6 +2,13 @@
     <div class="feed-container">
         <p class="feed-title">Discover</p>
 
+        <!-- Shown to signed-out visitors only: says what the site is and links to the privacy policy. -->
+        <p class="feed-about" *ngIf="authChecked() && !isAuthenticated()">
+            FinalFeedback is where you rate movies and shows on acting, visuals, story, pacing and ending,
+            and see what the people you follow thought.
+            <a routerLink="/privacy-policy">Privacy Policy</a>
+        </p>
+
         <div class="no-new-posts" *ngIf="initialFeedLoaded() && !loadingFeed() && usersFeedPosts.length === 0">
             <p class="no-posts-message">No New Posts</p>
 

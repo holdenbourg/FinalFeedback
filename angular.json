@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "what-to-watch": {
+    "final-feedback": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -13,7 +13,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/what-to-watch",
+            "outputPath": "dist/final-feedback",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -58,10 +58,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "what-to-watch:build:production"
+              "buildTarget": "final-feedback:build:production"
             },
             "development": {
-              "buildTarget": "what-to-watch:build:development"
+              "buildTarget": "final-feedback:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -69,7 +69,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "buildTarget": "what-to-watch:build"
+            "buildTarget": "final-feedback:build"
           }
         },
         "test": {

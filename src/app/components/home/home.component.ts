@@ -37,6 +37,8 @@ export class HomeComponent implements OnInit, DoCheck {
   public currentUser = signal<UserModel | null>(null);
   public authUserId = signal<string | null>(null);
   public isAuthenticated = signal(false);
+  // True once the sign-in check has finished, so signed-out-only content does not flash for signed-in users.
+  public authChecked = signal(false);
 
   usersFeedPosts: PostModelWithAuthor[] = [];
   usersMemoryLanePosts: PostModelWithAuthor[] = [];
@@ -86,6 +88,10 @@ export class HomeComponent implements OnInit, DoCheck {
       if (uid) {
         this.authUserId.set(uid);
         this.isAuthenticated.set(true);
+      }
+      this.authChecked.set(true);
+
+      if (uid) {
 
         this.usersService.getCurrentUserProfile()
           .then(u => this.currentUser.set(u))

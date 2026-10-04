@@ -14,16 +14,16 @@ describe('AppComponent', () => {
     expect(app).toBeTruthy();
   });
 
-  it(`should have the 'what-to-watch' title`, () => {
+  it(`should have the 'final-feedback' title`, () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
-    expect(app.title).toEqual('what-to-watch');
+    expect(app.title).toEqual('final-feedback');
   });
 
   it('should render title', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('what-to-watch');
+    expect(compiled.querySelector('h1')?.textContent).toContain('final-feedback');
   });
 });
